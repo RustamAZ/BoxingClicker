@@ -3,6 +3,8 @@ import { RewardContainer, type RewardContainerConfig } from "./RewardContainer";
 
 export class CoinContainer extends RewardContainer {
   private static readonly defaultDisplaySize = 300;
+  private static readonly startMaxValue = 40;
+  private static readonly maxValueStepPerOpening = 20;
   private static readonly textureKeys = [
     "coin-container-1",
     "coin-container-2",
@@ -27,6 +29,10 @@ export class CoinContainer extends RewardContainer {
   constructor(scene: Scene, config: RewardContainerConfig) {
     super(scene, {
       ...config,
+      startMaxValue: config.startMaxValue ?? CoinContainer.startMaxValue,
+      maxValueStepPerOpening:
+        config.maxValueStepPerOpening ??
+        CoinContainer.maxValueStepPerOpening,
       displaySize: config.displaySize ?? CoinContainer.defaultDisplaySize,
       textureKeys: CoinContainer.textureKeys,
     });

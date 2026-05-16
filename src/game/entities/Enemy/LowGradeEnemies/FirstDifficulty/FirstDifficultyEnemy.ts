@@ -1,6 +1,6 @@
 import { GameObjects, Scene } from "phaser";
-import { Enemy } from "../Enemy";
-import type { EnemySpawnSlot } from "../types";
+import { Enemy } from "../../Enemy";
+import type { EnemySpawnSlot } from "../../types";
 
 type EnemyStatRange = {
   min: number;
@@ -26,35 +26,24 @@ export class FirstDifficultyEnemy extends Enemy {
   private static readonly sprites: EnemySpritePair[] = [
     [
       {
-        key: "first-difficulty-enemy-1",
-        path: "assets/images/enemies/first-difficulty/man-v1.png",
-        displayName: "First Difficulty Enemy",
+        key: "first-difficulty-human-1",
+        path: "assets/images/enemies/first-difficulty/human-v1.png",
+        displayName: "Village Farmer",
       },
       {
-        key: "first-difficulty-enemy-1-dead",
-        path: "assets/images/enemies/first-difficulty/man-v1-die.png",
-      },
-    ],
-    [
-      {
-        key: "first-difficulty-enemy-2",
-        path: "assets/images/enemies/first-difficulty/man-v2.png",
-        displayName: "First Difficulty Enemy",
-      },
-      {
-        key: "first-difficulty-enemy-2-dead",
-        path: "assets/images/enemies/first-difficulty/man-v2-die.png",
+        key: "first-difficulty-human-1-dead",
+        path: "assets/images/enemies/first-difficulty/human-v1-die.png",
       },
     ],
     [
       {
-        key: "first-difficulty-skeleton-1",
-        path: "assets/images/enemies/first-difficulty/skeleton-v1.png",
-        displayName: "Skeleton",
+        key: "first-difficulty-human-2",
+        path: "assets/images/enemies/first-difficulty/human-v2.png",
+        displayName: "Village Guard",
       },
       {
-        key: "first-difficulty-skeleton-1-dead",
-        path: "assets/images/enemies/first-difficulty/skeleton-v1-die.png",
+        key: "first-difficulty-human-2-dead",
+        path: "assets/images/enemies/first-difficulty/human-v2-die.png",
       },
     ],
   ];

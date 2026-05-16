@@ -1,6 +1,6 @@
 import { GameObjects, Scene } from "phaser";
-import { Enemy } from "../Enemy";
-import type { EnemySpawnSlot } from "../types";
+import { Enemy } from "../../Enemy";
+import type { EnemySpawnSlot } from "../../types";
 
 type EnemyStatRange = {
   min: number;
@@ -71,7 +71,7 @@ export class SecondDifficultyEnemy extends Enemy {
   ];
   private static readonly healthRange = {
     min: 200,
-    max: 350,
+    max: 300,
   };
   private static readonly xpRewardRange = {
     min: 100,
@@ -86,8 +86,8 @@ export class SecondDifficultyEnemy extends Enemy {
     max: 26,
   };
   private static readonly damagePerHitRange = {
-    min: 10,
-    max: 18,
+    min: 8,
+    max: 15,
   };
   private static readonly attackCooldownSecondsRange = {
     min: 0.8,

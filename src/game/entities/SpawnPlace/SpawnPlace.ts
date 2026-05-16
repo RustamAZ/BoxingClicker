@@ -1,11 +1,16 @@
 import { Math as PhaserMath } from "phaser";
 import type { Scene } from "phaser";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
+import type {
+  EnemySpawnKind,
+  GameLevelController,
+} from "../../progression/GameLevelController";
 import type { Gloves } from "../Gloves/Gloves";
 import type { Player } from "../Player/Player";
 import type { Enemy } from "../Enemy/Enemy";
-import { FirstDifficultyEnemy } from "../Enemy/LowGradeEnemies/FirstDifficultyEnemy";
-import { SecondDifficultyEnemy } from "../Enemy/LowGradeEnemies/SecondDifficultyEnemy";
+import { FirstDifficultyBoss } from "../Enemy/LowGradeEnemies/FirstDifficulty/FirstDifficultyBoss";
+import { FirstDifficultyEnemy } from "../Enemy/LowGradeEnemies/FirstDifficulty/FirstDifficultyEnemy";
+import { SecondDifficultyEnemy } from "../Enemy/LowGradeEnemies/SecondDifficulty/SecondDifficultyEnemy";
 import { PunchingBag } from "../Enemy/PunchingBag/PunchingBag";
 import type { EnemySpawnSlot } from "../Enemy/types";
 
@@ -15,7 +20,6 @@ type EnemyDefeatedCallback = (
 ) => void;
 
 export class SpawnPlace {
-  private static readonly secondDifficultyMinPlayerLevel = 5;
   private static readonly hitEffectKeys = [
     "hit-effect-punch",
     "hit-effect-boom",
@@ -27,11 +31,14 @@ export class SpawnPlace {
   };
 
   private currentEnemyValue?: Enemy;
+  private currentEnemySpawnKind?: EnemySpawnKind;
+  private currentBossId?: string;
   private isEnemyDeathAnimationPlaying = false;
 
   constructor(
     private readonly scene: Scene,
     readonly slot: EnemySpawnSlot,
+    private readonly levelController: GameLevelController,
     private readonly player: Player,
     private readonly gloves: Gloves,
     private readonly hitSoundPlayer: HitSoundPlayer,
@@ -43,6 +50,7 @@ export class SpawnPlace {
   static preload(scene: Scene) {
     PunchingBag.preload(scene);
     FirstDifficultyEnemy.preload(scene);
+    FirstDifficultyBoss.preload(scene);
     SecondDifficultyEnemy.preload(scene);
     scene.load.image("hit-effect-punch", "assets/images/effects/punch.png");
     scene.load.image("hit-effect-boom", "assets/images/effects/boom.png");
@@ -61,7 +69,15 @@ export class SpawnPlace {
     this.destroyCurrentEnemy();
     this.isEnemyDeathAnimationPlaying = false;
 
-    this.currentEnemyValue = this.createEnemyByPlayerLevel();
+    this.currentEnemySpawnKind = this.levelController.getCurrentEnemySpawnKind();
+    this.currentBossId = this.getBossIdForSpawnKind(this.currentEnemySpawnKind);
+    if (this.currentBossId) {
+      this.levelController.startBossFight(this.currentBossId);
+    }
+
+    this.currentEnemyValue = this.createEnemyBySpawnKind(
+      this.currentEnemySpawnKind,
+    );
     this.currentEnemyValue.onHit(() => this.handleEnemyHit());
 
     return this.currentEnemyValue;
@@ -72,8 +88,14 @@ export class SpawnPlace {
   }
 
   destroyCurrentEnemy() {
+    if (this.currentBossId) {
+      this.levelController.stopBossFight(this.currentBossId);
+    }
+
     this.currentEnemyValue?.destroy();
     this.currentEnemyValue = undefined;
+    this.currentEnemySpawnKind = undefined;
+    this.currentBossId = undefined;
   }
 
   private handleEnemyHit() {
@@ -95,6 +117,8 @@ export class SpawnPlace {
     this.gloves.punch(this.player.getPunchAnimationDurationMs());
 
     if (!enemySurvived) {
+      const defeatedBossId = this.currentBossId;
+
       this.player.gainXp(enemy.xpReward);
       this.onEnemyDefeated?.(enemy, {
         x: this.slot.x,
@@ -102,6 +126,10 @@ export class SpawnPlace {
       });
       this.isEnemyDeathAnimationPlaying = true;
       enemy.playDeathAnimation(() => {
+        if (defeatedBossId) {
+          this.levelController.markBossDefeated(defeatedBossId);
+        }
+
         if (this.currentEnemyValue === enemy) {
           this.currentEnemyValue = undefined;
         }
@@ -119,20 +147,32 @@ export class SpawnPlace {
     return true;
   }
 
-  private createEnemyByPlayerLevel() {
-    if (this.player.level === 1) {
-      return new PunchingBag(this.scene, this.slot);
+  private createEnemyBySpawnKind(enemySpawnKind: EnemySpawnKind) {
+    switch (enemySpawnKind) {
+      case "training":
+        return new PunchingBag(this.scene, this.slot);
+      case "first-difficulty-enemy":
+        return new FirstDifficultyEnemy(this.scene, this.slot);
+      case "first-difficulty-boss":
+        return new FirstDifficultyBoss(this.scene, this.slot);
+      case "second-difficulty-enemy":
+        return new SecondDifficultyEnemy(this.scene, this.slot);
+    }
+  }
+
+  private getBossIdForSpawnKind(enemySpawnKind: EnemySpawnKind) {
+    if (enemySpawnKind !== "first-difficulty-boss") {
+      return undefined;
     }
 
-    if (this.player.level >= SpawnPlace.secondDifficultyMinPlayerLevel) {
-      return new SecondDifficultyEnemy(this.scene, this.slot);
-    }
-
-    return new FirstDifficultyEnemy(this.scene, this.slot);
+    return this.levelController.getPendingBossIdForCurrentLevel();
   }
 
   private shouldReplaceTrainingEnemy(enemy: Enemy) {
-    return this.player.level > 1 && enemy instanceof PunchingBag;
+    return (
+      this.levelController.getCurrentEnemyDifficulty() !== "training" &&
+      enemy instanceof PunchingBag
+    );
   }
 
   private playHitEffect() {

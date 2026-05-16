@@ -3,16 +3,16 @@ export class Player {
   xp = 0;
   xpToNextLevel = 100;
 
-  stamina = 100;
-  maxStamina = 100;
-  staminaRegenPerSecond = 50;
+  stamina = 2000;
+  maxStamina = 2000;
+  staminaRegenPerSecond = 18;
 
-  health = 100;
-  maxHealth = 100;
+  health = 200;
+  maxHealth = 200;
 
-  damagePerHit = 10;
+  damagePerHit = 50;
 
-  punchSpeed = 1;
+  punchSpeed = 0.9;
   xpPerHit = 2;
   staminaCostPerHit = 8;
 

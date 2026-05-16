@@ -3,6 +3,8 @@ import { RewardContainer, type RewardContainerConfig } from "./RewardContainer";
 
 export class DiamondContainer extends RewardContainer {
   private static readonly defaultDisplaySize = 300;
+  private static readonly startMaxValue = 50;
+  private static readonly maxValueStepPerOpening = 20;
   private static readonly textureKeys = [
     "diamonds-container-1",
     "diamonds-container-2",
@@ -27,6 +29,11 @@ export class DiamondContainer extends RewardContainer {
   constructor(scene: Scene, config: RewardContainerConfig) {
     super(scene, {
       ...config,
+      startMaxValue:
+        config.startMaxValue ?? DiamondContainer.startMaxValue,
+      maxValueStepPerOpening:
+        config.maxValueStepPerOpening ??
+        DiamondContainer.maxValueStepPerOpening,
       displaySize: config.displaySize ?? DiamondContainer.defaultDisplaySize,
       textureKeys: DiamondContainer.textureKeys,
     });

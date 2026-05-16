@@ -4,6 +4,7 @@ import { GameHud } from "../ui/GameHud";
 import { PauseMenu } from "../ui/PauseMenu";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
 import { BreathSoundPlayer } from "../audio/BreathSoundPlayer";
+import { BackgroundMusicController } from "../audio/BackgroundMusicController";
 import { GameBackground } from "../entities/Background/GameBackground";
 import type { Enemy } from "../entities/Enemy/Enemy";
 import { Player } from "../entities/Player/Player";
@@ -12,6 +13,7 @@ import { DiamondContainer } from "../entities/Rewards/DiamondContainer";
 import { RewardContainer } from "../entities/Rewards/RewardContainer";
 import { RewardParticleFlow } from "../entities/Rewards/RewardParticleFlow";
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
+import { GameLevelController } from "../progression/GameLevelController";
 import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
@@ -19,6 +21,7 @@ import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 
 export class Game extends Scene {
   private player: Player;
+  private levelController: GameLevelController;
   private gameSettings: GameSettings;
   private pauseController: PauseController;
   private background: GameBackground;
@@ -33,6 +36,7 @@ export class Game extends Scene {
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
   private breathSoundPlayer: BreathSoundPlayer;
+  private backgroundMusicController: BackgroundMusicController;
 
   constructor() {
     super("Game");
@@ -46,15 +50,17 @@ export class Game extends Scene {
     Gloves.preload(this);
     HitSoundPlayer.preload(this);
     BreathSoundPlayer.preload(this);
+    BackgroundMusicController.preload(this);
   }
 
   create() {
     this.player = new Player();
+    this.levelController = new GameLevelController(this.player);
     this.pauseController = new PauseController(this);
     this.gameSettings = new GameSettings(this);
 
     this.cameras.main.setBackgroundColor(0x1f1f1f);
-    this.background = new GameBackground(this, this.player);
+    this.background = new GameBackground(this, this.levelController);
     this.rewardParticleFlow = new RewardParticleFlow(this);
     this.diamondContainer = new DiamondContainer(this, {
       x: 160,
@@ -64,10 +70,15 @@ export class Game extends Scene {
       x: 864,
       y: 620,
     });
+    this.updateRewardContainersVisibility();
 
     this.gloves = new Gloves(this);
     this.hitSoundPlayer = new HitSoundPlayer(this);
     this.breathSoundPlayer = new BreathSoundPlayer(this);
+    this.backgroundMusicController = new BackgroundMusicController(
+      this,
+      this.levelController,
+    );
     this.enemySpawnPlace = new SpawnPlace(
       this,
       {
@@ -76,6 +87,7 @@ export class Game extends Scene {
         width: 650,
         height: 550,
       },
+      this.levelController,
       this.player,
       this.gloves,
       this.hitSoundPlayer,
@@ -107,6 +119,8 @@ export class Game extends Scene {
   }
 
   update(_time: number, delta: number) {
+    this.backgroundMusicController.update();
+
     if (this.pauseMenu.isPaused) {
       return;
     }
@@ -114,6 +128,7 @@ export class Game extends Scene {
     const deltaSeconds = delta / 1000;
 
     this.background.update();
+    this.updateRewardContainersVisibility();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
 
@@ -164,5 +179,12 @@ export class Game extends Scene {
         }
       },
     });
+  }
+
+  private updateRewardContainersVisibility() {
+    const isVisible = this.levelController.shouldShowRewardContainers();
+
+    this.diamondContainer.setVisible(isVisible);
+    this.treasureContainer.setVisible(isVisible);
   }
 }

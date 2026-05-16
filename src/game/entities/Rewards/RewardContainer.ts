@@ -3,7 +3,8 @@ import { GameObjects, Scene } from "phaser";
 export type RewardContainerConfig = {
   x: number;
   y: number;
-  maxValue?: number;
+  startMaxValue?: number;
+  maxValueStepPerOpening?: number;
   displaySize?: number;
 };
 
@@ -14,7 +15,8 @@ type RewardContainerViewConfig = RewardContainerConfig & {
 
 export abstract class RewardContainer {
   static readonly rewardIssueAnimationDelayMs = 420;
-  protected static readonly defaultMaxValue = 100;
+  protected static readonly defaultStartMaxValue = 30;
+  protected static readonly defaultMaxValueStepPerOpening = 20;
   protected static readonly depth = 30;
   protected static readonly fallbackSize = 76;
 
@@ -24,14 +26,23 @@ export abstract class RewardContainer {
   private readonly textureKeys: string[];
   private readonly originX: number;
   private readonly originY: number;
-  protected readonly maxValue: number;
+  private readonly startMaxValue: number;
+  private readonly maxValueStepPerOpening: number;
   protected value = 0;
+  protected openingsCount = 0;
 
   constructor(scene: Scene, config: RewardContainerViewConfig) {
     this.scene = scene;
-    this.maxValue = Math.max(
+    this.startMaxValue = Math.max(
       1,
-      config.maxValue ?? RewardContainer.defaultMaxValue,
+      Math.floor(config.startMaxValue ?? RewardContainer.defaultStartMaxValue),
+    );
+    this.maxValueStepPerOpening = Math.max(
+      0,
+      Math.floor(
+        config.maxValueStepPerOpening ??
+          RewardContainer.defaultMaxValueStepPerOpening,
+      ),
     );
     this.textureKeys = config.textureKeys ?? [];
 
@@ -72,14 +83,18 @@ export abstract class RewardContainer {
 
     this.value += safeAmount;
 
-    const completedRewards = Math.floor(this.value / this.maxValue);
     let issuedRewards = 0;
 
-    if (completedRewards > 0) {
-      const nextValue = this.value % this.maxValue;
+    while (this.value >= this.getCurrentMaxValue()) {
+      this.value -= this.getCurrentMaxValue();
+      this.openingsCount += 1;
+      issuedRewards += this.issueReward(1);
+    }
 
-      issuedRewards = this.issueReward(completedRewards);
-      this.value = this.maxValue;
+    if (issuedRewards > 0) {
+      const nextValue = this.value;
+
+      this.value = this.getCurrentMaxValue();
       this.updateVisualState();
       this.playRewardIssuedAnimation(() => {
         this.resetAfterReward(nextValue);
@@ -102,10 +117,21 @@ export abstract class RewardContainer {
     };
   }
 
+  setVisible(visible: boolean) {
+    this.view.setVisible(visible);
+  }
+
   protected abstract issueReward(completedRewards: number): number;
 
-  protected resetAfterReward(nextValue = this.value % this.maxValue) {
+  protected resetAfterReward(nextValue = this.value % this.getCurrentMaxValue()) {
     this.value = nextValue;
+  }
+
+  protected getCurrentMaxValue() {
+    return (
+      this.startMaxValue +
+      this.openingsCount * this.maxValueStepPerOpening
+    );
   }
 
   private playHitAnimation() {
@@ -178,7 +204,7 @@ export abstract class RewardContainer {
     }
 
     const maxIndex = this.textureKeys.length - 1;
-    const fillProgress = this.value / this.maxValue;
+    const fillProgress = this.value / this.getCurrentMaxValue();
 
     return Math.min(maxIndex, Math.ceil(fillProgress * maxIndex));
   }
