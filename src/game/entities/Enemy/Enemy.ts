@@ -2,10 +2,13 @@ import type { Player } from '../Player/Player';
 
 export type EnemyConfig = {
     displayName: string;
+    isBoss?: boolean;
     maxHealth: number;
     xpReward: number;
     diamondsReward: number;
     coinsReward: number;
+    emeraldDropChance?: number;
+    emeraldReward?: number;
     damagePerHit: number;
     attackCooldownSeconds: number;
 };
@@ -15,25 +18,32 @@ export abstract class Enemy
     abstract readonly isCanAttack: boolean;
 
     readonly displayName: string;
+    readonly isBoss: boolean;
     readonly maxHealth: number;
     readonly xpReward: number;
     readonly diamondsReward: number;
     readonly coinsReward: number;
+    readonly emeraldDropChance: number;
+    readonly emeraldReward: number;
     readonly damagePerHit: number;
     readonly attackCooldownSeconds: number;
 
     health: number;
 
     private attackCooldownRemaining: number;
+    private readonly selfDefeatedCallbacks: Array<() => void> = [];
 
     protected constructor (config: EnemyConfig)
     {
         this.displayName = config.displayName;
+        this.isBoss = config.isBoss ?? false;
         this.maxHealth = config.maxHealth;
         this.health = config.maxHealth;
         this.xpReward = config.xpReward;
         this.diamondsReward = config.diamondsReward;
         this.coinsReward = config.coinsReward;
+        this.emeraldDropChance = Math.max(0, Math.min(1, config.emeraldDropChance ?? 0));
+        this.emeraldReward = Math.max(0, Math.floor(config.emeraldReward ?? 1));
         this.damagePerHit = config.damagePerHit;
         this.attackCooldownSeconds = config.attackCooldownSeconds;
         this.attackCooldownRemaining = config.attackCooldownSeconds;
@@ -100,6 +110,18 @@ export abstract class Enemy
         return !this.isAlive();
     }
 
+    rollEmeraldReward ()
+    {
+        if (this.emeraldReward <= 0 || this.emeraldDropChance <= 0)
+        {
+            return 0;
+        }
+
+        return Math.random() <= this.emeraldDropChance
+            ? this.emeraldReward
+            : 0;
+    }
+
     protected onAttack (_player: Player)
     {
     }
@@ -108,6 +130,18 @@ export abstract class Enemy
     {
         this.destroy();
         onComplete();
+    }
+
+    onSelfDefeated (callback: () => void)
+    {
+        this.selfDefeatedCallbacks.push(callback);
+    }
+
+    protected emitSelfDefeated ()
+    {
+        this.selfDefeatedCallbacks.forEach((callback) => {
+            callback();
+        });
     }
 
     abstract onHit (callback: () => void): void;

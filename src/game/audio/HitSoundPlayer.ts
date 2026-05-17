@@ -2,27 +2,26 @@ import { Scene } from 'phaser';
 
 export class HitSoundPlayer
 {
-    private static readonly soundKeys = ['hit-v1', 'hit-v2', 'hit-v3', 'hit-v4'];
-
     static preload (scene: Scene)
     {
-        HitSoundPlayer.soundKeys.forEach((key) => {
-            scene.load.audio(key, `assets/audio/${key}.mp3`);
-        });
+        void scene;
     }
 
     constructor (private readonly scene: Scene)
     {
     }
 
-    playRandom ()
+    playRandom (soundKeys: string[], volume: number)
     {
-        const soundKey = HitSoundPlayer.soundKeys[
-            Math.floor(Math.random() * HitSoundPlayer.soundKeys.length)
-        ];
+        if (soundKeys.length === 0)
+        {
+            return;
+        }
+
+        const soundKey = soundKeys[Math.floor(Math.random() * soundKeys.length)];
 
         this.scene.sound.play(soundKey, {
-            volume: 0.8
+            volume
         });
     }
 }

@@ -1,4 +1,6 @@
 import { Scene } from 'phaser';
+import type { BaseGloves } from './BaseGloves';
+import { GlovesCatalog } from './GlovesCatalog';
 import { GlovesModel } from './GlovesModel';
 import { GlovesView } from './GlovesView';
 
@@ -6,15 +8,63 @@ export class Gloves
 {
     private readonly model = new GlovesModel();
     private readonly view: GlovesView;
+    private equippedGloves: BaseGloves;
 
     static preload (scene: Scene)
     {
-        GlovesView.preload(scene);
+        GlovesCatalog.preload(scene);
     }
 
     constructor (scene: Scene)
     {
-        this.view = new GlovesView(scene);
+        this.equippedGloves = GlovesCatalog.getDefaultGloves();
+        this.view = new GlovesView(scene, this.equippedGloves);
+    }
+
+    equip (gloves: BaseGloves)
+    {
+        this.equippedGloves = gloves;
+        this.model.finishPunch();
+        this.view.equip(gloves);
+    }
+
+    equipById (glovesId: string)
+    {
+        const gloves = GlovesCatalog.getGlovesById(glovesId);
+
+        if (!gloves)
+        {
+            return false;
+        }
+
+        this.equip(gloves);
+
+        return true;
+    }
+
+    getEquippedGloves()
+    {
+        return this.equippedGloves;
+    }
+
+    getCurrentWeapon()
+    {
+        return this.equippedGloves.getCombatProfile();
+    }
+
+    getDamageMultiplier()
+    {
+        return this.getCurrentWeapon().damageMultiplier;
+    }
+
+    getStaminaCostMultiplier()
+    {
+        return this.getCurrentWeapon().staminaCostMultiplier;
+    }
+
+    getAttackSpeedMultiplier()
+    {
+        return this.getCurrentWeapon().attackSpeedMultiplier;
     }
 
     canPunch ()

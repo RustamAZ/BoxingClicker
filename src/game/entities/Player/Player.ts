@@ -3,14 +3,14 @@ export class Player {
   xp = 0;
   xpToNextLevel = 100;
 
-  stamina = 2000;
-  maxStamina = 2000;
+  stamina = 200;
+  maxStamina = 200;
   staminaRegenPerSecond = 18;
 
   health = 200;
   maxHealth = 200;
 
-  damagePerHit = 50;
+  damagePerHit = 25;
 
   punchSpeed = 0.9;
   xpPerHit = 2;
@@ -22,16 +22,21 @@ export class Player {
   private readonly basePunchAnimationDurationMs = 75;
   private readonly levelUpHealthRestorePercent = 0.2;
 
-  canHit() {
-    return this.isAlive() && this.stamina >= this.staminaCostPerHit;
+  canHit(staminaCostMultiplier = 1) {
+    return (
+      this.isAlive() &&
+      this.stamina >= this.getStaminaCostPerHit(staminaCostMultiplier)
+    );
   }
 
-  hit() {
-    if (!this.canHit()) {
+  hit(staminaCostMultiplier = 1) {
+    const staminaCost = this.getStaminaCostPerHit(staminaCostMultiplier);
+
+    if (!this.canHit(staminaCostMultiplier)) {
       return false;
     }
 
-    this.stamina -= this.staminaCostPerHit;
+    this.stamina -= staminaCost;
     this.gainXp(this.xpPerHit);
 
     return true;
@@ -44,8 +49,18 @@ export class Player {
     );
   }
 
-  getPunchAnimationDurationMs() {
-    return this.basePunchAnimationDurationMs / Math.max(this.punchSpeed, 0.1);
+  getPunchAnimationDurationMs(attackSpeedMultiplier = 1) {
+    const punchSpeed = this.punchSpeed * Math.max(0.1, attackSpeedMultiplier);
+
+    return this.basePunchAnimationDurationMs / Math.max(punchSpeed, 0.1);
+  }
+
+  getDamagePerHit(damageMultiplier = 1) {
+    return this.damagePerHit * Math.max(0, damageMultiplier);
+  }
+
+  getStaminaCostPerHit(staminaCostMultiplier = 1) {
+    return this.staminaCostPerHit * Math.max(0, staminaCostMultiplier);
   }
 
   takeDamage(amount: number) {

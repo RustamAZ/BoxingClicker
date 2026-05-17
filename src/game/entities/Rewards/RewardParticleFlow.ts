@@ -9,8 +9,10 @@ type RewardParticleFlowConfig = {
   from: Point;
   diamondTarget: Point;
   treasureTarget: Point;
+  emeraldTarget?: Point;
   diamondsCount: number;
   coinsCount: number;
+  emeraldsCount?: number;
   onComplete?: () => void;
 };
 
@@ -19,11 +21,29 @@ type ParticleMotion = {
   scatterY: number;
 };
 
+type ParticleTextureKey =
+  | "diamond-particle"
+  | "coin-particle"
+  | "emerald-particle";
+
 export class RewardParticleFlow {
-  private static readonly diamondParticleTextureKey = "diamond-particle";
-  private static readonly coinParticleTextureKey = "coin-particle";
-  private static readonly diamondParticleColor = 0x08e8de;
-  private static readonly coinParticleColor = 0xffdc33;
+  private static readonly diamondParticleTextureKey: ParticleTextureKey =
+    "diamond-particle";
+  private static readonly coinParticleTextureKey: ParticleTextureKey =
+    "coin-particle";
+  private static readonly emeraldParticleTextureKey: ParticleTextureKey =
+    "emerald-particle";
+  private static readonly diamondParticlePath =
+    "assets/images/rewards/particles/diamond-particle.png";
+  private static readonly coinParticlePath =
+    "assets/images/rewards/particles/coin-particle.png";
+  private static readonly emeraldParticlePath =
+    "assets/images/rewards/particles/emerald-particle.png";
+  private static readonly particleScales: Record<ParticleTextureKey, number> = {
+    [RewardParticleFlow.diamondParticleTextureKey]: 2.55,
+    [RewardParticleFlow.coinParticleTextureKey]: 2.4,
+    [RewardParticleFlow.emeraldParticleTextureKey]: 0.32,
+  };
   private static readonly particleScatterDurationMs = 260;
   private static readonly particleAttractDurationMs = 680;
   private static readonly particleDelayMaxMs = 140;
@@ -58,13 +78,27 @@ export class RewardParticleFlow {
   private static readonly scatterVerticalStretch = 1.15;
   private static readonly depth = 40;
 
-  constructor(private readonly scene: Scene) {
-    RewardParticleFlow.createParticleTextures(scene);
+  static preload(scene: Scene) {
+    scene.load.image(
+      RewardParticleFlow.diamondParticleTextureKey,
+      RewardParticleFlow.diamondParticlePath,
+    );
+    scene.load.image(
+      RewardParticleFlow.coinParticleTextureKey,
+      RewardParticleFlow.coinParticlePath,
+    );
+    scene.load.image(
+      RewardParticleFlow.emeraldParticleTextureKey,
+      RewardParticleFlow.emeraldParticlePath,
+    );
   }
+
+  constructor(private readonly scene: Scene) {}
 
   play(config: RewardParticleFlowConfig) {
     const diamondsCount = Math.max(0, Math.floor(config.diamondsCount));
     const coinsCount = Math.max(0, Math.floor(config.coinsCount));
+    const emeraldsCount = Math.max(0, Math.floor(config.emeraldsCount ?? 0));
 
     if (diamondsCount > 0) {
       this.emitParticles(
@@ -84,6 +118,15 @@ export class RewardParticleFlow {
       );
     }
 
+    if (emeraldsCount > 0 && config.emeraldTarget) {
+      this.emitParticles(
+        RewardParticleFlow.emeraldParticleTextureKey,
+        emeraldsCount,
+        config.from,
+        config.emeraldTarget,
+      );
+    }
+
     this.scene.time.delayedCall(
       RewardParticleFlow.rewardApplyDelayMs,
       () => {
@@ -93,7 +136,7 @@ export class RewardParticleFlow {
   }
 
   private emitParticles(
-    textureKey: string,
+    textureKey: ParticleTextureKey,
     count: number,
     from: Point,
     target: Point,
@@ -117,15 +160,7 @@ export class RewardParticleFlow {
           min: 0,
           max: RewardParticleFlow.particleDelayMaxMs,
         },
-        alpha: {
-          start: 1,
-          end: 0.1,
-        },
-        scale: {
-          start: 1,
-          end: 0.5,
-          ease: "Quad.easeIn",
-        },
+        scale: RewardParticleFlow.getParticleScale(textureKey),
         rotate: {
           min: -180,
           max: 180,
@@ -301,31 +336,7 @@ export class RewardParticleFlow {
     return min + Math.random() * (max - min);
   }
 
-  private static createParticleTextures(scene: Scene) {
-    if (!scene.textures.exists(RewardParticleFlow.diamondParticleTextureKey)) {
-      const diamondGraphics = scene.add.graphics();
-
-      diamondGraphics.fillStyle(RewardParticleFlow.diamondParticleColor, 1);
-      diamondGraphics.fillRect(0, 0, 12, 12);
-      diamondGraphics.generateTexture(
-        RewardParticleFlow.diamondParticleTextureKey,
-        12,
-        12,
-      );
-      diamondGraphics.destroy();
-    }
-
-    if (!scene.textures.exists(RewardParticleFlow.coinParticleTextureKey)) {
-      const coinGraphics = scene.add.graphics();
-
-      coinGraphics.fillStyle(RewardParticleFlow.coinParticleColor, 1);
-      coinGraphics.fillCircle(7, 7, 7);
-      coinGraphics.generateTexture(
-        RewardParticleFlow.coinParticleTextureKey,
-        14,
-        14,
-      );
-      coinGraphics.destroy();
-    }
+  private static getParticleScale(textureKey: ParticleTextureKey) {
+    return RewardParticleFlow.particleScales[textureKey];
   }
 }

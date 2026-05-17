@@ -10,9 +10,11 @@ import type { Enemy } from "../entities/Enemy/Enemy";
 import { Player } from "../entities/Player/Player";
 import { CoinContainer } from "../entities/Rewards/CoinContainer";
 import { DiamondContainer } from "../entities/Rewards/DiamondContainer";
+import { EmeraldContainer } from "../entities/Rewards/EmeraldContainer";
 import { RewardContainer } from "../entities/Rewards/RewardContainer";
 import { RewardParticleFlow } from "../entities/Rewards/RewardParticleFlow";
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
+import { Wallet } from "../entities/Wallet/Wallet";
 import { GameLevelController } from "../progression/GameLevelController";
 import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
@@ -21,12 +23,14 @@ import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 
 export class Game extends Scene {
   private player: Player;
+  private wallet: Wallet;
   private levelController: GameLevelController;
   private gameSettings: GameSettings;
   private pauseController: PauseController;
   private background: GameBackground;
   private diamondContainer: DiamondContainer;
   private treasureContainer: CoinContainer;
+  private emeraldContainer: EmeraldContainer;
   private rewardParticleFlow: RewardParticleFlow;
   private enemySpawnPlace: SpawnPlace;
   private gloves: Gloves;
@@ -45,8 +49,12 @@ export class Game extends Scene {
   preload() {
     GameBackground.preload(this);
     SpawnPlace.preload(this);
+    GameHud.preload(this);
+    PauseMenu.preload(this);
+    RewardParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
+    EmeraldContainer.preload(this);
     Gloves.preload(this);
     HitSoundPlayer.preload(this);
     BreathSoundPlayer.preload(this);
@@ -55,9 +63,13 @@ export class Game extends Scene {
 
   create() {
     this.player = new Player();
+    this.wallet = new Wallet(this.player);
     this.levelController = new GameLevelController(this.player);
     this.pauseController = new PauseController(this);
     this.gameSettings = new GameSettings(this);
+    this.pauseController.onPauseChange((isPaused) => {
+      this.gameSettings.setAudioPaused(isPaused);
+    });
 
     this.cameras.main.setBackgroundColor(0x1f1f1f);
     this.background = new GameBackground(this, this.levelController);
@@ -69,6 +81,10 @@ export class Game extends Scene {
     this.treasureContainer = new CoinContainer(this, {
       x: 864,
       y: 620,
+    });
+    this.emeraldContainer = new EmeraldContainer(this, this.wallet, {
+      x: 18,
+      y: 150,
     });
     this.updateRewardContainersVisibility();
 
@@ -129,6 +145,7 @@ export class Game extends Scene {
 
     this.background.update();
     this.updateRewardContainersVisibility();
+    this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
 
@@ -154,7 +171,13 @@ export class Game extends Scene {
   }
 
   private handleEnemyRewards(enemy: Enemy, position: { x: number; y: number }) {
-    if (enemy.diamondsReward <= 0 && enemy.coinsReward <= 0) {
+    const emeraldsReward = enemy.rollEmeraldReward();
+
+    if (
+      enemy.diamondsReward <= 0 &&
+      enemy.coinsReward <= 0 &&
+      emeraldsReward <= 0
+    ) {
       return;
     }
 
@@ -162,12 +185,18 @@ export class Game extends Scene {
       from: position,
       diamondTarget: this.diamondContainer.getTargetPoint(),
       treasureTarget: this.treasureContainer.getTargetPoint(),
+      emeraldTarget: this.emeraldContainer.getTargetPoint(),
       diamondsCount: enemy.diamondsReward,
       coinsCount: enemy.coinsReward,
+      emeraldsCount: emeraldsReward,
       onComplete: () => {
         const rewardChoices =
           this.diamondContainer.add(enemy.diamondsReward) +
           this.treasureContainer.add(enemy.coinsReward);
+
+        if (emeraldsReward > 0) {
+          this.emeraldContainer.add(emeraldsReward);
+        }
 
         if (rewardChoices > 0) {
           this.time.delayedCall(

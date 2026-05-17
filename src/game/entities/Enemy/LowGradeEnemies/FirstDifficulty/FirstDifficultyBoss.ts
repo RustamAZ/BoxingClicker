@@ -15,6 +15,8 @@ export class FirstDifficultyBoss extends Enemy {
     death: "first-difficulty-boss-death-sound",
   };
 
+  private static readonly attackAnimationDurationMs = 110;
+  private static readonly attackAnimationScaleMultiplier = 1.05;
   private static readonly deathAnimationDurationMs = 650;
   private static readonly deathAnimationMoveOffsetX = 180;
   private static readonly deathAnimationMoveOffsetY = 140;
@@ -45,10 +47,12 @@ export class FirstDifficultyBoss extends Enemy {
   constructor(scene: Scene, slot: EnemySpawnSlot) {
     super({
       displayName: "Village Boss",
+      isBoss: true,
       maxHealth: 750,
       xpReward: 350,
       diamondsReward: 60,
       coinsReward: 70,
+      emeraldDropChance: 0.2,
       damagePerHit: 18,
       attackCooldownSeconds: 1.1,
     });
@@ -69,10 +73,14 @@ export class FirstDifficultyBoss extends Enemy {
       return;
     }
 
+    const baseScaleX = this.body.scaleX;
+    const baseScaleY = this.body.scaleY;
+
     this.body.scene.tweens.add({
       targets: this.body,
-      x: this.slot.x - 28,
-      duration: 95,
+      scaleX: baseScaleX * FirstDifficultyBoss.attackAnimationScaleMultiplier,
+      scaleY: baseScaleY * FirstDifficultyBoss.attackAnimationScaleMultiplier,
+      duration: FirstDifficultyBoss.attackAnimationDurationMs,
       yoyo: true,
       ease: "Back.easeOut",
     });

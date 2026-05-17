@@ -20,6 +20,8 @@ type EnemySpritePair = readonly [
 export class FirstDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
 
+  private static readonly attackAnimationDurationMs = 90;
+  private static readonly attackAnimationScaleMultiplier = 1.04;
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
@@ -63,6 +65,7 @@ export class FirstDifficultyEnemy extends Enemy {
     min: 8,
     max: 16,
   };
+  private static readonly emeraldDropChance = 0.08;
   private static readonly damagePerHitRange = {
     min: 5,
     max: 10,
@@ -103,6 +106,7 @@ export class FirstDifficultyEnemy extends Enemy {
       coinsReward: FirstDifficultyEnemy.randomInt(
         FirstDifficultyEnemy.coinsRewardRange,
       ),
+      emeraldDropChance: FirstDifficultyEnemy.emeraldDropChance,
       damagePerHit: FirstDifficultyEnemy.randomInt(
         FirstDifficultyEnemy.damagePerHitRange,
       ),
@@ -128,10 +132,14 @@ export class FirstDifficultyEnemy extends Enemy {
       return;
     }
 
+    const baseScaleX = this.body.scaleX;
+    const baseScaleY = this.body.scaleY;
+
     this.body.scene.tweens.add({
       targets: this.body,
-      x: this.slot.x - 18,
-      duration: 80,
+      scaleX: baseScaleX * FirstDifficultyEnemy.attackAnimationScaleMultiplier,
+      scaleY: baseScaleY * FirstDifficultyEnemy.attackAnimationScaleMultiplier,
+      duration: FirstDifficultyEnemy.attackAnimationDurationMs,
       yoyo: true,
       ease: "Quad.easeOut",
     });

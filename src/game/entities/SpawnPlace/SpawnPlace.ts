@@ -1,17 +1,13 @@
 import { Math as PhaserMath } from "phaser";
 import type { Scene } from "phaser";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
-import type {
-  EnemySpawnKind,
-  GameLevelController,
-} from "../../progression/GameLevelController";
+import type { GameLevelController } from "../../progression/GameLevelController";
+import type { EnemySpawnKind } from "../../progression/types";
+import type { GlovesCombatProfile } from "../Gloves/types";
 import type { Gloves } from "../Gloves/Gloves";
 import type { Player } from "../Player/Player";
 import type { Enemy } from "../Enemy/Enemy";
-import { FirstDifficultyBoss } from "../Enemy/LowGradeEnemies/FirstDifficulty/FirstDifficultyBoss";
-import { FirstDifficultyEnemy } from "../Enemy/LowGradeEnemies/FirstDifficulty/FirstDifficultyEnemy";
-import { SecondDifficultyEnemy } from "../Enemy/LowGradeEnemies/SecondDifficulty/SecondDifficultyEnemy";
-import { PunchingBag } from "../Enemy/PunchingBag/PunchingBag";
+import { EnemyRegistry } from "../Enemy/EnemyRegistry";
 import type { EnemySpawnSlot } from "../Enemy/types";
 
 type EnemyDefeatedCallback = (
@@ -20,11 +16,6 @@ type EnemyDefeatedCallback = (
 ) => void;
 
 export class SpawnPlace {
-  private static readonly hitEffectKeys = [
-    "hit-effect-punch",
-    "hit-effect-boom",
-    "hit-effect-pow",
-  ];
   private static readonly hitEffectAreaSize = {
     width: 190,
     height: 260,
@@ -48,13 +39,7 @@ export class SpawnPlace {
   }
 
   static preload(scene: Scene) {
-    PunchingBag.preload(scene);
-    FirstDifficultyEnemy.preload(scene);
-    FirstDifficultyBoss.preload(scene);
-    SecondDifficultyEnemy.preload(scene);
-    scene.load.image("hit-effect-punch", "assets/images/effects/punch.png");
-    scene.load.image("hit-effect-boom", "assets/images/effects/boom.png");
-    scene.load.image("hit-effect-pow", "assets/images/effects/pow.png");
+    EnemyRegistry.preload(scene);
   }
 
   get currentEnemy() {
@@ -79,6 +64,11 @@ export class SpawnPlace {
       this.currentEnemySpawnKind,
     );
     this.currentEnemyValue.onHit(() => this.handleEnemyHit());
+    const enemy = this.currentEnemyValue;
+
+    enemy.onSelfDefeated(() => {
+      this.handleEnemySelfDefeated(enemy);
+    });
 
     return this.currentEnemyValue;
   }
@@ -105,16 +95,26 @@ export class SpawnPlace {
       !enemy ||
       this.isEnemyDeathAnimationPlaying ||
       !this.gloves.canPunch() ||
-      !this.player.hit()
+      !this.player.hit(this.gloves.getStaminaCostMultiplier())
     ) {
       return false;
     }
 
-    const enemySurvived = enemy.takeDamage(this.player.damagePerHit);
+    const currentWeapon = this.gloves.getCurrentWeapon();
+    const enemySurvived = enemy.takeDamage(
+      this.player.getDamagePerHit(currentWeapon.damageMultiplier),
+    );
 
-    this.hitSoundPlayer.playRandom();
-    this.playHitEffect();
-    this.gloves.punch(this.player.getPunchAnimationDurationMs());
+    this.hitSoundPlayer.playRandom(
+      currentWeapon.hitSoundKeys,
+      currentWeapon.hitSoundVolume,
+    );
+    this.playHitEffect(currentWeapon);
+    this.gloves.punch(
+      this.player.getPunchAnimationDurationMs(
+        currentWeapon.attackSpeedMultiplier,
+      ),
+    );
 
     if (!enemySurvived) {
       const defeatedBossId = this.currentBossId;
@@ -140,47 +140,66 @@ export class SpawnPlace {
       return true;
     }
 
-    if (this.shouldReplaceTrainingEnemy(enemy)) {
+    if (this.shouldReplaceTrainingEnemy()) {
       this.spawnNextEnemy();
     }
 
     return true;
   }
 
-  private createEnemyBySpawnKind(enemySpawnKind: EnemySpawnKind) {
-    switch (enemySpawnKind) {
-      case "training":
-        return new PunchingBag(this.scene, this.slot);
-      case "first-difficulty-enemy":
-        return new FirstDifficultyEnemy(this.scene, this.slot);
-      case "first-difficulty-boss":
-        return new FirstDifficultyBoss(this.scene, this.slot);
-      case "second-difficulty-enemy":
-        return new SecondDifficultyEnemy(this.scene, this.slot);
+  private handleEnemySelfDefeated(enemy?: Enemy) {
+    if (
+      !enemy ||
+      enemy !== this.currentEnemyValue ||
+      this.isEnemyDeathAnimationPlaying
+    ) {
+      return;
     }
+
+    const defeatedBossId = this.currentBossId;
+
+    if (defeatedBossId) {
+      this.levelController.markBossDefeated(defeatedBossId);
+    }
+
+    this.currentEnemyValue = undefined;
+    this.currentEnemySpawnKind = undefined;
+    this.currentBossId = undefined;
+    this.spawnNextEnemy();
+  }
+
+  private createEnemyBySpawnKind(enemySpawnKind: EnemySpawnKind) {
+    return EnemyRegistry.create(enemySpawnKind, this.scene, this.slot);
   }
 
   private getBossIdForSpawnKind(enemySpawnKind: EnemySpawnKind) {
-    if (enemySpawnKind !== "first-difficulty-boss") {
+    if (!EnemyRegistry.isBoss(enemySpawnKind)) {
       return undefined;
     }
 
     return this.levelController.getPendingBossIdForCurrentLevel();
   }
 
-  private shouldReplaceTrainingEnemy(enemy: Enemy) {
+  private shouldReplaceTrainingEnemy() {
     return (
-      this.levelController.getCurrentEnemyDifficulty() !== "training" &&
-      enemy instanceof PunchingBag
+      !this.levelController.isTrainingLevel() &&
+      EnemyRegistry.isTraining(this.currentEnemySpawnKind)
     );
   }
 
-  private playHitEffect() {
-    const effectKey = SpawnPlace.randomItem(SpawnPlace.hitEffectKeys);
+  private playHitEffect(currentWeapon: GlovesCombatProfile) {
+    if (currentWeapon.hitEffectKeys.length === 0) {
+      return;
+    }
+
+    const effectKey = SpawnPlace.randomItem(currentWeapon.hitEffectKeys);
     const effectPosition = this.getRandomPointInSlot();
     const effect = this.scene.add
       .image(effectPosition.x, effectPosition.y, effectKey)
-      .setDisplaySize(100, 100)
+      .setDisplaySize(
+        currentWeapon.hitEffectSize,
+        currentWeapon.hitEffectSize,
+      )
       .setRotation(PhaserMath.DegToRad(PhaserMath.Between(-10, 10)))
       .setAlpha(0)
       .setDepth(10);

@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from 'phaser';
+import type { BaseGloves } from './BaseGloves';
 import { PunchHand } from './types';
 
 type GloveSprite = {
@@ -7,6 +8,7 @@ type GloveSprite = {
     baseX: number;
     baseY: number;
     baseScale: number;
+    size: number;
     phaseOffset: number;
 };
 
@@ -16,16 +18,35 @@ export class GlovesView
     private readonly rightHand: GloveSprite;
     private idleTime = 0;
 
-    static preload (scene: Scene)
+    constructor (
+        private readonly scene: Scene,
+        equippedGloves: BaseGloves
+    )
     {
-        scene.load.image('left-hand', 'assets/images/left-hand.png');
-        scene.load.image('right-hand', 'assets/images/right-hand.png');
+        this.leftHand = this.createGlove(
+            equippedGloves.leftTextureKey,
+            410,
+            735,
+            430,
+            0
+        );
+        this.rightHand = this.createGlove(
+            equippedGloves.rightTextureKey,
+            610,
+            710,
+            400,
+            Math.PI * 0.35
+        );
     }
 
-    constructor (private readonly scene: Scene)
+    equip (gloves: BaseGloves)
     {
-        this.leftHand = this.createGlove('left-hand', 410, 735, 430, 0);
-        this.rightHand = this.createGlove('right-hand', 610, 710, 400, Math.PI * 0.35);
+        this.scene.tweens.killTweensOf([
+            this.leftHand.image,
+            this.rightHand.image,
+        ]);
+        this.setGloveTexture(this.leftHand, gloves.leftTextureKey);
+        this.setGloveTexture(this.rightHand, gloves.rightTextureKey);
     }
 
     update (deltaSeconds: number)
@@ -81,8 +102,17 @@ export class GlovesView
             baseX: x,
             baseY: y,
             baseScale: 1,
+            size,
             phaseOffset
         };
+    }
+
+    private setGloveTexture (glove: GloveSprite, texture: string)
+    {
+        glove.image
+            .setTexture(texture)
+            .setPosition(0, 0)
+            .setDisplaySize(glove.size, glove.size);
     }
 
     private updateIdleGlove (glove: GloveSprite, direction: number)

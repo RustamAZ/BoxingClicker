@@ -1,8 +1,6 @@
 import { Scene, Sound } from "phaser";
-import type {
-  BackgroundMusicId,
-  GameLevelController,
-} from "../progression/GameLevelController";
+import type { GameLevelController } from "../progression/GameLevelController";
+import type { BackgroundMusicId } from "../progression/types";
 
 type BackgroundMusicTrack = {
   id: BackgroundMusicId;

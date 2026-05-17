@@ -2,21 +2,37 @@ import type { Scene } from "phaser";
 
 type StoredGameSettings = {
   masterVolume?: number;
+  isMuted?: boolean;
+};
+
+type NormalizedGameSettings = {
+  masterVolume: number;
+  isMuted: boolean;
 };
 
 export class GameSettings {
   private static readonly storageKey = "boxing-clicker-settings";
   private static readonly defaultMasterVolume = 1;
+  private static readonly pauseVolumeMultiplier = 0.55;
 
   private masterVolume = GameSettings.defaultMasterVolume;
+  private isMuted = false;
+  private isAudioPaused = false;
 
   constructor(private readonly scene: Scene) {
-    this.masterVolume = this.loadMasterVolume();
+    const settings = this.loadSettings();
+
+    this.masterVolume = settings.masterVolume;
+    this.isMuted = settings.isMuted;
     this.applyMasterVolume();
   }
 
   getMasterVolume() {
     return this.masterVolume;
+  }
+
+  getIsMuted() {
+    return this.isMuted;
   }
 
   setMasterVolume(value: number) {
@@ -25,33 +41,67 @@ export class GameSettings {
     this.save();
   }
 
-  private applyMasterVolume() {
-    this.scene.sound.volume = this.masterVolume;
+  setMuted(isMuted: boolean) {
+    this.isMuted = isMuted;
+    this.applyMasterVolume();
+    this.save();
   }
 
-  private loadMasterVolume() {
+  toggleMuted() {
+    this.setMuted(!this.isMuted);
+  }
+
+  setAudioPaused(isPaused: boolean) {
+    this.isAudioPaused = isPaused;
+    this.applyMasterVolume();
+  }
+
+  private applyMasterVolume() {
+    if (this.isMuted) {
+      this.scene.sound.volume = 0;
+      return;
+    }
+
+    const pauseMultiplier = this.isAudioPaused
+      ? GameSettings.pauseVolumeMultiplier
+      : 1;
+
+    this.scene.sound.volume = this.masterVolume * pauseMultiplier;
+  }
+
+  private loadSettings(): NormalizedGameSettings {
     try {
       const rawSettings = localStorage.getItem(GameSettings.storageKey);
 
       if (!rawSettings) {
-        return GameSettings.defaultMasterVolume;
+        return this.getDefaultSettings();
       }
 
       const settings = JSON.parse(rawSettings) as StoredGameSettings;
 
-      if (typeof settings.masterVolume !== "number") {
-        return GameSettings.defaultMasterVolume;
-      }
-
-      return Math.max(0, Math.min(1, settings.masterVolume));
+      return {
+        masterVolume:
+          typeof settings.masterVolume === "number"
+            ? Math.max(0, Math.min(1, settings.masterVolume))
+            : GameSettings.defaultMasterVolume,
+        isMuted: settings.isMuted === true,
+      };
     } catch {
-      return GameSettings.defaultMasterVolume;
+      return this.getDefaultSettings();
     }
+  }
+
+  private getDefaultSettings(): NormalizedGameSettings {
+    return {
+      masterVolume: GameSettings.defaultMasterVolume,
+      isMuted: false,
+    };
   }
 
   private save() {
     const settings: StoredGameSettings = {
       masterVolume: this.masterVolume,
+      isMuted: this.isMuted,
     };
 
     try {

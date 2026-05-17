@@ -7,6 +7,11 @@ type PauseMenuButton = {
   label: GameObjects.Text;
 };
 
+type PauseMenuIconButton = {
+  hitArea: GameObjects.Rectangle;
+  icon: GameObjects.Image;
+};
+
 type VolumeSlider = {
   label: GameObjects.Text;
   track: GameObjects.Rectangle;
@@ -17,8 +22,17 @@ type VolumeSlider = {
 export class PauseMenu {
   private static readonly depth = 1000;
   private static readonly volumeSliderWidth = 260;
+  private static readonly settingsIconTextureKey = "settings-icon";
+  private static readonly settingsIconPath = "assets/images/ui/settings.png";
+  private static readonly muteIconTextureKey = "mute-icon";
+  private static readonly muteIconPath = "assets/images/ui/mute.png";
+  private static readonly voiceIconTextureKey = "voice-icon";
+  private static readonly voiceIconPath = "assets/images/ui/voice.png";
+  private static readonly settingsButtonSize = 72;
+  private static readonly settingsIconSize = 64;
 
-  private readonly settingsButton: PauseMenuButton;
+  private readonly settingsButton: PauseMenuIconButton;
+  private readonly muteButton: PauseMenuIconButton;
   private readonly overlay: GameObjects.Rectangle;
   private readonly panel: GameObjects.Rectangle;
   private readonly title: GameObjects.Text;
@@ -26,17 +40,22 @@ export class PauseMenu {
   private readonly continueButton: PauseMenuButton;
   private readonly restartButton: PauseMenuButton;
 
+  static preload(scene: Scene) {
+    scene.load.image(PauseMenu.settingsIconTextureKey, PauseMenu.settingsIconPath);
+    scene.load.image(PauseMenu.muteIconTextureKey, PauseMenu.muteIconPath);
+    scene.load.image(PauseMenu.voiceIconTextureKey, PauseMenu.voiceIconPath);
+  }
+
   constructor(
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly gameSettings: GameSettings,
     private readonly onRestart: () => void,
   ) {
-    this.settingsButton = this.createButton(944, 34, 120, 40, "Настройки", () => {
+    this.settingsButton = this.createSettingsButton(976, 48, () => {
       this.open();
     });
-    this.settingsButton.background.setDepth(PauseMenu.depth);
-    this.settingsButton.label.setDepth(PauseMenu.depth + 1);
+    this.muteButton = this.createMuteButton(900, 48);
 
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.58)
@@ -71,6 +90,7 @@ export class PauseMenu {
     });
 
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
+    this.syncMuteButtonTexture();
     this.setMenuVisible(false);
   }
 
@@ -85,6 +105,7 @@ export class PauseMenu {
 
     this.pauseController.pause("settings");
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
+    this.syncMuteButtonTexture();
     this.setMenuVisible(true);
   }
 
@@ -95,6 +116,74 @@ export class PauseMenu {
 
     this.pauseController.resume("settings");
     this.setMenuVisible(false);
+  }
+
+  private createSettingsButton(
+    x: number,
+    y: number,
+    onClick: () => void,
+  ): PauseMenuIconButton {
+    return this.createIconButton(
+      x,
+      y,
+      PauseMenu.settingsIconTextureKey,
+      onClick,
+    );
+  }
+
+  private createMuteButton(x: number, y: number): PauseMenuIconButton {
+    return this.createIconButton(x, y, this.getMuteButtonTextureKey(), () => {
+      this.gameSettings.toggleMuted();
+      this.syncMuteButtonTexture();
+    });
+  }
+
+  private createIconButton(
+    x: number,
+    y: number,
+    textureKey: string,
+    onClick: () => void,
+  ): PauseMenuIconButton {
+    const hitArea = this.scene.add
+      .rectangle(
+        x,
+        y,
+        PauseMenu.settingsButtonSize,
+        PauseMenu.settingsButtonSize,
+        0x000000,
+        0,
+      )
+      .setDepth(PauseMenu.depth)
+      .setInteractive({ useHandCursor: true });
+    const icon = this.scene.add
+      .image(x, y, textureKey)
+      .setDisplaySize(PauseMenu.settingsIconSize, PauseMenu.settingsIconSize)
+      .setDepth(PauseMenu.depth + 1);
+    const iconBaseScaleX = icon.scaleX;
+    const iconBaseScaleY = icon.scaleY;
+
+    hitArea.on("pointerdown", onClick);
+    hitArea.on("pointerover", () => {
+      icon.setScale(iconBaseScaleX * 1.08, iconBaseScaleY * 1.08);
+    });
+    hitArea.on("pointerout", () => {
+      icon.setScale(iconBaseScaleX, iconBaseScaleY);
+    });
+
+    return {
+      hitArea,
+      icon,
+    };
+  }
+
+  private syncMuteButtonTexture() {
+    this.muteButton.icon.setTexture(this.getMuteButtonTextureKey());
+  }
+
+  private getMuteButtonTextureKey() {
+    return this.gameSettings.getIsMuted()
+      ? PauseMenu.muteIconTextureKey
+      : PauseMenu.voiceIconTextureKey;
   }
 
   private createVolumeSlider(x: number, y: number): VolumeSlider {
@@ -157,7 +246,9 @@ export class PauseMenu {
     const volume = (pointerX - trackLeft) / PauseMenu.volumeSliderWidth;
 
     this.gameSettings.setMasterVolume(volume);
+    this.gameSettings.setMuted(false);
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
+    this.syncMuteButtonTexture();
   }
 
   private setVolumeSliderValue(volume: number) {
