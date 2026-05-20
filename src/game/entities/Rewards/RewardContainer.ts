@@ -20,7 +20,7 @@ export abstract class RewardContainer {
   protected static readonly depth = 30;
   protected static readonly fallbackSize = 76;
 
-  private readonly scene: Scene;
+  protected readonly scene: Scene;
   private readonly view: GameObjects.Image | GameObjects.Rectangle;
   private readonly sprite?: GameObjects.Image;
   private readonly textureKeys: string[];

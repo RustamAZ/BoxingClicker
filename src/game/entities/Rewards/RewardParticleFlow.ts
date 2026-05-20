@@ -42,7 +42,7 @@ export class RewardParticleFlow {
   private static readonly particleScales: Record<ParticleTextureKey, number> = {
     [RewardParticleFlow.diamondParticleTextureKey]: 2.55,
     [RewardParticleFlow.coinParticleTextureKey]: 2.4,
-    [RewardParticleFlow.emeraldParticleTextureKey]: 0.32,
+    [RewardParticleFlow.emeraldParticleTextureKey]: 1,
   };
   private static readonly particleScatterDurationMs = 260;
   private static readonly particleAttractDurationMs = 680;

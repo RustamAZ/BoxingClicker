@@ -1,110 +1,103 @@
 import { GameObjects, Scene } from "phaser";
-import type { Upgrade, UpgradeDirection, UpgradeRarity } from "../upgrades/types";
+import { UiSoundPlayer } from "../audio/UiSoundPlayer";
+import type { RewardChoice } from "../upgrades/types";
 
-type UpgradeCard = {
-  background: GameObjects.Rectangle;
-  title: GameObjects.Text;
+type RewardCard = {
+  container: GameObjects.Image;
+  icon: GameObjects.Image;
+  hitArea: GameObjects.Rectangle;
   description: GameObjects.Text;
-  meta: GameObjects.Text;
-  upgrade?: Upgrade;
-};
-
-const rarityView: Record<UpgradeRarity, { label: string; color: string }> = {
-  common: {
-    label: "Обычный",
-    color: "#d8d8d8",
-  },
-  rare: {
-    label: "Редкий",
-    color: "#6eb6ff",
-  },
-  epic: {
-    label: "Эпический",
-    color: "#d17bff",
-  },
-};
-
-const directionLabels: Record<UpgradeDirection, string> = {
-  strength: "Сила",
-  "attack-speed": "Скорость",
-  "stamina-cost": "Затраты",
-  "stamina-volume": "Выносливость",
-  health: "Здоровье",
-  armor: "Защита",
+  choice?: RewardChoice;
 };
 
 export class LevelUpRewardModal {
   private static readonly depth = 1200;
   private static readonly selectionLockDurationMs = 300;
+  private static readonly backgroundTextureKey = "buff-container-empty";
+  private static readonly backgroundPath =
+    "assets/images/ui/buffs/buff-container-empty.png";
+  private static readonly titleYOffset = -187;
+  private static readonly cardYOffset = 56;
+  private static readonly iconYOffset = -82;
+  private static readonly descriptionYOffset = 144;
+  private static readonly cardGap = 286;
+  private static readonly cardWidth = 262;
+  private static readonly cardHeight = 360;
+  private static readonly descriptionWidth = 204;
 
   private readonly overlay: GameObjects.Rectangle;
-  private readonly panel: GameObjects.Rectangle;
+  private readonly panel: GameObjects.Image;
   private readonly title: GameObjects.Text;
-  private readonly subtitle: GameObjects.Text;
-  private readonly cards: UpgradeCard[];
-  private onSelect?: (upgrade: Upgrade) => void;
+  private readonly cards: RewardCard[];
+  private onSelect?: (choice: RewardChoice) => void;
   private isSelectionLocked = false;
   private unlockSelectionTimer?: Phaser.Time.TimerEvent;
 
+  static preload(scene: Scene) {
+    scene.load.image(
+      LevelUpRewardModal.backgroundTextureKey,
+      LevelUpRewardModal.backgroundPath,
+    );
+  }
+
   constructor(private readonly scene: Scene) {
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+
     this.overlay = this.scene.add
-      .rectangle(512, 384, 1024, 768, 0x000000, 0.62)
+      .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.62)
       .setDepth(LevelUpRewardModal.depth)
       .setInteractive()
       .setVisible(false);
 
     this.panel = this.scene.add
-      .rectangle(512, 384, 880, 430, 0x1b1b1b, 0.98)
+      .image(centerX, centerY, LevelUpRewardModal.backgroundTextureKey)
       .setDepth(LevelUpRewardModal.depth + 1)
-      .setStrokeStyle(2, 0xffffff, 0.6)
       .setVisible(false);
 
     this.title = this.scene.add
-      .text(512, 188, "Новый уровень", {
-        fontFamily: "Arial",
-        fontSize: 34,
-        color: "#ffffff",
-      })
+      .text(
+        centerX,
+        centerY + LevelUpRewardModal.titleYOffset,
+        "Выбери награду",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 30,
+          color: "#ffffff",
+          stroke: "#1f1f1f",
+          strokeThickness: 5,
+        },
+      )
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(LevelUpRewardModal.depth + 2)
-      .setVisible(false);
-
-    this.subtitle = this.scene.add
-      .text(512, 228, "Выбери усиление", {
-        fontFamily: "Arial",
-        fontSize: 20,
-        color: "#d2d2d2",
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(LevelUpRewardModal.depth + 2)
+      .setDepth(LevelUpRewardModal.depth + 3)
       .setVisible(false);
 
     this.cards = [
-      this.createUpgradeCard(232, 420),
-      this.createUpgradeCard(512, 420),
-      this.createUpgradeCard(792, 420),
+      this.createRewardCard(centerX - LevelUpRewardModal.cardGap, centerY),
+      this.createRewardCard(centerX, centerY),
+      this.createRewardCard(centerX + LevelUpRewardModal.cardGap, centerY),
     ];
 
     this.hide();
   }
 
-  show(upgrades: Upgrade[], onSelect: (upgrade: Upgrade) => void) {
+  show(choices: RewardChoice[], onSelect: (choice: RewardChoice) => void) {
     this.onSelect = onSelect;
     this.isSelectionLocked = true;
     this.clearUnlockSelectionTimer();
     this.setVisible(true);
 
     this.cards.forEach((card, index) => {
-      const upgrade = upgrades[index];
+      const choice = choices[index];
 
-      card.upgrade = upgrade;
-      this.setCardVisible(card, Boolean(upgrade), false);
+      card.choice = choice;
 
-      if (upgrade) {
-        this.setCardText(card, upgrade);
+      if (choice) {
+        this.setCardData(card, choice);
       }
+
+      this.setCardVisible(card, Boolean(choice), false);
     });
 
     this.unlockSelectionTimer = this.scene.time.delayedCall(
@@ -113,7 +106,7 @@ export class LevelUpRewardModal {
         this.isSelectionLocked = false;
         this.unlockSelectionTimer = undefined;
         this.cards.forEach((card) => {
-          if (card.upgrade) {
+          if (card.choice) {
             this.setCardInteractive(card, true);
           }
         });
@@ -127,102 +120,99 @@ export class LevelUpRewardModal {
     this.clearUnlockSelectionTimer();
     this.setVisible(false);
     this.cards.forEach((card) => {
-      card.upgrade = undefined;
+      card.choice = undefined;
       this.setCardVisible(card, false);
     });
   }
 
-  private createUpgradeCard(x: number, y: number): UpgradeCard {
-    const card = {} as UpgradeCard;
-    const background = this.scene.add
-      .rectangle(x, y, 250, 260, 0x2d2d2d, 0.97)
+  private createRewardCard(x: number, modalCenterY: number): RewardCard {
+    const card = {} as RewardCard;
+    const cardY = modalCenterY + LevelUpRewardModal.cardYOffset;
+
+    const container = this.scene.add
+      .image(x, cardY, LevelUpRewardModal.backgroundTextureKey)
       .setDepth(LevelUpRewardModal.depth + 2)
-      .setStrokeStyle(2, 0xffffff, 0.4)
+      .setVisible(false);
+
+    const icon = this.scene.add
+      .image(
+        x,
+        cardY + LevelUpRewardModal.iconYOffset,
+        LevelUpRewardModal.backgroundTextureKey,
+      )
+      .setDepth(LevelUpRewardModal.depth + 3)
+      .setVisible(false);
+
+    const hitArea = this.scene.add
+      .rectangle(
+        x,
+        cardY,
+        LevelUpRewardModal.cardWidth,
+        LevelUpRewardModal.cardHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(LevelUpRewardModal.depth + 4)
       .setInteractive({ useHandCursor: true });
 
-    const title = this.scene.add
-      .text(x, y - 82, "", {
-        fontFamily: "Arial",
-        fontSize: 22,
-        color: "#ffffff",
-        align: "center",
-        wordWrap: {
-          width: 210,
-        },
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(LevelUpRewardModal.depth + 3);
-
     const description = this.scene.add
-      .text(x, y - 8, "", {
-        fontFamily: "Arial",
-        fontSize: 18,
-        color: "#e7e7e7",
-        align: "center",
-        wordWrap: {
-          width: 210,
+      .text(
+        x,
+        modalCenterY + LevelUpRewardModal.descriptionYOffset,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 16,
+          color: "#ffffff",
+          stroke: "#1f1f1f",
+          strokeThickness: 4,
+          align: "center",
+          wordWrap: {
+            width: LevelUpRewardModal.descriptionWidth,
+          },
         },
-      })
+      )
       .setOrigin(0.5)
       .setResolution(2)
       .setDepth(LevelUpRewardModal.depth + 3);
 
-    const meta = this.scene.add
-      .text(x, y + 92, "", {
-        fontFamily: "Arial",
-        fontSize: 16,
-        color: "#d8d8d8",
-        align: "center",
-        wordWrap: {
-          width: 210,
-        },
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(LevelUpRewardModal.depth + 3);
-
-    card.background = background;
-    card.title = title;
+    card.container = container;
+    card.icon = icon;
+    card.hitArea = hitArea;
     card.description = description;
-    card.meta = meta;
 
-    background.on("pointerdown", () => {
-      const upgrade = card.upgrade;
+    hitArea.on("pointerdown", () => {
+      const choice = card.choice;
       const onSelect = this.onSelect;
 
-      if (this.isSelectionLocked || !upgrade || !onSelect) {
+      if (this.isSelectionLocked || !choice || !onSelect) {
         return;
       }
 
+      UiSoundPlayer.playClick(this.scene);
       this.onSelect = undefined;
-      onSelect(upgrade);
+      onSelect(choice);
     });
-
-    background.on("pointerover", () => {
-      background.setFillStyle(0x3a3a3a, 0.99);
+    hitArea.on("pointerover", () => {
+      card.container.setTint(0xe8e8e8);
     });
-    background.on("pointerout", () => {
-      background.setFillStyle(0x2d2d2d, 0.97);
+    hitArea.on("pointerout", () => {
+      card.container.clearTint();
     });
 
     return card;
   }
 
-  private setCardText(card: UpgradeCard, upgrade: Upgrade) {
-    const rarity = rarityView[upgrade.rarity];
-
-    card.title.setText(upgrade.title);
-    card.description.setText(upgrade.description);
-    card.meta.setText(`${rarity.label} / ${directionLabels[upgrade.direction]}`);
-    card.meta.setColor(rarity.color);
+  private setCardData(card: RewardCard, choice: RewardChoice) {
+    card.container.setTexture(choice.rarityTextureKey);
+    card.icon.setTexture(choice.iconTextureKey);
+    card.description.setText(`${choice.title}\n${choice.description}`);
   }
 
   private setVisible(visible: boolean) {
     this.overlay.setVisible(visible);
     this.panel.setVisible(visible);
     this.title.setVisible(visible);
-    this.subtitle.setVisible(visible);
 
     if (visible) {
       this.overlay.setInteractive();
@@ -232,23 +222,23 @@ export class LevelUpRewardModal {
   }
 
   private setCardVisible(
-    card: UpgradeCard,
+    card: RewardCard,
     visible: boolean,
     canInteract = visible,
   ) {
-    card.background.setVisible(visible);
-    card.title.setVisible(visible);
+    card.container.setVisible(visible);
+    card.icon.setVisible(visible);
+    card.hitArea.setVisible(visible);
     card.description.setVisible(visible);
-    card.meta.setVisible(visible);
 
     this.setCardInteractive(card, visible && canInteract);
   }
 
-  private setCardInteractive(card: UpgradeCard, isInteractive: boolean) {
+  private setCardInteractive(card: RewardCard, isInteractive: boolean) {
     if (isInteractive) {
-      card.background.setInteractive({ useHandCursor: true });
+      card.hitArea.setInteractive({ useHandCursor: true });
     } else {
-      card.background.disableInteractive();
+      card.hitArea.disableInteractive();
     }
   }
 

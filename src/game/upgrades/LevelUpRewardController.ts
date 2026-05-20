@@ -2,13 +2,18 @@ import type { Scene } from "phaser";
 import type { Player } from "../entities/Player/Player";
 import type { PauseController } from "../state/PauseController";
 import { LevelUpRewardModal } from "../ui/LevelUpRewardModal";
-import type { Upgrade } from "./types";
-import { UpgradePool } from "./UpgradePool";
+import { RewardChoiceController } from "./RewardChoiceController";
+import type { RewardChoice } from "./types";
 
 export class LevelUpRewardController {
   private readonly modal: LevelUpRewardModal;
   private rewardsToChoose = 0;
   private isShowingReward = false;
+
+  static preload(scene: Scene) {
+    LevelUpRewardModal.preload(scene);
+    RewardChoiceController.preload(scene);
+  }
 
   constructor(
     scene: Scene,
@@ -42,7 +47,7 @@ export class LevelUpRewardController {
       return;
     }
 
-    const choices = UpgradePool.getRandomChoices(3);
+    const choices = RewardChoiceController.getRandomChoices(3);
 
     if (choices.length === 0) {
       this.rewardsToChoose = 0;
@@ -57,8 +62,8 @@ export class LevelUpRewardController {
     });
   }
 
-  private selectUpgrade(upgrade: Upgrade) {
-    upgrade.apply(this.player);
+  private selectUpgrade(choice: RewardChoice) {
+    choice.apply(this.player);
     this.modal.hide();
     this.isShowingReward = false;
     this.rewardsToChoose -= 1;

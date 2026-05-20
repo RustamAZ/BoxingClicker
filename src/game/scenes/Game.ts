@@ -1,8 +1,12 @@
 import { Scene } from "phaser";
 import { Gloves } from "../entities/Gloves/Gloves";
+import { GlovesEquipmentController } from "../entities/Gloves/GlovesEquipmentController";
 import { GameHud } from "../ui/GameHud";
 import { PauseMenu } from "../ui/PauseMenu";
+import { ShopModal } from "../ui/ShopModal";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
+import { EnemyAttackSoundPlayer } from "../audio/EnemyAttackSoundPlayer";
+import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import { BreathSoundPlayer } from "../audio/BreathSoundPlayer";
 import { BackgroundMusicController } from "../audio/BackgroundMusicController";
 import { GameBackground } from "../entities/Background/GameBackground";
@@ -34,11 +38,14 @@ export class Game extends Scene {
   private rewardParticleFlow: RewardParticleFlow;
   private enemySpawnPlace: SpawnPlace;
   private gloves: Gloves;
+  private glovesEquipmentController: GlovesEquipmentController;
   private hud: GameHud;
   private pauseMenu: PauseMenu;
+  private shopModal: ShopModal;
   private playerDeathModal: PlayerDeathModal;
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
+  private enemyAttackSoundPlayer: EnemyAttackSoundPlayer;
   private breathSoundPlayer: BreathSoundPlayer;
   private backgroundMusicController: BackgroundMusicController;
 
@@ -51,12 +58,16 @@ export class Game extends Scene {
     SpawnPlace.preload(this);
     GameHud.preload(this);
     PauseMenu.preload(this);
+    ShopModal.preload(this);
+    LevelUpRewardController.preload(this);
     RewardParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
     EmeraldContainer.preload(this);
     Gloves.preload(this);
     HitSoundPlayer.preload(this);
+    EnemyAttackSoundPlayer.preload(this);
+    UiSoundPlayer.preload(this);
     BreathSoundPlayer.preload(this);
     BackgroundMusicController.preload(this);
   }
@@ -89,7 +100,12 @@ export class Game extends Scene {
     this.updateRewardContainersVisibility();
 
     this.gloves = new Gloves(this);
+    this.glovesEquipmentController = new GlovesEquipmentController(
+      this.player.profile,
+      this.gloves,
+    );
     this.hitSoundPlayer = new HitSoundPlayer(this);
+    this.enemyAttackSoundPlayer = new EnemyAttackSoundPlayer(this);
     this.breathSoundPlayer = new BreathSoundPlayer(this);
     this.backgroundMusicController = new BackgroundMusicController(
       this,
@@ -105,8 +121,9 @@ export class Game extends Scene {
       },
       this.levelController,
       this.player,
-      this.gloves,
+      this.glovesEquipmentController,
       this.hitSoundPlayer,
+      this.enemyAttackSoundPlayer,
       (enemy, position) => {
         this.handleEnemyRewards(enemy, position);
       },
@@ -125,6 +142,12 @@ export class Game extends Scene {
     this.pauseMenu = new PauseMenu(this, this.pauseController, this.gameSettings, () => {
       this.scene.restart();
     });
+    this.shopModal = new ShopModal(
+      this,
+      this.pauseController,
+      this.wallet,
+      this.glovesEquipmentController,
+    );
     this.playerDeathModal = new PlayerDeathModal(
       this,
       this.pauseController,

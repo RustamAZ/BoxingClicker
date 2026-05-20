@@ -1,4 +1,8 @@
+import { PlayerProfile } from "./PlayerProfile";
+
 export class Player {
+  readonly profile = new PlayerProfile();
+
   level = 1;
   xp = 0;
   xpToNextLevel = 100;
@@ -10,9 +14,9 @@ export class Player {
   health = 200;
   maxHealth = 200;
 
-  damagePerHit = 25;
+  damagePerHit = 50;
 
-  punchSpeed = 0.9;
+  punchSpeed = 1;
   xpPerHit = 2;
   staminaCostPerHit = 8;
 

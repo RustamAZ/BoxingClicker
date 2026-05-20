@@ -31,6 +31,7 @@ export abstract class Enemy
     health: number;
 
     private attackCooldownRemaining: number;
+    private readonly attackPerformedCallbacks: Array<() => void> = [];
     private readonly selfDefeatedCallbacks: Array<() => void> = [];
 
     protected constructor (config: EnemyConfig)
@@ -96,6 +97,7 @@ export abstract class Enemy
         player.takeDamage(this.damagePerHit);
         this.attackCooldownRemaining = this.attackCooldownSeconds;
         this.onAttack(player);
+        this.emitAttackPerformed();
 
         return true;
     }
@@ -132,9 +134,21 @@ export abstract class Enemy
         onComplete();
     }
 
+    onAttackPerformed (callback: () => void)
+    {
+        this.attackPerformedCallbacks.push(callback);
+    }
+
     onSelfDefeated (callback: () => void)
     {
         this.selfDefeatedCallbacks.push(callback);
+    }
+
+    private emitAttackPerformed ()
+    {
+        this.attackPerformedCallbacks.forEach((callback) => {
+            callback();
+        });
     }
 
     protected emitSelfDefeated ()

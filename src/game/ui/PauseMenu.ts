@@ -1,9 +1,10 @@
 import { GameObjects, Scene } from "phaser";
+import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import type { GameSettings } from "../state/GameSettings";
 import type { PauseController } from "../state/PauseController";
 
 type PauseMenuButton = {
-  background: GameObjects.Rectangle;
+  background: GameObjects.Image;
   label: GameObjects.Text;
 };
 
@@ -23,18 +24,27 @@ export class PauseMenu {
   private static readonly depth = 1000;
   private static readonly volumeSliderWidth = 260;
   private static readonly settingsIconTextureKey = "settings-icon";
-  private static readonly settingsIconPath = "assets/images/ui/settings.png";
+  private static readonly settingsIconPath =
+    "assets/images/ui/icons/settings.png";
+  private static readonly settingsMenuBackgroundTextureKey =
+    "settings-menu-background";
+  private static readonly settingsMenuBackgroundPath =
+    "assets/images/ui/buttons/settings-menu-bg.png";
+  private static readonly settingsButtonBackgroundTextureKey =
+    "settings-button-background";
+  private static readonly settingsButtonBackgroundPath =
+    "assets/images/ui/buttons/settings-button-bg.png";
   private static readonly muteIconTextureKey = "mute-icon";
-  private static readonly muteIconPath = "assets/images/ui/mute.png";
+  private static readonly muteIconPath = "assets/images/ui/icons/mute.png";
   private static readonly voiceIconTextureKey = "voice-icon";
-  private static readonly voiceIconPath = "assets/images/ui/voice.png";
+  private static readonly voiceIconPath = "assets/images/ui/icons/voice.png";
   private static readonly settingsButtonSize = 72;
   private static readonly settingsIconSize = 64;
 
   private readonly settingsButton: PauseMenuIconButton;
   private readonly muteButton: PauseMenuIconButton;
   private readonly overlay: GameObjects.Rectangle;
-  private readonly panel: GameObjects.Rectangle;
+  private readonly panel: GameObjects.Image;
   private readonly title: GameObjects.Text;
   private readonly volumeSlider: VolumeSlider;
   private readonly continueButton: PauseMenuButton;
@@ -42,6 +52,14 @@ export class PauseMenu {
 
   static preload(scene: Scene) {
     scene.load.image(PauseMenu.settingsIconTextureKey, PauseMenu.settingsIconPath);
+    scene.load.image(
+      PauseMenu.settingsMenuBackgroundTextureKey,
+      PauseMenu.settingsMenuBackgroundPath,
+    );
+    scene.load.image(
+      PauseMenu.settingsButtonBackgroundTextureKey,
+      PauseMenu.settingsButtonBackgroundPath,
+    );
     scene.load.image(PauseMenu.muteIconTextureKey, PauseMenu.muteIconPath);
     scene.load.image(PauseMenu.voiceIconTextureKey, PauseMenu.voiceIconPath);
   }
@@ -64,14 +82,13 @@ export class PauseMenu {
       .setVisible(false);
 
     this.panel = this.scene.add
-      .rectangle(512, 384, 420, 350, 0x1f1f1f, 0.96)
+      .image(512, 384, PauseMenu.settingsMenuBackgroundTextureKey)
       .setDepth(PauseMenu.depth + 11)
-      .setStrokeStyle(2, 0xffffff, 0.6)
       .setVisible(false);
 
     this.title = this.scene.add
       .text(512, 250, "Настройки", {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 30,
         color: "#ffffff",
       })
@@ -92,6 +109,7 @@ export class PauseMenu {
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
     this.syncMuteButtonTexture();
     this.setMenuVisible(false);
+    this.scene.input.keyboard?.on("keydown-ESC", this.toggle, this);
   }
 
   get isPaused() {
@@ -116,6 +134,17 @@ export class PauseMenu {
 
     this.pauseController.resume("settings");
     this.setMenuVisible(false);
+  }
+
+  private toggle() {
+    if (this.pauseController.has("settings")) {
+      this.close();
+      return;
+    }
+
+    if (!this.pauseController.isPaused) {
+      this.open();
+    }
   }
 
   private createSettingsButton(
@@ -162,7 +191,10 @@ export class PauseMenu {
     const iconBaseScaleX = icon.scaleX;
     const iconBaseScaleY = icon.scaleY;
 
-    hitArea.on("pointerdown", onClick);
+    hitArea.on("pointerdown", () => {
+      UiSoundPlayer.playClick(this.scene);
+      onClick();
+    });
     hitArea.on("pointerover", () => {
       icon.setScale(iconBaseScaleX * 1.08, iconBaseScaleY * 1.08);
     });
@@ -189,7 +221,7 @@ export class PauseMenu {
   private createVolumeSlider(x: number, y: number): VolumeSlider {
     const label = this.scene.add
       .text(x, y - 36, "", {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 20,
         color: "#ffffff",
       })
@@ -287,13 +319,13 @@ export class PauseMenu {
     onClick: () => void,
   ): PauseMenuButton {
     const background = this.scene.add
-      .rectangle(x, y, width, height, 0x2d2d2d, 0.95)
+      .image(x, y, PauseMenu.settingsButtonBackgroundTextureKey)
+      .setDisplaySize(width, height)
       .setDepth(PauseMenu.depth + 12)
-      .setStrokeStyle(2, 0xffffff, 0.45)
       .setInteractive({ useHandCursor: true });
     const label = this.scene.add
       .text(x, y, text, {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 20,
         color: "#ffffff",
       })
@@ -301,12 +333,15 @@ export class PauseMenu {
       .setResolution(2)
       .setDepth(PauseMenu.depth + 13);
 
-    background.on("pointerdown", onClick);
+    background.on("pointerdown", () => {
+      UiSoundPlayer.playClick(this.scene);
+      onClick();
+    });
     background.on("pointerover", () => {
-      background.setFillStyle(0x3a3a3a, 0.98);
+      background.setTint(0xb8b8b8);
     });
     background.on("pointerout", () => {
-      background.setFillStyle(0x2d2d2d, 0.95);
+      background.clearTint();
     });
 
     return {

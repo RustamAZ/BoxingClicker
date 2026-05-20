@@ -15,9 +15,11 @@ export class Gloves
         GlovesCatalog.preload(scene);
     }
 
-    constructor (scene: Scene)
+    constructor (scene: Scene, equippedGlovesId?: string)
     {
-        this.equippedGloves = GlovesCatalog.getDefaultGloves();
+        this.equippedGloves =
+            GlovesCatalog.getGlovesById(equippedGlovesId ?? '') ??
+            GlovesCatalog.getDefaultGloves();
         this.view = new GlovesView(scene, this.equippedGloves);
     }
 

@@ -1,10 +1,11 @@
 import { Math as PhaserMath } from "phaser";
 import type { Scene } from "phaser";
+import type { EnemyAttackSoundPlayer } from "../../audio/EnemyAttackSoundPlayer";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
 import type { GameLevelController } from "../../progression/GameLevelController";
 import type { EnemySpawnKind } from "../../progression/types";
 import type { GlovesCombatProfile } from "../Gloves/types";
-import type { Gloves } from "../Gloves/Gloves";
+import type { GlovesEquipmentController } from "../Gloves/GlovesEquipmentController";
 import type { Player } from "../Player/Player";
 import type { Enemy } from "../Enemy/Enemy";
 import { EnemyRegistry } from "../Enemy/EnemyRegistry";
@@ -31,8 +32,9 @@ export class SpawnPlace {
     readonly slot: EnemySpawnSlot,
     private readonly levelController: GameLevelController,
     private readonly player: Player,
-    private readonly gloves: Gloves,
+    private readonly glovesEquipmentController: GlovesEquipmentController,
     private readonly hitSoundPlayer: HitSoundPlayer,
+    private readonly enemyAttackSoundPlayer: EnemyAttackSoundPlayer,
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
   ) {
     this.spawnNextEnemy();
@@ -66,6 +68,12 @@ export class SpawnPlace {
     this.currentEnemyValue.onHit(() => this.handleEnemyHit());
     const enemy = this.currentEnemyValue;
 
+    enemy.onAttackPerformed(() => {
+      if (enemy === this.currentEnemyValue) {
+        this.enemyAttackSoundPlayer.play();
+      }
+    });
+
     enemy.onSelfDefeated(() => {
       this.handleEnemySelfDefeated(enemy);
     });
@@ -94,13 +102,13 @@ export class SpawnPlace {
     if (
       !enemy ||
       this.isEnemyDeathAnimationPlaying ||
-      !this.gloves.canPunch() ||
-      !this.player.hit(this.gloves.getStaminaCostMultiplier())
+      !this.glovesEquipmentController.canPunch() ||
+      !this.player.hit(this.glovesEquipmentController.getStaminaCostMultiplier())
     ) {
       return false;
     }
 
-    const currentWeapon = this.gloves.getCurrentWeapon();
+    const currentWeapon = this.glovesEquipmentController.getCurrentWeapon();
     const enemySurvived = enemy.takeDamage(
       this.player.getDamagePerHit(currentWeapon.damageMultiplier),
     );
@@ -110,7 +118,7 @@ export class SpawnPlace {
       currentWeapon.hitSoundVolume,
     );
     this.playHitEffect(currentWeapon);
-    this.gloves.punch(
+    this.glovesEquipmentController.punch(
       this.player.getPunchAnimationDurationMs(
         currentWeapon.attackSpeedMultiplier,
       ),

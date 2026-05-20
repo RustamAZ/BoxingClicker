@@ -1,3 +1,11 @@
+@font-face {
+    font-family: "Hardpixel";
+    src: url("/assets/fonts/Hardpixel.OTF") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
 body {
     margin: 0;
     padding: 0;

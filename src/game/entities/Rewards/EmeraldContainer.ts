@@ -8,10 +8,11 @@ export type EmeraldContainerConfig = {
 
 export class EmeraldContainer {
   private static readonly iconTextureKey = "money-icon";
-  private static readonly iconPath = "assets/images/ui/money.png";
+  private static readonly iconPath = "assets/images/ui/icons/emerald.png";
   private static readonly takeSoundKey = "take-emerald";
   private static readonly takeSoundPath = "assets/audio/ui/takeEmerald.mp3";
-  private static readonly iconDisplaySize = 56;
+  private static readonly iconDisplayWidth = 44;
+  private static readonly iconDisplayHeight = 56;
   private static readonly depth = 902;
   private static readonly textOffsetX = 58;
   private static readonly iconShakeOffsetX = 5;
@@ -39,13 +40,13 @@ export class EmeraldContainer {
       .image(config.x, config.y, EmeraldContainer.iconTextureKey)
       .setOrigin(0, 0.5)
       .setDisplaySize(
-        EmeraldContainer.iconDisplaySize,
-        EmeraldContainer.iconDisplaySize,
+        EmeraldContainer.iconDisplayWidth,
+        EmeraldContainer.iconDisplayHeight,
       )
       .setDepth(EmeraldContainer.depth);
     this.text = scene.add
       .text(config.x + EmeraldContainer.textOffsetX, config.y, "", {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 24,
         color: "#7dff76",
         stroke: "#123b12",
@@ -73,7 +74,7 @@ export class EmeraldContainer {
 
   getTargetPoint() {
     return {
-      x: this.originX + EmeraldContainer.iconDisplaySize / 2,
+      x: this.originX + EmeraldContainer.iconDisplayWidth / 2,
       y: this.originY,
     };
   }

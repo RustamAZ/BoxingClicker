@@ -5,15 +5,20 @@ import type { Player } from "../entities/Player/Player";
 export class GameHud {
   private static readonly xpBarEmptyTextureKey = "expbar-empty";
   private static readonly xpBarFullTextureKey = "expbar-full";
-  private static readonly xpBarEmptyPath = "assets/images/ui/expbar-empty.png";
-  private static readonly xpBarFullPath = "assets/images/ui/expbar-full.png";
+  private static readonly xpBarEmptyPath =
+    "assets/images/ui/bars/expbar-empty.png";
+  private static readonly xpBarFullPath =
+    "assets/images/ui/bars/expbar-full.png";
   private static readonly xpBarDepth = 900;
+  private static readonly levelTextColor = "#7dff76";
+  private static readonly levelTextStroke = "#123b12";
+  private static readonly levelTextBottomOffsetY = 18;
   private static readonly healthBarEmptyTextureKey = "health-bar-empty";
   private static readonly healthBarFullTextureKey = "health-bar-full";
   private static readonly healthBarEmptyPath =
-    "assets/images/ui/health-bar-empty.png";
+    "assets/images/ui/bars/health-bar-empty.png";
   private static readonly healthBarFullPath =
-    "assets/images/ui/health-bar-full.png";
+    "assets/images/ui/bars/health-bar-full.png";
   private static readonly healthBarDepth = 900;
   private static readonly healthBarX = 0;
   private static readonly healthBarY = 28;
@@ -23,18 +28,18 @@ export class GameHud {
   private static readonly staminaBarEmptyTextureKey = "stamina-bar-empty";
   private static readonly staminaBarFullTextureKey = "stamina-bar-full";
   private static readonly staminaBarEmptyPath =
-    "assets/images/ui/stamina-bar-empty.png";
+    "assets/images/ui/bars/stamina-bar-empty.png";
   private static readonly staminaBarFullPath =
-    "assets/images/ui/stamina-bar-full.png";
+    "assets/images/ui/bars/stamina-bar-full.png";
   private static readonly staminaBarDepth = 900;
   private static readonly enemyHealthBarEmptyTextureKey =
     "enemy-health-bar-empty";
   private static readonly enemyHealthBarFullTextureKey =
     "enemy-health-bar-full";
   private static readonly enemyHealthBarEmptyPath =
-    "assets/images/ui/enemy-health-bar-empty.png";
+    "assets/images/ui/bars/enemy-health-bar-empty.png";
   private static readonly enemyHealthBarFullPath =
-    "assets/images/ui/enemy-health-bar-full.png";
+    "assets/images/ui/bars/enemy-health-bar-full.png";
   private static readonly enemyHealthBarDepth = 900;
   private static readonly enemyHealthBarY = 150;
   private static readonly bossLabelTextureKey = "boss-label";
@@ -42,6 +47,7 @@ export class GameHud {
   private static readonly bossLabelGap = 8;
 
   private readonly xpBarFull: Phaser.GameObjects.Image;
+  private readonly levelText: Phaser.GameObjects.Text;
   private readonly healthBarEmpty: Phaser.GameObjects.Image;
   private readonly healthBarFull: Phaser.GameObjects.Image;
   private readonly staminaBarFull: Phaser.GameObjects.Image;
@@ -96,6 +102,23 @@ export class GameHud {
       .setOrigin(0, 0)
       .setDepth(GameHud.xpBarDepth + 1);
 
+    this.levelText = scene.add
+      .text(
+        xpBarX + xpBarFrame.width / 2,
+        scene.scale.height - GameHud.levelTextBottomOffsetY,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 28,
+          color: GameHud.levelTextColor,
+          stroke: GameHud.levelTextStroke,
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(GameHud.xpBarDepth + 2);
+
     this.healthBarEmpty = scene.add
       .image(
         GameHud.healthBarX,
@@ -132,8 +155,7 @@ export class GameHud {
     );
     const enemyHealthBarX = (scene.scale.width - enemyHealthBarFrame.width) / 2;
     const bossLabelFrame = scene.textures.getFrame(GameHud.bossLabelTextureKey);
-    const bossLabelX =
-      enemyHealthBarX - 40;
+    const bossLabelX = enemyHealthBarX - 40;
     const bossLabelY =
       GameHud.enemyHealthBarY +
       (enemyHealthBarFrame.height - bossLabelFrame.height) / 2;
@@ -191,6 +213,7 @@ export class GameHud {
       this.xpBarFull.width * clampedProgress,
       this.xpBarFull.height,
     );
+    this.levelText.setText(String(player.level));
   }
 
   private updateHealthBar(player: Player) {

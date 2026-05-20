@@ -1,6 +1,10 @@
 import type { Scene } from "phaser";
 
-export type PauseReason = "settings" | "level-up-reward" | "player-death";
+export type PauseReason =
+  | "settings"
+  | "level-up-reward"
+  | "player-death"
+  | "shop";
 type PauseChangeCallback = (isPaused: boolean) => void;
 
 export class PauseController {

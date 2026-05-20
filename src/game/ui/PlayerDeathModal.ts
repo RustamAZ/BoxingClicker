@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import type { PauseController } from "../state/PauseController";
 
 type PlayerDeathButton = {
@@ -38,7 +39,7 @@ export class PlayerDeathModal {
 
     this.title = this.scene.add
       .text(512, 286, "Ты проиграл", {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 34,
         color: "#ffffff",
       })
@@ -49,7 +50,7 @@ export class PlayerDeathModal {
 
     this.subtitle = this.scene.add
       .text(512, 324, "Попробуй еще раз", {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 19,
         color: "#d2d2d2",
       })
@@ -132,7 +133,7 @@ export class PlayerDeathModal {
       .setInteractive({ useHandCursor: true });
     const label = this.scene.add
       .text(x, y, text, {
-        fontFamily: "Arial",
+        fontFamily: "Hardpixel",
         fontSize: 19,
         color: "#ffffff",
       })
@@ -140,7 +141,10 @@ export class PlayerDeathModal {
       .setResolution(2)
       .setDepth(PlayerDeathModal.depth + 3);
 
-    background.on("pointerdown", onClick);
+    background.on("pointerdown", () => {
+      UiSoundPlayer.playClick(this.scene);
+      onClick();
+    });
     background.on("pointerover", () => {
       background.setFillStyle(0x3a3a3a, 0.98);
     });

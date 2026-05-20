@@ -1,12 +1,24 @@
 import type { Scene } from 'phaser';
 import type { BaseGloves } from './BaseGloves';
+import { AmogusGloves } from './variants/AmogusGloves';
 import { BasicGloves } from './variants/BasicGloves';
+import { HeavyGloves } from './variants/HeavyGloves';
+import { InfinityGloves } from './variants/InfinityGloves';
+import { MechanicGloves } from './variants/MechanicGloves';
+import { PepeGloves } from './variants/PepeGloves';
+import { SixSevenGloves } from './variants/SixSevenGloves';
 
 export class GlovesCatalog
 {
     private static readonly defaultGloves = new BasicGloves();
     private static readonly gloves: BaseGloves[] = [
         GlovesCatalog.defaultGloves,
+        new AmogusGloves(),
+        new PepeGloves(),
+        new MechanicGloves(),
+        new InfinityGloves(),
+        new SixSevenGloves(),
+        new HeavyGloves(),
     ];
 
     static preload (scene: Scene)

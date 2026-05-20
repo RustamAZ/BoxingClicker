@@ -38,7 +38,7 @@ export class CoinContainer extends RewardContainer {
     });
   }
 
-  protected issueReward(completedRewards: number) {
-    return completedRewards;
+  protected issueReward(_completedRewards: number) {
+    return 0;
   }
 }
