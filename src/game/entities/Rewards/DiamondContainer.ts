@@ -3,7 +3,7 @@ import { RewardContainer, type RewardContainerConfig } from "./RewardContainer";
 
 export class DiamondContainer extends RewardContainer {
   private static readonly defaultDisplaySize = 300;
-  private static readonly startMaxValue = 50;
+  private static readonly startMaxValue = 35;
   private static readonly maxValueStepPerOpening = 20;
   private static readonly rewardSoundKey = "diamond-reward";
   private static readonly rewardSoundPath = "assets/audio/ui/diamondReward.mp3";

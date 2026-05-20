@@ -5,11 +5,13 @@ export const gameLevelStartPlayerLevels = {
   village: 2,
   cave: 7,
   dungeon: 12,
+  hell: 20,
 } as const;
 
 export const gameLevelBossPlayerLevels = {
   firstDifficultyBoss: gameLevelStartPlayerLevels.cave,
   secondDifficultyBoss: gameLevelStartPlayerLevels.dungeon,
+  thirdDifficultyBoss: gameLevelStartPlayerLevels.hell,
 } as const;
 
 export const gameLevelsConfig: readonly GameLevelConfig[] = [
@@ -64,7 +66,23 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
       path: "assets/images/backgrounds/dungeon.png",
     },
     enemyDifficulty: "second",
-    enemySpawnKind: "second-difficulty-enemy",
+    enemySpawnKind: "third-difficulty-enemy",
     music: "action",
+  },
+  {
+    level: 5,
+    startPlayerLevel: gameLevelStartPlayerLevels.hell,
+    background: {
+      key: "dungeon-background",
+      path: "assets/images/backgrounds/hell.png",
+    },
+    enemyDifficulty: "third",
+    enemySpawnKind: "third-difficulty-boss",
+    music: "action",
+    boss: {
+      id: "third-difficulty-boss",
+      requiredPlayerLevel: gameLevelBossPlayerLevels.thirdDifficultyBoss,
+      enemySpawnKind: "third-difficulty-boss",
+    },
   },
 ];

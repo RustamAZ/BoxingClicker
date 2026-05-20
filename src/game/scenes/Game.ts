@@ -154,6 +154,11 @@ export class Game extends Scene {
       () => {
         this.scene.restart();
       },
+      () => {
+        this.player.restoreFromAd();
+        this.pauseController.resume("player-death");
+        this.playerDeathModal.hide();
+      }
     );
   }
 

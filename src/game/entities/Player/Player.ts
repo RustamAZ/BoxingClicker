@@ -14,9 +14,9 @@ export class Player {
   health = 200;
   maxHealth = 200;
 
-  damagePerHit = 50;
+  damagePerHit = 250;
 
-  punchSpeed = 1;
+  punchSpeed = 0.9;
   xpPerHit = 2;
   staminaCostPerHit = 8;
 
@@ -129,6 +129,11 @@ export class Player {
 
     this.maxHealth += value;
     this.health = Math.min(this.maxHealth, this.health + value);
+  }
+
+  restoreFromAd() {
+    this.health = this.maxHealth;
+    this.stamina = this.maxStamina;
   }
 
   isLowHealth() {

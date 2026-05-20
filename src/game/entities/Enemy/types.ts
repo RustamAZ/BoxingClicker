@@ -4,3 +4,8 @@ export type EnemySpawnSlot = {
   width: number;
   height: number;
 };
+
+export type EnemyStatRange = {
+  min: number;
+  max: number;
+};

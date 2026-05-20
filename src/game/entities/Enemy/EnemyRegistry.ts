@@ -7,6 +7,8 @@ import { FirstDifficultyEnemy } from "./LowGradeEnemies/FirstDifficulty/FirstDif
 import { SecondDifficultyBoss } from "./LowGradeEnemies/SecondDifficulty/SecondDifficultyBoss";
 import { SecondDifficultyEnemy } from "./LowGradeEnemies/SecondDifficulty/SecondDifficultyEnemy";
 import { PunchingBag } from "./PunchingBag/PunchingBag";
+import { ThirdDifficultyBoss } from "./LowGradeEnemies/ThirdDifficulty/ThirdDifficultyBoss";
+import { ThirdDifficultyEnemy } from "./LowGradeEnemies/ThirdDifficulty/ThirdDifficultyEnemy";
 
 type EnemyRegistryItem = {
   preload: (scene: Scene) => void;
@@ -35,6 +37,15 @@ const enemyRegistry: Record<EnemySpawnKind, EnemyRegistryItem> = {
   "second-difficulty-boss": {
     preload: SecondDifficultyBoss.preload,
     create: (scene, slot) => new SecondDifficultyBoss(scene, slot),
+    isBoss: true,
+  },
+  "third-difficulty-enemy": {
+    preload: SecondDifficultyEnemy.preload,
+    create: (scene, slot) => new ThirdDifficultyEnemy(scene, slot),
+  },
+  "third-difficulty-boss": {
+    preload: SecondDifficultyBoss.preload,
+    create: (scene, slot) => new ThirdDifficultyBoss(scene, slot),
     isBoss: true,
   },
 };

@@ -1,11 +1,9 @@
 import { GameObjects, Scene } from "phaser";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
-
-type EnemyStatRange = {
-  min: number;
-  max: number;
-};
+import { randomItem } from "../../../../utils/randomItem";
+import { randomInt } from "../../../../utils/randomInt";
+import { randomFloat } from "../../../../utils/randomFloat";
 
 type EnemySpriteConfig = {
   key: string;
@@ -110,29 +108,29 @@ export class SecondDifficultyEnemy extends Enemy {
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = SecondDifficultyEnemy.randomItem(
+    const [aliveSprite, deadSprite] = randomItem(
       SecondDifficultyEnemy.sprites,
     );
 
     super({
       displayName: aliveSprite.displayName,
-      maxHealth: SecondDifficultyEnemy.randomInt(
+      maxHealth: randomInt(
         SecondDifficultyEnemy.healthRange,
       ),
-      xpReward: SecondDifficultyEnemy.randomInt(
+      xpReward: randomInt(
         SecondDifficultyEnemy.xpRewardRange,
       ),
-      diamondsReward: SecondDifficultyEnemy.randomInt(
+      diamondsReward: randomInt(
         SecondDifficultyEnemy.diamondsRewardRange,
       ),
-      coinsReward: SecondDifficultyEnemy.randomInt(
+      coinsReward: randomInt(
         SecondDifficultyEnemy.coinsRewardRange,
       ),
       emeraldDropChance: SecondDifficultyEnemy.emeraldDropChance,
-      damagePerHit: SecondDifficultyEnemy.randomInt(
+      damagePerHit: randomInt(
         SecondDifficultyEnemy.damagePerHitRange,
       ),
-      attackCooldownSeconds: SecondDifficultyEnemy.randomFloat(
+      attackCooldownSeconds: randomFloat(
         SecondDifficultyEnemy.attackCooldownSecondsRange,
       ),
     });
@@ -197,17 +195,5 @@ export class SecondDifficultyEnemy extends Enemy {
 
   destroy() {
     this.body.destroy();
-  }
-
-  private static randomInt(range: EnemyStatRange) {
-    return Math.floor(Math.random() * (range.max - range.min + 1) + range.min);
-  }
-
-  private static randomFloat(range: EnemyStatRange) {
-    return Math.random() * (range.max - range.min) + range.min;
-  }
-
-  private static randomItem<T>(items: T[]) {
-    return items[Math.floor(Math.random() * items.length)];
   }
 }

@@ -1,11 +1,13 @@
-export type EnemyDifficulty = "training" | "first" | "second";
+export type EnemyDifficulty = "training" | "first" | "second" | 'third';
 
 export type EnemySpawnKind =
   | "training"
   | "first-difficulty-enemy"
   | "first-difficulty-boss"
   | "second-difficulty-enemy"
-  | "second-difficulty-boss";
+  | "second-difficulty-boss"
+  | "third-difficulty-enemy"
+  | "third-difficulty-boss";
 
 export type BackgroundMusicId = "menu-and-lobby" | "action" | "boss-fight";
 

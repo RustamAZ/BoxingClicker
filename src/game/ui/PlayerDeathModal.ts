@@ -24,6 +24,7 @@ export class PlayerDeathModal {
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly onRestart: () => void,
+    private readonly onRestoreFromAd: () => void,
   ) {
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.68)
@@ -73,7 +74,7 @@ export class PlayerDeathModal {
       280,
       48,
       "Продолжить за рекламу",
-      () => this.restart(),
+      () => this.onRestoreFromAd(),
     );
 
     this.hide();
