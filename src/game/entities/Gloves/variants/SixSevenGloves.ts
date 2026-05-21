@@ -11,4 +11,5 @@ export class SixSevenGloves extends BaseGloves
     readonly damageMultiplier = 1.32;
     readonly staminaCostMultiplier = 0.95;
     readonly attackSpeedMultiplier = 1.18;
+    readonly hitSoundVolume = 0.8;
 }

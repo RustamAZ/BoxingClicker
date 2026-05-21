@@ -11,4 +11,5 @@ export class BasicGloves extends BaseGloves
     readonly damageMultiplier = 1;
     readonly staminaCostMultiplier = 1;
     readonly attackSpeedMultiplier = 1;
+    readonly hitSoundVolume = 0.8;
 }

@@ -13,7 +13,7 @@ type NormalizedGameSettings = {
 export class GameSettings {
   private static readonly storageKey = "boxing-clicker-settings";
   private static readonly defaultMasterVolume = 1;
-  private static readonly pauseVolumeMultiplier = 0.55;
+  private static readonly pauseVolumeMultiplier = 0.45;
 
   private masterVolume = GameSettings.defaultMasterVolume;
   private isMuted = false;

@@ -28,6 +28,9 @@ export class PlayerProfile {
   private static readonly defaultPurchasedItemIds = [
     PlayerProfile.defaultEquippedItemId,
   ];
+  private static readonly legacyItemIdAliases: Record<string, string> = {
+    "heavy-gloves": "mechanic-gloves",
+  };
 
   private id: string;
   private emeralds: number;
@@ -181,13 +184,13 @@ export class PlayerProfile {
             ? Math.max(0, Math.floor(profile.emeralds))
             : 0,
         purchasedItemIds: Array.isArray(profile.purchasedItemIds)
-          ? profile.purchasedItemIds.filter(
-              (itemId): itemId is string => typeof itemId === "string",
-            )
+          ? profile.purchasedItemIds
+              .filter((itemId): itemId is string => typeof itemId === "string")
+              .map((itemId) => this.normalizeItemId(itemId))
           : [...PlayerProfile.defaultPurchasedItemIds],
         equippedItemId:
           typeof profile.equippedItemId === "string"
-            ? profile.equippedItemId
+            ? this.normalizeItemId(profile.equippedItemId)
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
         deathContinueCount:
@@ -222,6 +225,10 @@ export class PlayerProfile {
     if (!this.hasPurchasedItem(this.equippedItemId)) {
       this.equippedItemId = PlayerProfile.defaultEquippedItemId;
     }
+  }
+
+  private normalizeItemId(itemId: string) {
+    return PlayerProfile.legacyItemIdAliases[itemId] ?? itemId;
   }
 
   private loadLegacyEmeralds() {

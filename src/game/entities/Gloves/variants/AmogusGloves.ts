@@ -12,6 +12,7 @@ export class AmogusGloves extends BaseGloves {
   readonly damageMultiplier = 1.08;
   readonly staminaCostMultiplier = 0.98;
   readonly attackSpeedMultiplier = 1.02;
+  readonly hitSoundVolume = 0.8;
 
   readonly hitSoundAssets = [
     {

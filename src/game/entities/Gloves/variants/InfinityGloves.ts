@@ -11,6 +11,7 @@ export class InfinityGloves extends BaseGloves
     readonly damageMultiplier = 1.42;
     readonly staminaCostMultiplier = 1.18;
     readonly attackSpeedMultiplier = 1.12;
+    readonly hitSoundVolume = 0.8;
 
     readonly hitSoundAssets = [
         {
