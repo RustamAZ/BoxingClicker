@@ -1,7 +1,14 @@
 import type { Scene } from "phaser";
-import { RewardContainer, type RewardContainerConfig } from "./RewardContainer";
+import {
+  ResourceContainer,
+  type ResourceContainerConfig,
+} from "./ResourceContainer";
 
-export class CoinContainer extends RewardContainer {
+export type CoinContainerConfig = ResourceContainerConfig & {
+  onFilled?: () => void;
+};
+
+export class CoinContainer extends ResourceContainer {
   private static readonly defaultDisplaySize = 300;
   private static readonly startMaxValue = 40;
   private static readonly maxValueStepPerOpening = 20;
@@ -26,7 +33,10 @@ export class CoinContainer extends RewardContainer {
     }
   }
 
-  constructor(scene: Scene, config: RewardContainerConfig) {
+  constructor(
+    scene: Scene,
+    private readonly config: CoinContainerConfig,
+  ) {
     super(scene, {
       ...config,
       startMaxValue: config.startMaxValue ?? CoinContainer.startMaxValue,
@@ -38,7 +48,9 @@ export class CoinContainer extends RewardContainer {
     });
   }
 
-  protected issueReward(_completedRewards: number) {
+  protected issueCompletion(_completedCount: number) {
+    this.config.onFilled?.();
+
     return 0;
   }
 }

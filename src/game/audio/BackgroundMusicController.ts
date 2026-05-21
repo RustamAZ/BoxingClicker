@@ -33,6 +33,7 @@ export class BackgroundMusicController {
 
   private currentTrack?: BackgroundMusicTrack;
   private currentSound?: Sound.BaseSound;
+  private isPaused = false;
 
   static preload(scene: Scene) {
     BackgroundMusicController.tracks.forEach((track) => {
@@ -56,6 +57,10 @@ export class BackgroundMusicController {
   }
 
   update() {
+    if (this.isPaused) {
+      return;
+    }
+
     const nextTrack = this.getTrackForCurrentLevel();
 
     if (this.currentTrack?.key === nextTrack.key) {
@@ -68,6 +73,19 @@ export class BackgroundMusicController {
 
   destroy() {
     this.stopCurrentSound();
+  }
+
+  pause() {
+    this.isPaused = true;
+
+    if (this.currentSound?.isPlaying) {
+      this.currentSound.pause();
+    }
+  }
+
+  resume() {
+    this.isPaused = false;
+    this.playCurrentSound();
   }
 
   private getTrackForCurrentLevel() {

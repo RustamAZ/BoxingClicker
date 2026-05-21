@@ -1,7 +1,10 @@
 import type { Scene } from "phaser";
-import { RewardContainer, type RewardContainerConfig } from "./RewardContainer";
+import {
+  ResourceContainer,
+  type ResourceContainerConfig,
+} from "./ResourceContainer";
 
-export class DiamondContainer extends RewardContainer {
+export class DiamondContainer extends ResourceContainer {
   private static readonly defaultDisplaySize = 300;
   private static readonly startMaxValue = 35;
   private static readonly maxValueStepPerOpening = 20;
@@ -54,7 +57,7 @@ export class DiamondContainer extends RewardContainer {
     });
   }
 
-  constructor(scene: Scene, config: RewardContainerConfig) {
+  constructor(scene: Scene, config: ResourceContainerConfig) {
     super(scene, {
       ...config,
       startMaxValue:
@@ -73,10 +76,10 @@ export class DiamondContainer extends RewardContainer {
     return super.add(amount);
   }
 
-  protected issueReward(completedRewards: number) {
+  protected issueCompletion(completedCount: number) {
     this.playRewardSound();
 
-    return completedRewards;
+    return completedCount;
   }
 
   private playRewardSound() {

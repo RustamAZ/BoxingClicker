@@ -1,6 +1,6 @@
 import { GameObjects, Scene } from "phaser";
 
-export type RewardContainerConfig = {
+export type ResourceContainerConfig = {
   x: number;
   y: number;
   startMaxValue?: number;
@@ -8,13 +8,13 @@ export type RewardContainerConfig = {
   displaySize?: number;
 };
 
-type RewardContainerViewConfig = RewardContainerConfig & {
+type ResourceContainerViewConfig = ResourceContainerConfig & {
   color?: number;
   textureKeys?: string[];
 };
 
-export abstract class RewardContainer {
-  static readonly rewardIssueAnimationDelayMs = 420;
+export abstract class ResourceContainer {
+  static readonly filledAnimationDelayMs = 420;
   protected static readonly defaultStartMaxValue = 30;
   protected static readonly defaultMaxValueStepPerOpening = 20;
   protected static readonly depth = 30;
@@ -31,17 +31,17 @@ export abstract class RewardContainer {
   protected value = 0;
   protected openingsCount = 0;
 
-  constructor(scene: Scene, config: RewardContainerViewConfig) {
+  constructor(scene: Scene, config: ResourceContainerViewConfig) {
     this.scene = scene;
     this.startMaxValue = Math.max(
       1,
-      Math.floor(config.startMaxValue ?? RewardContainer.defaultStartMaxValue),
+      Math.floor(config.startMaxValue ?? ResourceContainer.defaultStartMaxValue),
     );
     this.maxValueStepPerOpening = Math.max(
       0,
       Math.floor(
         config.maxValueStepPerOpening ??
-          RewardContainer.defaultMaxValueStepPerOpening,
+          ResourceContainer.defaultMaxValueStepPerOpening,
       ),
     );
     this.textureKeys = config.textureKeys ?? [];
@@ -50,22 +50,22 @@ export abstract class RewardContainer {
       this.sprite = scene.add
         .image(config.x, config.y, this.textureKeys[0])
         .setDisplaySize(
-          config.displaySize ?? RewardContainer.fallbackSize,
-          config.displaySize ?? RewardContainer.fallbackSize,
+          config.displaySize ?? ResourceContainer.fallbackSize,
+          config.displaySize ?? ResourceContainer.fallbackSize,
         )
-        .setDepth(RewardContainer.depth);
+        .setDepth(ResourceContainer.depth);
       this.view = this.sprite;
     } else {
       this.view = scene.add
         .rectangle(
           config.x,
           config.y,
-          config.displaySize ?? RewardContainer.fallbackSize,
-          config.displaySize ?? RewardContainer.fallbackSize,
+          config.displaySize ?? ResourceContainer.fallbackSize,
+          config.displaySize ?? ResourceContainer.fallbackSize,
           config.color ?? 0xffffff,
           0.92,
         )
-        .setDepth(RewardContainer.depth)
+        .setDepth(ResourceContainer.depth)
         .setStrokeStyle(2, 0xffffff, 0.65);
     }
 
@@ -83,31 +83,31 @@ export abstract class RewardContainer {
 
     this.value += safeAmount;
 
-    let issuedRewards = 0;
+    let issuedCompletions = 0;
 
     while (this.value >= this.getCurrentMaxValue()) {
       this.value -= this.getCurrentMaxValue();
       this.openingsCount += 1;
-      issuedRewards += this.issueReward(1);
+      issuedCompletions += this.issueCompletion(1);
     }
 
-    if (issuedRewards > 0) {
+    if (issuedCompletions > 0) {
       const nextValue = this.value;
 
       this.value = this.getCurrentMaxValue();
       this.updateVisualState();
-      this.playRewardIssuedAnimation(() => {
-        this.resetAfterReward(nextValue);
+      this.playFilledAnimation(() => {
+        this.resetAfterFill(nextValue);
         this.updateVisualState();
       });
 
-      return issuedRewards;
+      return issuedCompletions;
     }
 
     this.updateVisualState();
     this.playHitAnimation();
 
-    return issuedRewards;
+    return issuedCompletions;
   }
 
   getTargetPoint() {
@@ -121,9 +121,9 @@ export abstract class RewardContainer {
     this.view.setVisible(visible);
   }
 
-  protected abstract issueReward(completedRewards: number): number;
+  protected abstract issueCompletion(completedCount: number): number;
 
-  protected resetAfterReward(nextValue = this.value % this.getCurrentMaxValue()) {
+  protected resetAfterFill(nextValue = this.value % this.getCurrentMaxValue()) {
     this.value = nextValue;
   }
 
@@ -154,7 +154,7 @@ export abstract class RewardContainer {
     });
   }
 
-  private playRewardIssuedAnimation(onComplete: () => void) {
+  private playFilledAnimation(onComplete: () => void) {
     this.scene.tweens.killTweensOf(this.view);
     this.resetViewPosition();
 

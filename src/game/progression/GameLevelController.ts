@@ -65,7 +65,7 @@ export class GameLevelController {
     return this.getCurrentEnemyDifficulty() === "training";
   }
 
-  shouldShowRewardContainers() {
+  shouldShowResourceContainers() {
     return !this.isTrainingLevel();
   }
 

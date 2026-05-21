@@ -12,11 +12,12 @@ import { BackgroundMusicController } from "../audio/BackgroundMusicController";
 import { GameBackground } from "../entities/Background/GameBackground";
 import type { Enemy } from "../entities/Enemy/Enemy";
 import { Player } from "../entities/Player/Player";
-import { CoinContainer } from "../entities/Rewards/CoinContainer";
-import { DiamondContainer } from "../entities/Rewards/DiamondContainer";
-import { EmeraldContainer } from "../entities/Rewards/EmeraldContainer";
-import { RewardContainer } from "../entities/Rewards/RewardContainer";
-import { RewardParticleFlow } from "../entities/Rewards/RewardParticleFlow";
+import { LootCaseController } from "../entities/LootCase/LootCaseController";
+import { CoinContainer } from "../entities/ResourceContainers/CoinContainer";
+import { DiamondContainer } from "../entities/ResourceContainers/DiamondContainer";
+import { EmeraldContainer } from "../entities/ResourceContainers/EmeraldContainer";
+import { ResourceContainer } from "../entities/ResourceContainers/ResourceContainer";
+import { ResourceParticleFlow } from "../entities/ResourceContainers/ResourceParticleFlow";
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
 import { Wallet } from "../entities/Wallet/Wallet";
 import { GameLevelController } from "../progression/GameLevelController";
@@ -26,6 +27,8 @@ import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 
 export class Game extends Scene {
+  private static readonly deathContinueEmeraldCost = 50;
+
   private player: Player;
   private wallet: Wallet;
   private levelController: GameLevelController;
@@ -33,9 +36,10 @@ export class Game extends Scene {
   private pauseController: PauseController;
   private background: GameBackground;
   private diamondContainer: DiamondContainer;
-  private treasureContainer: CoinContainer;
+  private coinContainer: CoinContainer;
   private emeraldContainer: EmeraldContainer;
-  private rewardParticleFlow: RewardParticleFlow;
+  private lootCaseController: LootCaseController;
+  private resourceParticleFlow: ResourceParticleFlow;
   private enemySpawnPlace: SpawnPlace;
   private gloves: Gloves;
   private glovesEquipmentController: GlovesEquipmentController;
@@ -60,8 +64,9 @@ export class Game extends Scene {
     PauseMenu.preload(this);
     ShopModal.preload(this);
     PlayerDeathModal.preload(this);
+    LootCaseController.preload(this);
     LevelUpRewardController.preload(this);
-    RewardParticleFlow.preload(this);
+    ResourceParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
     EmeraldContainer.preload(this);
@@ -82,23 +87,37 @@ export class Game extends Scene {
     this.pauseController.onPauseChange((isPaused) => {
       this.gameSettings.setAudioPaused(isPaused);
     });
+    this.lootCaseController = new LootCaseController(
+      this,
+      this.player,
+      this.wallet,
+      this.pauseController,
+    );
 
     this.cameras.main.setBackgroundColor(0x1f1f1f);
     this.background = new GameBackground(this, this.levelController);
-    this.rewardParticleFlow = new RewardParticleFlow(this);
+    this.resourceParticleFlow = new ResourceParticleFlow(this);
     this.diamondContainer = new DiamondContainer(this, {
       x: 160,
       y: 620,
     });
-    this.treasureContainer = new CoinContainer(this, {
+    this.coinContainer = new CoinContainer(this, {
       x: 864,
       y: 620,
+      onFilled: () => {
+        this.time.delayedCall(
+          ResourceContainer.filledAnimationDelayMs,
+          () => {
+            this.lootCaseController.requestOpen();
+          },
+        );
+      },
     });
     this.emeraldContainer = new EmeraldContainer(this, this.wallet, {
       x: 18,
       y: 150,
     });
-    this.updateRewardContainersVisibility();
+    this.updateResourceContainersVisibility();
 
     this.gloves = new Gloves(this);
     this.glovesEquipmentController = new GlovesEquipmentController(
@@ -155,11 +174,6 @@ export class Game extends Scene {
       this.pauseController,
       () => {
         this.scene.restart();
-      },
-      () => {
-        this.player.restoreFromAd();
-        this.pauseController.resume("player-death");
-        this.playerDeathModal.hide();
       }
     );
   }
@@ -174,7 +188,7 @@ export class Game extends Scene {
     const deltaSeconds = delta / 1000;
 
     this.background.update();
-    this.updateRewardContainersVisibility();
+    this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
@@ -185,7 +199,8 @@ export class Game extends Scene {
     }
 
     if (this.player.isDead()) {
-      this.playerDeathModal.show();
+      this.backgroundMusicController.pause();
+      this.playerDeathModal.show(this.getPlayerDeathContinueOption());
       this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
       return;
     }
@@ -193,6 +208,7 @@ export class Game extends Scene {
     this.levelUpRewardController.update(
       !this.enemySpawnPlace.isDeathAnimationPlaying,
     );
+    this.lootCaseController.update();
 
     if (this.player.isLowStamina()) {
       this.breathSoundPlayer.playIfNotPlaying();
@@ -212,18 +228,18 @@ export class Game extends Scene {
       return;
     }
 
-    this.rewardParticleFlow.play({
+    this.resourceParticleFlow.play({
       from: position,
       diamondTarget: this.diamondContainer.getTargetPoint(),
-      treasureTarget: this.treasureContainer.getTargetPoint(),
+      coinTarget: this.coinContainer.getTargetPoint(),
       emeraldTarget: this.emeraldContainer.getTargetPoint(),
       diamondsCount: enemy.diamondsReward,
       coinsCount: enemy.coinsReward,
       emeraldsCount: emeraldsReward,
       onComplete: () => {
-        const rewardChoices =
-          this.diamondContainer.add(enemy.diamondsReward) +
-          this.treasureContainer.add(enemy.coinsReward);
+        const rewardChoices = this.diamondContainer.add(enemy.diamondsReward);
+
+        this.coinContainer.add(enemy.coinsReward);
 
         if (emeraldsReward > 0) {
           this.emeraldContainer.add(emeraldsReward);
@@ -231,7 +247,7 @@ export class Game extends Scene {
 
         if (rewardChoices > 0) {
           this.time.delayedCall(
-            RewardContainer.rewardIssueAnimationDelayMs,
+            ResourceContainer.filledAnimationDelayMs,
             () => {
               this.levelUpRewardController.enqueueRewards(rewardChoices);
             },
@@ -241,11 +257,11 @@ export class Game extends Scene {
     });
   }
 
-  private updateRewardContainersVisibility() {
-    const isVisible = this.levelController.shouldShowRewardContainers();
+  private updateResourceContainersVisibility() {
+    const isVisible = this.levelController.shouldShowResourceContainers();
 
     this.diamondContainer.setVisible(isVisible);
-    this.treasureContainer.setVisible(isVisible);
+    this.coinContainer.setVisible(isVisible);
   }
 
   private updateShopModalVisibility() {
@@ -256,5 +272,40 @@ export class Game extends Scene {
     if (!isVisible) {
       this.shopModal.close();
     }
+  }
+
+  private getPlayerDeathContinueOption() {
+    if (this.player.profile.getDeathContinueCount() <= 0) {
+      return {
+        label: "РџСЂРѕРґРѕР»Р¶РёС‚СЊ Р·Р° СЂРµРєР»Р°РјСѓ",
+        isEnabled: true,
+        onContinue: () => {
+          this.player.profile.incrementDeathContinueCount();
+          this.restorePlayerAfterDeath();
+        },
+      };
+    }
+
+    const cost = Game.deathContinueEmeraldCost;
+
+    return {
+      label: `РџСЂРѕРґРѕР»Р¶РёС‚СЊ Р·Р° ${cost}`,
+      isEnabled: this.wallet.canWithdraw(cost),
+      onContinue: () => {
+        if (!this.wallet.withdraw(cost)) {
+          return;
+        }
+
+        this.player.profile.incrementDeathContinueCount();
+        this.restorePlayerAfterDeath();
+      },
+    };
+  }
+
+  private restorePlayerAfterDeath() {
+    this.player.restoreFromAd();
+    this.backgroundMusicController.resume();
+    this.pauseController.resume("player-death");
+    this.playerDeathModal.hide();
   }
 }

@@ -4,6 +4,7 @@ export type PlayerProfileSnapshot = {
   purchasedItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
+  deathContinueCount: number;
 };
 
 type StoredPlayerProfile = {
@@ -13,6 +14,7 @@ type StoredPlayerProfile = {
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
+  deathContinueCount?: number;
 };
 
 type StoredLegacyWallet = {
@@ -32,6 +34,7 @@ export class PlayerProfile {
   private purchasedItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
+  private deathContinueCount: number;
 
   constructor() {
     const profile = this.loadProfile();
@@ -41,6 +44,7 @@ export class PlayerProfile {
     this.purchasedItemIds = profile.purchasedItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
+    this.deathContinueCount = profile.deathContinueCount;
     this.normalizeProfile();
     this.save();
   }
@@ -138,6 +142,17 @@ export class PlayerProfile {
     return this.globalLevel;
   }
 
+  getDeathContinueCount() {
+    return this.deathContinueCount;
+  }
+
+  incrementDeathContinueCount() {
+    this.deathContinueCount += 1;
+    this.save();
+
+    return this.deathContinueCount;
+  }
+
   getSnapshot(): PlayerProfileSnapshot {
     return {
       id: this.id,
@@ -145,6 +160,7 @@ export class PlayerProfile {
       purchasedItemIds: this.getPurchasedItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
+      deathContinueCount: this.deathContinueCount,
     };
   }
 
@@ -174,6 +190,10 @@ export class PlayerProfile {
             ? profile.equippedItemId
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
+        deathContinueCount:
+          typeof profile.deathContinueCount === "number"
+            ? Math.max(0, Math.floor(profile.deathContinueCount))
+            : 0,
       };
     } catch {
       return this.getDefaultProfile();
@@ -187,6 +207,7 @@ export class PlayerProfile {
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
+      deathContinueCount: 0,
     };
   }
 

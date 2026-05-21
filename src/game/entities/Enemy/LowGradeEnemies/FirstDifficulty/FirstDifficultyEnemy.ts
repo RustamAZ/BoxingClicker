@@ -60,8 +60,8 @@ export class FirstDifficultyEnemy extends Enemy {
     max: 16,
   };
   private static readonly coinsRewardRange = {
-    min: 8,
-    max: 16,
+    min: 4,
+    max: 8,
   };
   private static readonly emeraldDropChance = 0.08;
   private static readonly damagePerHitRange = {

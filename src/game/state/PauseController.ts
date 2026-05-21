@@ -4,6 +4,7 @@ export type PauseReason =
   | "settings"
   | "level-up-reward"
   | "player-death"
+  | "loot-case"
   | "shop";
 type PauseChangeCallback = (isPaused: boolean) => void;
 

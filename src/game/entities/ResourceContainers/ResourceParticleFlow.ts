@@ -5,10 +5,10 @@ type Point = {
   y: number;
 };
 
-type RewardParticleFlowConfig = {
+type ResourceParticleFlowConfig = {
   from: Point;
   diamondTarget: Point;
-  treasureTarget: Point;
+  coinTarget: Point;
   emeraldTarget?: Point;
   diamondsCount: number;
   coinsCount: number;
@@ -26,7 +26,7 @@ type ParticleTextureKey =
   | "coin-particle"
   | "emerald-particle";
 
-export class RewardParticleFlow {
+export class ResourceParticleFlow {
   private static readonly diamondParticleTextureKey: ParticleTextureKey =
     "diamond-particle";
   private static readonly coinParticleTextureKey: ParticleTextureKey =
@@ -40,23 +40,23 @@ export class RewardParticleFlow {
   private static readonly emeraldParticlePath =
     "assets/images/rewards/particles/emerald-particle.png";
   private static readonly particleScales: Record<ParticleTextureKey, number> = {
-    [RewardParticleFlow.diamondParticleTextureKey]: 2.55,
-    [RewardParticleFlow.coinParticleTextureKey]: 2.4,
-    [RewardParticleFlow.emeraldParticleTextureKey]: 1,
+    [ResourceParticleFlow.diamondParticleTextureKey]: 2.55,
+    [ResourceParticleFlow.coinParticleTextureKey]: 2.4,
+    [ResourceParticleFlow.emeraldParticleTextureKey]: 1,
   };
   private static readonly particleScatterDurationMs = 260;
   private static readonly particleAttractDurationMs = 680;
   private static readonly particleDelayMaxMs = 140;
   private static readonly particleFlightDurationMs =
-    RewardParticleFlow.particleScatterDurationMs +
-    RewardParticleFlow.particleAttractDurationMs;
+    ResourceParticleFlow.particleScatterDurationMs +
+    ResourceParticleFlow.particleAttractDurationMs;
   private static readonly emitterDestroyDelayMs =
-    RewardParticleFlow.particleFlightDurationMs +
-    RewardParticleFlow.particleDelayMaxMs +
+    ResourceParticleFlow.particleFlightDurationMs +
+    ResourceParticleFlow.particleDelayMaxMs +
     160;
-  private static readonly rewardApplyDelayMs =
-    RewardParticleFlow.particleFlightDurationMs +
-    RewardParticleFlow.particleDelayMaxMs;
+  private static readonly resourceApplyDelayMs =
+    ResourceParticleFlow.particleFlightDurationMs +
+    ResourceParticleFlow.particleDelayMaxMs;
   private static readonly spawnOffsetY = -120;
   private static readonly scatterDistanceRanges = [
     {
@@ -80,29 +80,29 @@ export class RewardParticleFlow {
 
   static preload(scene: Scene) {
     scene.load.image(
-      RewardParticleFlow.diamondParticleTextureKey,
-      RewardParticleFlow.diamondParticlePath,
+      ResourceParticleFlow.diamondParticleTextureKey,
+      ResourceParticleFlow.diamondParticlePath,
     );
     scene.load.image(
-      RewardParticleFlow.coinParticleTextureKey,
-      RewardParticleFlow.coinParticlePath,
+      ResourceParticleFlow.coinParticleTextureKey,
+      ResourceParticleFlow.coinParticlePath,
     );
     scene.load.image(
-      RewardParticleFlow.emeraldParticleTextureKey,
-      RewardParticleFlow.emeraldParticlePath,
+      ResourceParticleFlow.emeraldParticleTextureKey,
+      ResourceParticleFlow.emeraldParticlePath,
     );
   }
 
   constructor(private readonly scene: Scene) {}
 
-  play(config: RewardParticleFlowConfig) {
+  play(config: ResourceParticleFlowConfig) {
     const diamondsCount = Math.max(0, Math.floor(config.diamondsCount));
     const coinsCount = Math.max(0, Math.floor(config.coinsCount));
     const emeraldsCount = Math.max(0, Math.floor(config.emeraldsCount ?? 0));
 
     if (diamondsCount > 0) {
       this.emitParticles(
-        RewardParticleFlow.diamondParticleTextureKey,
+        ResourceParticleFlow.diamondParticleTextureKey,
         diamondsCount,
         config.from,
         config.diamondTarget,
@@ -111,16 +111,16 @@ export class RewardParticleFlow {
 
     if (coinsCount > 0) {
       this.emitParticles(
-        RewardParticleFlow.coinParticleTextureKey,
+        ResourceParticleFlow.coinParticleTextureKey,
         coinsCount,
         config.from,
-        config.treasureTarget,
+        config.coinTarget,
       );
     }
 
     if (emeraldsCount > 0 && config.emeraldTarget) {
       this.emitParticles(
-        RewardParticleFlow.emeraldParticleTextureKey,
+        ResourceParticleFlow.emeraldParticleTextureKey,
         emeraldsCount,
         config.from,
         config.emeraldTarget,
@@ -128,7 +128,7 @@ export class RewardParticleFlow {
     }
 
     this.scene.time.delayedCall(
-      RewardParticleFlow.rewardApplyDelayMs,
+      ResourceParticleFlow.resourceApplyDelayMs,
       () => {
         config.onComplete?.();
       },
@@ -143,7 +143,7 @@ export class RewardParticleFlow {
   ) {
     const emitPoint = {
       x: from.x,
-      y: from.y + RewardParticleFlow.spawnOffsetY,
+      y: from.y + ResourceParticleFlow.spawnOffsetY,
     };
     const particleMotions = new WeakMap<
       Phaser.GameObjects.Particles.Particle,
@@ -153,14 +153,14 @@ export class RewardParticleFlow {
       .particles(0, 0, textureKey, {
         emitting: false,
         lifespan: {
-          min: RewardParticleFlow.particleFlightDurationMs - 120,
-          max: RewardParticleFlow.particleFlightDurationMs + 80,
+          min: ResourceParticleFlow.particleFlightDurationMs - 120,
+          max: ResourceParticleFlow.particleFlightDurationMs + 80,
         },
         delay: {
           min: 0,
-          max: RewardParticleFlow.particleDelayMaxMs,
+          max: ResourceParticleFlow.particleDelayMaxMs,
         },
-        scale: RewardParticleFlow.getParticleScale(textureKey),
+        scale: ResourceParticleFlow.getParticleScale(textureKey),
         rotate: {
           min: -180,
           max: 180,
@@ -179,7 +179,7 @@ export class RewardParticleFlow {
               particle,
             );
 
-            return RewardParticleFlow.getParticlePositionOnAxis(
+            return ResourceParticleFlow.getParticlePositionOnAxis(
               progress,
               emitPoint.x,
               motion.scatterX,
@@ -201,7 +201,7 @@ export class RewardParticleFlow {
               particle,
             );
 
-            return RewardParticleFlow.getParticlePositionOnAxis(
+            return ResourceParticleFlow.getParticlePositionOnAxis(
               progress,
               emitPoint.y,
               motion.scatterY,
@@ -210,12 +210,12 @@ export class RewardParticleFlow {
           },
         },
       })
-      .setDepth(RewardParticleFlow.depth);
+      .setDepth(ResourceParticleFlow.depth);
 
     emitter.explode(count);
 
     this.scene.time.delayedCall(
-      RewardParticleFlow.emitterDestroyDelayMs,
+      ResourceParticleFlow.emitterDestroyDelayMs,
       () => {
         emitter.destroy();
       },
@@ -235,7 +235,7 @@ export class RewardParticleFlow {
     }
 
     const angle = Math.random() * Math.PI * 2;
-    const distance = RewardParticleFlow.getRandomScatterDistance();
+    const distance = ResourceParticleFlow.getRandomScatterDistance();
 
     particleMotions.set(particle, {
       scatterX: from.x + Math.cos(angle) * distance,
@@ -243,7 +243,7 @@ export class RewardParticleFlow {
         from.y +
         Math.sin(angle) *
           distance *
-          RewardParticleFlow.scatterVerticalStretch,
+          ResourceParticleFlow.scatterVerticalStretch,
     });
   }
 
@@ -269,25 +269,25 @@ export class RewardParticleFlow {
     target: number,
   ) {
     const scatterProgress =
-      RewardParticleFlow.particleScatterDurationMs /
-      RewardParticleFlow.particleFlightDurationMs;
+      ResourceParticleFlow.particleScatterDurationMs /
+      ResourceParticleFlow.particleFlightDurationMs;
 
     if (progress <= scatterProgress) {
       const normalizedProgress = progress / scatterProgress;
-      const easedProgress = RewardParticleFlow.easeOutQuad(
+      const easedProgress = ResourceParticleFlow.easeOutQuad(
         normalizedProgress,
       );
 
-      return RewardParticleFlow.lerp(from, scatter, easedProgress);
+      return ResourceParticleFlow.lerp(from, scatter, easedProgress);
     }
 
     const normalizedProgress =
       (progress - scatterProgress) / (1 - scatterProgress);
-    const easedProgress = RewardParticleFlow.easeInQuad(
+    const easedProgress = ResourceParticleFlow.easeInQuad(
       normalizedProgress,
     );
 
-    return RewardParticleFlow.lerp(scatter, target, easedProgress);
+    return ResourceParticleFlow.lerp(scatter, target, easedProgress);
   }
 
   private static lerp(from: number, to: number, progress: number) {
@@ -307,26 +307,26 @@ export class RewardParticleFlow {
   }
 
   private static getRandomScatterDistance() {
-    const totalWeight = RewardParticleFlow.scatterDistanceRanges.reduce(
+    const totalWeight = ResourceParticleFlow.scatterDistanceRanges.reduce(
       (sum, range) => sum + range.weight,
       0,
     );
     let randomWeight = Math.random() * totalWeight;
 
-    for (const range of RewardParticleFlow.scatterDistanceRanges) {
+    for (const range of ResourceParticleFlow.scatterDistanceRanges) {
       randomWeight -= range.weight;
 
       if (randomWeight <= 0) {
-        return RewardParticleFlow.randomBetween(range.min, range.max);
+        return ResourceParticleFlow.randomBetween(range.min, range.max);
       }
     }
 
     const fallbackRange =
-      RewardParticleFlow.scatterDistanceRanges[
-        RewardParticleFlow.scatterDistanceRanges.length - 1
+      ResourceParticleFlow.scatterDistanceRanges[
+        ResourceParticleFlow.scatterDistanceRanges.length - 1
       ];
 
-    return RewardParticleFlow.randomBetween(
+    return ResourceParticleFlow.randomBetween(
       fallbackRange.min,
       fallbackRange.max,
     );
@@ -337,6 +337,6 @@ export class RewardParticleFlow {
   }
 
   private static getParticleScale(textureKey: ParticleTextureKey) {
-    return RewardParticleFlow.particleScales[textureKey];
+    return ResourceParticleFlow.particleScales[textureKey];
   }
 }

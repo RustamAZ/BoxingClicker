@@ -5,6 +5,14 @@ import type { PauseController } from "../state/PauseController";
 type PlayerDeathButton = {
   background: GameObjects.Rectangle;
   label: GameObjects.Text;
+  enabled: boolean;
+  baseFillColor: number;
+};
+
+export type PlayerDeathContinueOption = {
+  label: string;
+  isEnabled: boolean;
+  onContinue: () => void;
 };
 
 export class PlayerDeathModal {
@@ -12,15 +20,15 @@ export class PlayerDeathModal {
   private static readonly actionLockDurationMs = 300;
   private static readonly soundKey = "player-death";
   private static readonly soundPath = "assets/audio/ui/player-death.mp3";
-  private static readonly deathSoundVolume = 0.3;
-  private static readonly restartSoundVolume = 0.58;
+  private static readonly deathSoundVolume = 0.8;
 
   private readonly overlay: GameObjects.Rectangle;
   private readonly panel: GameObjects.Rectangle;
   private readonly title: GameObjects.Text;
   private readonly subtitle: GameObjects.Text;
   private readonly restartButton: PlayerDeathButton;
-  private readonly continueForAdButton: PlayerDeathButton;
+  private readonly continueButton: PlayerDeathButton;
+  private onContinue?: () => void;
   private isActionLocked = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
@@ -32,7 +40,6 @@ export class PlayerDeathModal {
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly onRestart: () => void,
-    private readonly onRestoreFromAd: () => void,
   ) {
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.68)
@@ -76,13 +83,13 @@ export class PlayerDeathModal {
       "Начать заново",
       () => this.restart(),
     );
-    this.continueForAdButton = this.createButton(
+    this.continueButton = this.createButton(
       512,
       456,
       280,
       48,
       "Продолжить за рекламу",
-      () => this.onRestoreFromAd(),
+      () => this.onContinue?.(),
     );
 
     this.hide();
@@ -92,11 +99,12 @@ export class PlayerDeathModal {
     return this.pauseController.has("player-death");
   }
 
-  show() {
+  show(continueOption: PlayerDeathContinueOption) {
     if (this.isShown) {
       return;
     }
 
+    this.setContinueOption(continueOption);
     this.pauseController.pause("player-death");
     this.playDeathSound();
     this.isActionLocked = true;
@@ -114,6 +122,7 @@ export class PlayerDeathModal {
   }
 
   hide() {
+    this.onContinue = undefined;
     this.isActionLocked = false;
     this.clearUnlockActionTimer();
     this.setVisible(false);
@@ -151,21 +160,33 @@ export class PlayerDeathModal {
       .setResolution(2)
       .setDepth(PlayerDeathModal.depth + 3);
 
+    const button = {
+      background,
+      label,
+      enabled: true,
+      baseFillColor: 0x2d2d2d,
+    };
+
     background.on("pointerdown", () => {
+      if (this.isActionLocked || !button.enabled) {
+        return;
+      }
+
       UiSoundPlayer.playClick(this.scene);
       onClick();
     });
     background.on("pointerover", () => {
+      if (!button.enabled) {
+        return;
+      }
+
       background.setFillStyle(0x3a3a3a, 0.98);
     });
     background.on("pointerout", () => {
-      background.setFillStyle(0x2d2d2d, 0.95);
+      this.applyButtonFill(button);
     });
 
-    return {
-      background,
-      label,
-    };
+    return button;
   }
 
   private setVisible(visible: boolean) {
@@ -174,7 +195,7 @@ export class PlayerDeathModal {
     this.title.setVisible(visible);
     this.subtitle.setVisible(visible);
     this.setButtonVisible(this.restartButton, visible);
-    this.setButtonVisible(this.continueForAdButton, visible);
+    this.setButtonVisible(this.continueButton, visible);
 
     if (visible) {
       this.overlay.setInteractive();
@@ -187,7 +208,7 @@ export class PlayerDeathModal {
     button.background.setVisible(visible);
     button.label.setVisible(visible);
 
-    if (visible) {
+    if (visible && button.enabled) {
       button.background.setInteractive({ useHandCursor: true });
     } else {
       button.background.disableInteractive();
@@ -196,14 +217,14 @@ export class PlayerDeathModal {
 
   private setButtonsInteractive(isInteractive: boolean) {
     this.setButtonInteractive(this.restartButton, isInteractive);
-    this.setButtonInteractive(this.continueForAdButton, isInteractive);
+    this.setButtonInteractive(this.continueButton, isInteractive);
   }
 
   private setButtonInteractive(
     button: PlayerDeathButton,
     isInteractive: boolean,
   ) {
-    if (isInteractive && button.background.visible) {
+    if (isInteractive && button.enabled && button.background.visible) {
       button.background.setInteractive({ useHandCursor: true });
     } else {
       button.background.disableInteractive();
@@ -219,5 +240,24 @@ export class PlayerDeathModal {
     this.scene.sound.play(PlayerDeathModal.soundKey, {
       volume: PlayerDeathModal.deathSoundVolume,
     });
+  }
+
+  private setContinueOption(option: PlayerDeathContinueOption) {
+    this.onContinue = option.onContinue;
+    this.continueButton.label.setText(option.label);
+    this.continueButton.enabled = option.isEnabled;
+    this.continueButton.label.setAlpha(option.isEnabled ? 1 : 0.55);
+    this.applyButtonFill(this.continueButton);
+  }
+
+  private applyButtonFill(button: PlayerDeathButton) {
+    if (button.enabled) {
+      button.background.setFillStyle(button.baseFillColor, 0.95);
+      button.background.setAlpha(1);
+      return;
+    }
+
+    button.background.setFillStyle(0x1f1f1f, 0.72);
+    button.background.setAlpha(0.72);
   }
 }
