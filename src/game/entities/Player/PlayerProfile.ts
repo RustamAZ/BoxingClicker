@@ -3,6 +3,7 @@ export type PlayerProfileSnapshot = {
   emeralds: number;
   purchasedItemIds: string[];
   equippedItemId: string;
+  globalLevel: number;
 };
 
 type StoredPlayerProfile = {
@@ -10,6 +11,8 @@ type StoredPlayerProfile = {
   emeralds?: number;
   purchasedItemIds?: string[];
   equippedItemId?: string;
+  globalLevel?: number;
+  currentLevel?: number;
 };
 
 type StoredLegacyWallet = {
@@ -28,6 +31,7 @@ export class PlayerProfile {
   private emeralds: number;
   private purchasedItemIds: string[];
   private equippedItemId: string;
+  private globalLevel: number;
 
   constructor() {
     const profile = this.loadProfile();
@@ -36,6 +40,7 @@ export class PlayerProfile {
     this.emeralds = profile.emeralds;
     this.purchasedItemIds = profile.purchasedItemIds;
     this.equippedItemId = profile.equippedItemId;
+    this.globalLevel = profile.globalLevel;
     this.normalizeProfile();
     this.save();
   }
@@ -116,12 +121,30 @@ export class PlayerProfile {
     return true;
   }
 
+  getGlobalLevel() {
+    return this.globalLevel;
+  }
+
+  setGlobalLevel(level: number) {
+    const safeLevel = Math.max(1, Math.floor(level));
+
+    if (this.globalLevel === safeLevel) {
+      return this.globalLevel;
+    }
+
+    this.globalLevel = safeLevel;
+    this.save();
+
+    return this.globalLevel;
+  }
+
   getSnapshot(): PlayerProfileSnapshot {
     return {
       id: this.id,
       emeralds: this.emeralds,
       purchasedItemIds: this.getPurchasedItemIds(),
       equippedItemId: this.equippedItemId,
+      globalLevel: this.globalLevel,
     };
   }
 
@@ -150,6 +173,7 @@ export class PlayerProfile {
           typeof profile.equippedItemId === "string"
             ? profile.equippedItemId
             : PlayerProfile.defaultEquippedItemId,
+        globalLevel: this.getStoredGlobalLevel(profile),
       };
     } catch {
       return this.getDefaultProfile();
@@ -162,6 +186,7 @@ export class PlayerProfile {
       emeralds: this.loadLegacyEmeralds(),
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
+      globalLevel: 1,
     };
   }
 
@@ -180,7 +205,9 @@ export class PlayerProfile {
 
   private loadLegacyEmeralds() {
     try {
-      const rawWallet = localStorage.getItem(PlayerProfile.legacyWalletStorageKey);
+      const rawWallet = localStorage.getItem(
+        PlayerProfile.legacyWalletStorageKey,
+      );
 
       if (!rawWallet) {
         return 0;
@@ -202,6 +229,18 @@ export class PlayerProfile {
     }
 
     return `player-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  }
+
+  private getStoredGlobalLevel(profile: StoredPlayerProfile) {
+    if (typeof profile.globalLevel === "number") {
+      return Math.max(1, Math.floor(profile.globalLevel));
+    }
+
+    if (typeof profile.currentLevel === "number") {
+      return Math.max(1, Math.floor(profile.currentLevel));
+    }
+
+    return 1;
   }
 
   private save() {

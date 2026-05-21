@@ -3,7 +3,8 @@ import { PlayerProfile } from "./PlayerProfile";
 export class Player {
   readonly profile = new PlayerProfile();
 
-  level = 1;
+  sessionLevel = 1;
+  globalLevel = this.profile.getGlobalLevel();
   xp = 0;
   xpToNextLevel = 100;
 
@@ -14,7 +15,7 @@ export class Player {
   health = 200;
   maxHealth = 200;
 
-  damagePerHit = 250;
+  damagePerHit = 25;
 
   punchSpeed = 0.9;
   xpPerHit = 2;
@@ -93,10 +94,15 @@ export class Player {
 
     while (this.xp >= this.xpToNextLevel) {
       this.xp -= this.xpToNextLevel;
-      this.level += 1;
+      this.sessionLevel += 1;
+      this.globalLevel += 1;
       levelsGained += 1;
       this.restoreHealthPercent(this.levelUpHealthRestorePercent);
       this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.25);
+    }
+
+    if (levelsGained > 0) {
+      this.profile.setGlobalLevel(this.globalLevel);
     }
 
     return levelsGained;

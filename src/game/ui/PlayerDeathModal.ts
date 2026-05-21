@@ -10,6 +10,10 @@ type PlayerDeathButton = {
 export class PlayerDeathModal {
   private static readonly depth = 1400;
   private static readonly actionLockDurationMs = 300;
+  private static readonly soundKey = "player-death";
+  private static readonly soundPath = "assets/audio/ui/player-death.mp3";
+  private static readonly deathSoundVolume = 0.3;
+  private static readonly restartSoundVolume = 0.58;
 
   private readonly overlay: GameObjects.Rectangle;
   private readonly panel: GameObjects.Rectangle;
@@ -19,6 +23,10 @@ export class PlayerDeathModal {
   private readonly continueForAdButton: PlayerDeathButton;
   private isActionLocked = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
+
+  static preload(scene: Scene) {
+    scene.load.audio(PlayerDeathModal.soundKey, PlayerDeathModal.soundPath);
+  }
 
   constructor(
     private readonly scene: Scene,
@@ -90,6 +98,7 @@ export class PlayerDeathModal {
     }
 
     this.pauseController.pause("player-death");
+    this.playDeathSound();
     this.isActionLocked = true;
     this.clearUnlockActionTimer();
     this.setVisible(true);
@@ -204,5 +213,11 @@ export class PlayerDeathModal {
   private clearUnlockActionTimer() {
     this.unlockActionTimer?.remove();
     this.unlockActionTimer = undefined;
+  }
+
+  private playDeathSound() {
+    this.scene.sound.play(PlayerDeathModal.soundKey, {
+      volume: PlayerDeathModal.deathSoundVolume,
+    });
   }
 }

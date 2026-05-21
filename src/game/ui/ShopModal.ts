@@ -246,6 +246,18 @@ export class ShopModal {
     this.setVisible(false);
   }
 
+  setButtonVisible(visible: boolean) {
+    this.shopButton.hitArea.setVisible(visible);
+    this.shopButton.icon.setVisible(visible);
+
+    if (visible) {
+      this.shopButton.hitArea.setInteractive({ useHandCursor: true });
+    } else {
+      this.shopButton.icon.clearTint();
+      this.shopButton.hitArea.disableInteractive();
+    }
+  }
+
   private refresh() {
     const profile = this.wallet.getPlayer().profile;
     const itemViews = ShopCatalog.getItemViews(profile);

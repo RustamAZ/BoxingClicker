@@ -59,6 +59,7 @@ export class Game extends Scene {
     GameHud.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
+    PlayerDeathModal.preload(this);
     LevelUpRewardController.preload(this);
     RewardParticleFlow.preload(this);
     DiamondContainer.preload(this);
@@ -148,6 +149,7 @@ export class Game extends Scene {
       this.wallet,
       this.glovesEquipmentController,
     );
+    this.updateShopModalVisibility();
     this.playerDeathModal = new PlayerDeathModal(
       this,
       this.pauseController,
@@ -173,6 +175,7 @@ export class Game extends Scene {
 
     this.background.update();
     this.updateRewardContainersVisibility();
+    this.updateShopModalVisibility();
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
@@ -243,5 +246,15 @@ export class Game extends Scene {
 
     this.diamondContainer.setVisible(isVisible);
     this.treasureContainer.setVisible(isVisible);
+  }
+
+  private updateShopModalVisibility() {
+    const isVisible = this.levelController.shouldShowShopModal();
+
+    this.shopModal.setButtonVisible(isVisible);
+
+    if (!isVisible) {
+      this.shopModal.close();
+    }
   }
 }

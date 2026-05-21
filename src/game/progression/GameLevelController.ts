@@ -69,11 +69,15 @@ export class GameLevelController {
     return !this.isTrainingLevel();
   }
 
+  shouldShowShopModal() {
+    return this.isTrainingLevel();
+  }
+
   private getCurrentLevelConfig() {
     let currentLevel = gameLevelsConfig[0];
 
     for (const nextLevel of gameLevelsConfig.slice(1)) {
-      if (this.player.level < nextLevel.startPlayerLevel) {
+      if (this.player.sessionLevel < nextLevel.startPlayerLevel) {
         break;
       }
 
@@ -92,7 +96,7 @@ export class GameLevelController {
 
     if (
       !currentLevel.boss ||
-      this.player.level < currentLevel.boss.requiredPlayerLevel ||
+      this.player.sessionLevel < currentLevel.boss.requiredPlayerLevel ||
       this.defeatedBossIds.has(currentLevel.boss.id)
     ) {
       return undefined;

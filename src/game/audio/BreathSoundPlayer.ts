@@ -28,7 +28,7 @@ export class BreathSoundPlayer
         ];
 
         this.currentSound = this.scene.sound.add(soundKey, {
-            volume: 0.3
+            volume: 0.2
         });
         this.currentSound.play();
     }

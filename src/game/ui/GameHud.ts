@@ -213,7 +213,7 @@ export class GameHud {
       this.xpBarFull.width * clampedProgress,
       this.xpBarFull.height,
     );
-    this.levelText.setText(String(player.level));
+    this.levelText.setText(String(player.globalLevel));
   }
 
   private updateHealthBar(player: Player) {
