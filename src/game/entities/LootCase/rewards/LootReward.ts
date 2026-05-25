@@ -5,10 +5,9 @@ import type { Wallet } from "../../Wallet/Wallet";
 export type LootRewardId = string;
 
 export type LootRewardRarity =
-  | "wooden"
-  | "golden"
-  | "emerald"
-  | "diamond";
+  | "s"
+  | "m"
+  | "l";
 
 export type LootRewardApplyContext = {
   player: Player;
@@ -60,18 +59,7 @@ export abstract class LootReward {
 }
 
 export const lootRewardRarityColors: Record<LootRewardRarity, number> = {
-  wooden: 0xa66a35,
-  golden: 0xffd05a,
-  emerald: 0x3cff8f,
-  diamond: 0x7ed7ff,
-};
-
-export const lootRewardRarityMultipliers: Record<
-  LootRewardRarity,
-  number
-> = {
-  wooden: 1,
-  golden: 1.75,
-  emerald: 2.75,
-  diamond: 4,
+  s: 0x9a9a9a,
+  m: 0xffd05a,
+  l: 0x7ed7ff,
 };

@@ -81,6 +81,7 @@ export class LootCaseController {
     return {
       reward: this.currentRewards[this.currentRewards.length - 1],
       rewardsCount: this.currentRewards.length,
+      rollerIconTextureKeys: LootRewardFactory.getVisualRewardIconKeys(),
       canRollExtra:
         this.currentRewards.length < LootCaseController.maxRewardsPerCase,
       onContinue: () => {

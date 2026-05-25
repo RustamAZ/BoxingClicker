@@ -112,6 +112,12 @@ export class Player {
     this.health = Math.min(this.maxHealth, this.health + healthToRestore);
   }
 
+  restoreStaminaPercent(percent: number) {
+    const staminaToRestore = this.maxStamina * Math.max(0, percent);
+
+    this.stamina = Math.min(this.maxStamina, this.stamina + staminaToRestore);
+  }
+
   gainXp(amount: number) {
     const xp = Math.max(0, amount);
     let levelsGained = 0;

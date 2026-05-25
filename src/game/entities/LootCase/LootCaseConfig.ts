@@ -10,26 +10,21 @@ export type LootCaseDropConfig = {
 };
 
 export const lootCaseDrops: readonly LootCaseDropConfig[] = [
-  {
-    rewardId: "emerald",
-    rarity: "wooden",
-    weight: 55,
-  },
-  {
-    rewardId: "emerald",
-    rarity: "golden",
-    weight: 28,
-  },
-  {
-    rewardId: "emerald",
-    rarity: "emerald",
-    weight: 13,
-  },
-  {
-    rewardId: "emerald",
-    rarity: "diamond",
-    weight: 4,
-  },
+  { rewardId: "emerald", rarity: "s", weight: 18 },
+  { rewardId: "emerald", rarity: "m", weight: 8 },
+  { rewardId: "emerald", rarity: "l", weight: 3 },
+  { rewardId: "health-potion", rarity: "s", weight: 18 },
+  { rewardId: "health-potion", rarity: "m", weight: 8 },
+  { rewardId: "health-potion", rarity: "l", weight: 3 },
+  { rewardId: "stamina-potion", rarity: "s", weight: 18 },
+  { rewardId: "stamina-potion", rarity: "m", weight: 8 },
+  { rewardId: "stamina-potion", rarity: "l", weight: 3 },
+  { rewardId: "speed-potion", rarity: "s", weight: 18 },
+  { rewardId: "speed-potion", rarity: "m", weight: 8 },
+  { rewardId: "speed-potion", rarity: "l", weight: 3 },
+  { rewardId: "attack-potion", rarity: "s", weight: 18 },
+  { rewardId: "attack-potion", rarity: "m", weight: 8 },
+  { rewardId: "attack-potion", rarity: "l", weight: 3 },
 ];
 
 export function rollLootCaseDrop(

@@ -1,6 +1,10 @@
 import type { Scene } from "phaser";
+import { AttackPotionLootReward } from "./AttackPotionLootReward";
 import { EmeraldLootReward } from "./EmeraldLootReward";
+import { HealthPotionLootReward } from "./HealthPotionLootReward";
 import { PlaceholderLootReward } from "./PlaceholderLootReward";
+import { SpeedPotionLootReward } from "./SpeedPotionLootReward";
+import { StaminaPotionLootReward } from "./StaminaPotionLootReward";
 import type {
   LootReward,
   LootRewardId,
@@ -11,20 +15,27 @@ type LootRewardFactoryFn = (rarity: LootRewardRarity) => LootReward;
 
 export class LootRewardFactory {
   private static readonly placeholderRewardId = "placeholder-reward";
+  private static readonly rarities: LootRewardRarity[] = ["s", "m", "l"];
   private static readonly factories = new Map<
     LootRewardId,
     LootRewardFactoryFn
-  >([["emerald", (rarity) => new EmeraldLootReward(rarity)]]);
+  >([
+    ["emerald", (rarity) => new EmeraldLootReward(rarity)],
+    ["health-potion", (rarity) => new HealthPotionLootReward(rarity)],
+    ["stamina-potion", (rarity) => new StaminaPotionLootReward(rarity)],
+    ["speed-potion", (rarity) => new SpeedPotionLootReward(rarity)],
+    ["attack-potion", (rarity) => new AttackPotionLootReward(rarity)],
+  ]);
 
   static preload(scene: Scene) {
     const preloadedAssetKeys = new Set<string>();
     const rewardsToPreload = [
       LootRewardFactory.create(
         LootRewardFactory.placeholderRewardId,
-        "wooden",
+        "s",
       ),
-      ...Array.from(LootRewardFactory.factories.values()).map((create) =>
-        create("wooden"),
+      ...Array.from(LootRewardFactory.factories.values()).flatMap((create) =>
+        LootRewardFactory.rarities.map((rarity) => create(rarity)),
       ),
     ];
 
@@ -39,6 +50,18 @@ export class LootRewardFactory {
         preloadedAssetKeys.add(reward.applySoundKey);
       }
     });
+  }
+
+  static getVisualRewardIconKeys() {
+    return Array.from(
+      new Set(
+        Array.from(LootRewardFactory.factories.values())
+          .flatMap((create) =>
+            LootRewardFactory.rarities.map((rarity) => create(rarity)),
+          )
+          .map((reward) => reward.getIconTextureKey()),
+      ),
+    );
   }
 
   static register(

@@ -7,9 +7,12 @@ type LootCaseButton = {
   label: GameObjects.Text;
 };
 
+type LootCaseButtonAction = "continue" | "extra";
+
 type LootCaseModalShowConfig = {
   reward: LootReward;
   rewardsCount: number;
+  rollerIconTextureKeys: string[];
   canRollExtra: boolean;
   onContinue: () => void;
   onExtra: () => void;
@@ -17,8 +20,13 @@ type LootCaseModalShowConfig = {
 
 export class LootCaseModal {
   private static readonly depth = 1300;
-  private static readonly rollDurationMs = 1200;
-  private static readonly buttonWidth = 176;
+  private static readonly rollSteps = 17;
+  private static readonly minRollStepDelayMs = 45;
+  private static readonly maxRollStepDelayMs = 210;
+  private static readonly rollingIconSize = 72;
+  private static readonly rewardIconSize = 94;
+  private static readonly rewardIconStartSize = 28;
+  private static readonly buttonWidth = 190;
   private static readonly buttonHeight = 48;
 
   private readonly overlay: GameObjects.Rectangle;
@@ -35,6 +43,7 @@ export class LootCaseModal {
   private onContinue?: () => void;
   private onExtra?: () => void;
   private isRolling = false;
+  private isActionLocked = false;
 
   constructor(private readonly scene: Scene) {
     const centerX = this.scene.scale.width / 2;
@@ -86,7 +95,10 @@ export class LootCaseModal {
 
     this.rewardIcon = this.scene.add
       .image(centerX, centerY - 8, "loot-case-placeholder-icon")
-      .setDisplaySize(64, 64)
+      .setDisplaySize(
+        LootCaseModal.rewardIconSize,
+        LootCaseModal.rewardIconSize,
+      )
       .setDepth(LootCaseModal.depth + 3)
       .setVisible(false);
 
@@ -117,18 +129,17 @@ export class LootCaseModal {
       .setVisible(false);
 
     this.continueButton = this.createButton(
-      centerX - 102,
+      centerX - 108,
       centerY + 154,
-      "Продолжить",
-      () => this.handleContinue(),
+      "Получить",
+      "continue",
     );
     this.extraButton = this.createButton(
-      centerX + 102,
+      centerX + 108,
       centerY + 154,
-      "Еще",
-      () => this.handleExtra(),
+      "Получить еще",
+      "extra",
     );
-
     this.hide();
   }
 
@@ -143,30 +154,24 @@ export class LootCaseModal {
     this.onContinue = config.onContinue;
     this.onExtra = config.onExtra;
     this.isRolling = true;
+    this.isActionLocked = false;
     this.clearRollTimer();
-    this.setReward(config.reward, config.rewardsCount);
-    this.loaderText.setText("Rolling...");
-    this.loaderText.setVisible(true);
-    this.setRewardVisible(false);
+    this.loaderText.setText("");
+    this.loaderText.setVisible(false);
+    this.rewardSlot.setFillStyle(0x555555, 0.96);
+    this.rewardSlot.setStrokeStyle(2, 0xffffff, 0.48);
+    this.setRollingRewardVisible(true);
+    this.rewardTitle.setVisible(false);
+    this.rewardDescription.setVisible(false);
     this.setButtonsVisible(false, false);
-
-    this.rollTimer = this.scene.time.delayedCall(
-      LootCaseModal.rollDurationMs,
-      () => {
-        this.isRolling = false;
-        this.rollTimer = undefined;
-        this.loaderText.setText("");
-        this.loaderText.setVisible(false);
-        this.setRewardVisible(true);
-        this.setButtonsVisible(true, config.canRollExtra);
-      },
-    );
+    this.playRollStep(config, 0);
   }
 
   hide() {
     this.onContinue = undefined;
     this.onExtra = undefined;
     this.isRolling = false;
+    this.isActionLocked = false;
     this.clearRollTimer();
     this.setVisible(false);
   }
@@ -175,7 +180,7 @@ export class LootCaseModal {
     x: number,
     y: number,
     text: string,
-    onClick: () => void,
+    action: LootCaseButtonAction,
   ): LootCaseButton {
     const background = this.scene.add
       .rectangle(
@@ -203,15 +208,29 @@ export class LootCaseModal {
       .setDepth(LootCaseModal.depth + 3)
       .setVisible(false);
 
-    background.on("pointerdown", () => {
-      if (this.isRolling) {
+    background.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+
+        if (this.isRolling || this.isActionLocked) {
+          return;
+        }
+
+        UiSoundPlayer.playClick(this.scene);
+        this.handleButtonAction(action);
+      },
+    );
+    background.on("pointerover", () => {
+      if (this.isRolling || this.isActionLocked) {
         return;
       }
 
-      UiSoundPlayer.playClick(this.scene);
-      onClick();
-    });
-    background.on("pointerover", () => {
       background.setFillStyle(0x3a3a3a, 0.98);
     });
     background.on("pointerout", () => {
@@ -232,11 +251,30 @@ export class LootCaseModal {
   }
 
   private handleContinue() {
+    if (this.isActionLocked) {
+      return;
+    }
+
+    this.isActionLocked = true;
     this.onContinue?.();
   }
 
   private handleExtra() {
+    if (this.isActionLocked) {
+      return;
+    }
+
+    this.isActionLocked = true;
     this.onExtra?.();
+  }
+
+  private handleButtonAction(action: LootCaseButtonAction) {
+    if (action === "continue") {
+      this.handleContinue();
+      return;
+    }
+
+    this.handleExtra();
   }
 
   private setVisible(visible: boolean) {
@@ -266,6 +304,11 @@ export class LootCaseModal {
     this.rewardDescription.setVisible(visible);
   }
 
+  private setRollingRewardVisible(visible: boolean) {
+    this.rewardSlot.setVisible(visible);
+    this.rewardIcon.setVisible(visible);
+  }
+
   private setButtonVisible(button: LootCaseButton, visible: boolean) {
     button.background.setVisible(visible);
     button.label.setVisible(visible);
@@ -280,5 +323,75 @@ export class LootCaseModal {
   private clearRollTimer() {
     this.rollTimer?.remove();
     this.rollTimer = undefined;
+  }
+
+  private playRollStep(config: LootCaseModalShowConfig, step: number) {
+    if (step >= LootCaseModal.rollSteps) {
+      this.finishRoll(config);
+      return;
+    }
+
+    const visualIconKeys = config.rollerIconTextureKeys;
+    const iconTextureKey =
+      visualIconKeys[Math.floor(Math.random() * visualIconKeys.length)] ??
+      config.reward.getIconTextureKey();
+    const targetScale = this.getRewardIconScale(
+      iconTextureKey,
+      LootCaseModal.rewardIconSize,
+    );
+
+    this.scene.tweens.killTweensOf(this.rewardIcon);
+    this.rewardIcon
+      .setTexture(iconTextureKey)
+      .setScale(
+        this.getRewardIconScale(iconTextureKey, LootCaseModal.rollingIconSize),
+      )
+      .setAlpha(1)
+      .setVisible(true);
+
+    this.scene.tweens.add({
+      targets: this.rewardIcon,
+      scaleX: targetScale,
+      scaleY: targetScale,
+      duration: 38,
+      ease: "Quad.easeOut",
+    });
+
+    const progress = step / Math.max(1, LootCaseModal.rollSteps - 1);
+    const delay =
+      LootCaseModal.minRollStepDelayMs +
+      (LootCaseModal.maxRollStepDelayMs - LootCaseModal.minRollStepDelayMs) *
+        progress ** 1.75;
+
+    this.rollTimer = this.scene.time.delayedCall(delay, () => {
+      this.playRollStep(config, step + 1);
+    });
+  }
+
+  private finishRoll(config: LootCaseModalShowConfig) {
+    this.isRolling = false;
+    this.rollTimer = undefined;
+    this.scene.tweens.killTweensOf(this.rewardIcon);
+    this.setReward(config.reward, config.rewardsCount);
+    this.setRewardVisible(true);
+    this.rewardIcon
+      .setTexture(config.reward.getIconTextureKey())
+      .setDisplaySize(
+        LootCaseModal.rewardIconSize,
+        LootCaseModal.rewardIconSize,
+      )
+      .setDepth(LootCaseModal.depth + 3)
+      .setAlpha(1)
+      .setVisible(true);
+    this.setButtonsVisible(true, config.canRollExtra);
+  }
+
+  private getRewardIconScale(textureKey: string, targetSize: number) {
+    const texture = this.scene.textures.get(textureKey);
+    const source = texture.getSourceImage() as HTMLImageElement;
+    const width = source.width || targetSize;
+    const height = source.height || targetSize;
+
+    return Math.min(targetSize / width, targetSize / height);
   }
 }
