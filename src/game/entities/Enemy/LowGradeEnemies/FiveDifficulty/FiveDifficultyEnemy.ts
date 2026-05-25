@@ -1,4 +1,6 @@
 import { GameObjects, Scene } from "phaser";
+import { fiveEnemyConfig } from "../../../../configs/enemies/five";
+import { toEnemyStatRange } from "../../../../configs/enemies/types";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
@@ -58,32 +60,6 @@ export class FiveDifficultyEnemy extends Enemy {
       },
     ],
   ];
-  private static readonly healthRange = {
-    min: 560,
-    max: 740,
-  };
-  private static readonly xpRewardRange = {
-    min: 240,
-    max: 360,
-  };
-  private static readonly diamondsRewardRange = {
-    min: 30,
-    max: 46,
-  };
-  private static readonly coinsRewardRange = {
-    min: 28,
-    max: 44,
-  };
-  private static readonly emeraldDropChance = 0.16;
-  private static readonly damagePerHitRange = {
-    min: 22,
-    max: 40,
-  };
-  private static readonly attackCooldownSecondsRange = {
-    min: 0.7,
-    max: 1.25,
-  };
-
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
   private readonly deathSpriteKey: string;
@@ -101,14 +77,14 @@ export class FiveDifficultyEnemy extends Enemy {
 
     super({
       displayName: aliveSprite.displayName,
-      maxHealth: randomInt(FiveDifficultyEnemy.healthRange),
-      xpReward: randomInt(FiveDifficultyEnemy.xpRewardRange),
-      diamondsReward: randomInt(FiveDifficultyEnemy.diamondsRewardRange),
-      coinsReward: randomInt(FiveDifficultyEnemy.coinsRewardRange),
-      emeraldDropChance: FiveDifficultyEnemy.emeraldDropChance,
-      damagePerHit: randomInt(FiveDifficultyEnemy.damagePerHitRange),
+      maxHealth: randomInt(toEnemyStatRange(fiveEnemyConfig.health_range)),
+      xpReward: fiveEnemyConfig.xp_reward,
+      diamondsReward: fiveEnemyConfig.buff_container_reward,
+      coinsReward: fiveEnemyConfig.lootbox_container_reward,
+      emeraldDropChance: fiveEnemyConfig.emerald_drop_chance,
+      damagePerHit: randomInt(toEnemyStatRange(fiveEnemyConfig.damage_range)),
       attackCooldownSeconds: randomFloat(
-        FiveDifficultyEnemy.attackCooldownSecondsRange,
+        toEnemyStatRange(fiveEnemyConfig.attack_speed_range),
       ),
     });
 

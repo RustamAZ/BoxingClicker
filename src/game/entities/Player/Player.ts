@@ -1,3 +1,5 @@
+import { playerConfig } from "../../configs/player";
+import { getXpToNextLevel } from "../../configs/playerLevelUp";
 import { PlayerProfile } from "./PlayerProfile";
 
 export type PlayerStat =
@@ -25,20 +27,20 @@ export class Player {
   sessionLevel = 1;
   globalLevel = this.profile.getGlobalLevel();
   xp = 0;
-  xpToNextLevel = 100;
+  xpToNextLevel = getXpToNextLevel(this.sessionLevel);
 
-  stamina = 200;
-  maxStamina = 200;
-  staminaRegenPerSecond = 18;
+  stamina = playerConfig.player_start.stamina;
+  maxStamina = playerConfig.player_start.stamina;
+  staminaRegenPerSecond = playerConfig.player_start.stamina_regen_per_second;
 
-  health = 200;
-  maxHealth = 200;
+  health = playerConfig.player_start.health;
+  maxHealth = playerConfig.player_start.health;
 
-  damagePerHit = 250;
+  damagePerHit = playerConfig.player_start.attack;
 
-  punchSpeed = 2;
+  punchSpeed = playerConfig.player_start.attack_speed;
   xpPerHit = 2;
-  staminaCostPerHit = 8;
+  staminaCostPerHit = playerConfig.player_start.stamina_cost_per_hit;
 
   lowStaminaPercent = 0.15;
   lowHealthPercent = 0.25;
@@ -106,6 +108,10 @@ export class Player {
     this.health = this.maxHealth;
   }
 
+  restoreStamina() {
+    this.stamina = this.maxStamina;
+  }
+
   restoreHealthPercent(percent: number) {
     const healthToRestore = this.maxHealth * Math.max(0, percent);
 
@@ -130,7 +136,7 @@ export class Player {
       this.globalLevel += 1;
       levelsGained += 1;
       this.restoreHealthPercent(this.levelUpHealthRestorePercent);
-      this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.25);
+      this.xpToNextLevel = getXpToNextLevel(this.sessionLevel);
     }
 
     if (levelsGained > 0) {
@@ -199,7 +205,7 @@ export class Player {
 
   restoreFromAd() {
     this.health = this.maxHealth;
-    this.stamina = this.maxStamina;
+    this.restoreStamina();
   }
 
   isLowHealth() {
@@ -252,7 +258,7 @@ export class Player {
         break;
       case "stamina-cost":
         this.staminaCostPerHit = Math.max(
-          1,
+          playerConfig.player_limits.minimum_stamina_cost_per_hit,
           this.applyStatEffectValue(this.staminaCostPerHit, effect),
         );
         break;

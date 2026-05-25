@@ -28,10 +28,13 @@ import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
+import { getRewardContainerRequirements } from "../configs/rewardContainers";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 50;
   private static readonly weaponUnlockToastDurationMs = 1800;
+  private static readonly lobbyGameLevel = 1;
+  private static readonly villageGameLevel = 2;
 
   private player: Player;
   private wallet: Wallet;
@@ -60,6 +63,7 @@ export class Game extends Scene {
   private weaponUnlockToastBackground: GameObjects.Rectangle;
   private weaponUnlockToastText: GameObjects.Text;
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
+  private previousGameLevel: number;
 
   constructor() {
     super("Game");
@@ -90,6 +94,7 @@ export class Game extends Scene {
     this.player = new Player();
     this.wallet = new Wallet(this.player);
     this.levelController = new GameLevelController(this.player);
+    this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
     this.screenFilterController = new ScreenFilterController(this);
     this.gameSettings = new GameSettings(this);
@@ -109,10 +114,18 @@ export class Game extends Scene {
     this.diamondContainer = new DiamondContainer(this, {
       x: 160,
       y: 620,
+      getRequiredValue: () =>
+        getRewardContainerRequirements(
+          this.levelController.getCurrentLocationId(),
+        ).buff_container_required,
     });
     this.coinContainer = new CoinContainer(this, {
       x: 864,
       y: 620,
+      getRequiredValue: () =>
+        getRewardContainerRequirements(
+          this.levelController.getCurrentLocationId(),
+        ).lootbox_container_required,
       onFilled: () => {
         this.time.delayedCall(
           ResourceContainer.filledAnimationDelayMs,
@@ -213,6 +226,7 @@ export class Game extends Scene {
 
     const deltaSeconds = delta / 1000;
 
+    this.updateGameLevelTransitionEffects();
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
@@ -333,6 +347,19 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.pauseController.resume("player-death");
     this.playerDeathModal.hide();
+  }
+
+  private updateGameLevelTransitionEffects() {
+    const currentGameLevel = this.levelController.getCurrentGameLevel();
+
+    if (
+      this.previousGameLevel === Game.lobbyGameLevel &&
+      currentGameLevel === Game.villageGameLevel
+    ) {
+      this.player.restoreStamina();
+    }
+
+    this.previousGameLevel = currentGameLevel;
   }
 
   private handleFiveDifficultyBossAttack() {

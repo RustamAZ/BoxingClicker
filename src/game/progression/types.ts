@@ -1,3 +1,5 @@
+import type { RewardContainerLocationId } from "../configs/rewardContainers";
+
 export type EnemyDifficulty = "training" | "first" | "second" | 'third' | 'four' | 'five' | 'six';
 
 export type EnemySpawnKind =
@@ -33,6 +35,7 @@ export type GameLevelBossConfig = {
 
 export type GameLevelConfig = {
   level: number;
+  locationId?: RewardContainerLocationId;
   startPlayerLevel: number;
   background: GameLevelBackgroundConfig;
   enemyDifficulty: EnemyDifficulty;

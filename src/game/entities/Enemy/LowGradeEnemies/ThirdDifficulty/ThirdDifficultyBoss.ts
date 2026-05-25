@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { thirdBossConfig } from "../../../../configs/boss/third";
 import type { Player } from "../../../Player/Player";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
@@ -12,10 +13,12 @@ export class ThirdDifficultyBoss extends Enemy {
   readonly isCanAttack = true;
 
   private static readonly attackAnimationDurationMs = 180;
-  private static readonly attackCooldownSeconds = 1.5;
   private static readonly attackAnimationMoveOffsetY = -18;
   private static readonly attackAnimationAngle = -5;
-  private static readonly webShotAttackSpeedMultiplier = 0.2;
+  private static readonly webShotAttackSpeedMultiplier =
+    thirdBossConfig.effect?.type === "attack_speed_slow"
+      ? Math.max(0, 1 + thirdBossConfig.effect.slow_value)
+      : 1;
   private static readonly webShotDebuffDurationSeconds = 0.2;
   private static readonly webShotAnimationDurationMs = 620;
   private static readonly webShotStartScale = 0.18;
@@ -63,13 +66,13 @@ export class ThirdDifficultyBoss extends Enemy {
     super({
       displayName: "Spider Rider Boss",
       isBoss: true,
-      maxHealth: 1250,
-      xpReward: 620,
-      diamondsReward: 120,
-      coinsReward: 120,
-      emeraldDropChance: 0.22,
-      damagePerHit: 28,
-      attackCooldownSeconds: ThirdDifficultyBoss.attackCooldownSeconds,
+      maxHealth: thirdBossConfig.health,
+      xpReward: thirdBossConfig.xp_reward,
+      diamondsReward: thirdBossConfig.buff_container_reward,
+      coinsReward: thirdBossConfig.lootbox_container_reward,
+      emeraldDropChance: thirdBossConfig.emerald_drop_chance,
+      damagePerHit: thirdBossConfig.damage,
+      attackCooldownSeconds: thirdBossConfig.attack_speed,
     });
 
     this.slot = slot;

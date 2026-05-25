@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { fiveBossConfig } from "../../../../configs/boss/five";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 
@@ -12,7 +13,6 @@ export const fiveDifficultyBossAttackEvent = "five-difficulty-boss-attack";
 export class FiveDifficultyBoss extends Enemy {
   readonly isCanAttack = true;
 
-  private static readonly attackCooldownSeconds = 2;
   private static readonly attackAnimationDurationMs = 190;
   private static readonly attackAnimationScaleMultiplier = 1.08;
   private static readonly shockwaveAnimationDurationMs = 650;
@@ -76,13 +76,13 @@ export class FiveDifficultyBoss extends Enemy {
     super({
       displayName: "Hell Boss",
       isBoss: true,
-      maxHealth: 2450,
-      xpReward: 1100,
-      diamondsReward: 220,
-      coinsReward: 220,
-      emeraldDropChance: 0.3,
-      damagePerHit: 58,
-      attackCooldownSeconds: FiveDifficultyBoss.attackCooldownSeconds,
+      maxHealth: fiveBossConfig.health,
+      xpReward: fiveBossConfig.xp_reward,
+      diamondsReward: fiveBossConfig.buff_container_reward,
+      coinsReward: fiveBossConfig.lootbox_container_reward,
+      emeraldDropChance: fiveBossConfig.emerald_drop_chance,
+      damagePerHit: fiveBossConfig.damage,
+      attackCooldownSeconds: fiveBossConfig.attack_speed,
     });
 
     this.slot = slot;

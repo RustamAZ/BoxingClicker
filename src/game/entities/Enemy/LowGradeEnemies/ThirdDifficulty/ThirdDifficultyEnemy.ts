@@ -1,4 +1,6 @@
 import { GameObjects, Scene } from "phaser";
+import { thirdEnemyConfig } from "../../../../configs/enemies/third";
+import { toEnemyStatRange } from "../../../../configs/enemies/types";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
@@ -58,32 +60,6 @@ export class ThirdDifficultyEnemy extends Enemy {
       },
     ],
   ];
-  private static readonly healthRange = {
-    min: 300,
-    max: 400,
-  };
-  private static readonly xpRewardRange = {
-    min: 130,
-    max: 210,
-  };
-  private static readonly diamondsRewardRange = {
-    min: 14,
-    max: 26,
-  };
-  private static readonly coinsRewardRange = {
-    min: 14,
-    max: 26,
-  };
-  private static readonly emeraldDropChance = 0.12;
-  private static readonly damagePerHitRange = {
-    min: 10,
-    max: 25,
-  };
-  private static readonly attackCooldownSecondsRange = {
-    min: 0.8,
-    max: 1.5,
-  };
-
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
   private readonly deathSpriteKey: string;
@@ -101,14 +77,14 @@ export class ThirdDifficultyEnemy extends Enemy {
 
     super({
       displayName: aliveSprite.displayName,
-      maxHealth: randomInt(ThirdDifficultyEnemy.healthRange),
-      xpReward: randomInt(ThirdDifficultyEnemy.xpRewardRange),
-      diamondsReward: randomInt(ThirdDifficultyEnemy.diamondsRewardRange),
-      coinsReward: randomInt(ThirdDifficultyEnemy.coinsRewardRange),
-      emeraldDropChance: ThirdDifficultyEnemy.emeraldDropChance,
-      damagePerHit: randomInt(ThirdDifficultyEnemy.damagePerHitRange),
+      maxHealth: randomInt(toEnemyStatRange(thirdEnemyConfig.health_range)),
+      xpReward: thirdEnemyConfig.xp_reward,
+      diamondsReward: thirdEnemyConfig.buff_container_reward,
+      coinsReward: thirdEnemyConfig.lootbox_container_reward,
+      emeraldDropChance: thirdEnemyConfig.emerald_drop_chance,
+      damagePerHit: randomInt(toEnemyStatRange(thirdEnemyConfig.damage_range)),
       attackCooldownSeconds: randomFloat(
-        ThirdDifficultyEnemy.attackCooldownSecondsRange,
+        toEnemyStatRange(thirdEnemyConfig.attack_speed_range),
       ),
     });
 

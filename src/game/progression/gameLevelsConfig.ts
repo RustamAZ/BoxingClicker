@@ -2,13 +2,13 @@ import type { GameLevelConfig } from "./types";
 
 export const gameLevelStartPlayerLevels = {
   lobby: 1,
-  village: 2,
-  cave: 4,
-  lowDungeon: 6,
-  midDungeon: 8,
-  highDungeon: 10,
-  hell: 12,
-  infinite: 15,
+  village: 10,
+  cave: 20,
+  lowDungeon: 30,
+  midDungeon: 40,
+  highDungeon: 50,
+  hell: 60,
+  infinite: 150,
 } as const;
 
 export const gameLevelBossPlayerLevels = {
@@ -33,6 +33,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 2,
+    locationId: "village",
     startPlayerLevel: gameLevelStartPlayerLevels.village,
     background: {
       key: "village-background",
@@ -49,6 +50,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 3,
+    locationId: "cave",
     startPlayerLevel: gameLevelStartPlayerLevels.cave,
     background: {
       key: "cave-background",
@@ -65,6 +67,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 4,
+    locationId: "low-dungeon",
     startPlayerLevel: gameLevelStartPlayerLevels.lowDungeon,
     background: {
       key: "dungeon-background",
@@ -76,6 +79,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 5,
+    locationId: "mid-dungeon",
     startPlayerLevel: gameLevelStartPlayerLevels.midDungeon,
     background: {
       key: "mid-dungeon-background",
@@ -92,6 +96,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 6,
+    locationId: "high-dungeon",
     startPlayerLevel: gameLevelStartPlayerLevels.highDungeon,
     background: {
       key: "high-dungeon-background",
@@ -108,6 +113,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 7,
+    locationId: "hell",
     startPlayerLevel: gameLevelStartPlayerLevels.hell,
     background: {
       key: "hell-background",
@@ -124,6 +130,7 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 8,
+    locationId: "hell",
     startPlayerLevel: gameLevelStartPlayerLevels.infinite,
     background: {
       key: "infinite-background",

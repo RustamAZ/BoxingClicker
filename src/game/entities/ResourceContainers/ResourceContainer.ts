@@ -5,6 +5,7 @@ export type ResourceContainerConfig = {
   y: number;
   startMaxValue?: number;
   maxValueStepPerOpening?: number;
+  getRequiredValue?: () => number;
   displaySize?: number;
 };
 
@@ -28,6 +29,7 @@ export abstract class ResourceContainer {
   private readonly originY: number;
   private readonly startMaxValue: number;
   private readonly maxValueStepPerOpening: number;
+  private readonly getRequiredValue?: () => number;
   protected value = 0;
   protected openingsCount = 0;
 
@@ -44,6 +46,7 @@ export abstract class ResourceContainer {
           ResourceContainer.defaultMaxValueStepPerOpening,
       ),
     );
+    this.getRequiredValue = config.getRequiredValue;
     this.textureKeys = config.textureKeys ?? [];
 
     if (this.textureKeys.length > 0) {
@@ -128,6 +131,10 @@ export abstract class ResourceContainer {
   }
 
   protected getCurrentMaxValue() {
+    if (this.getRequiredValue) {
+      return Math.max(1, Math.floor(this.getRequiredValue()));
+    }
+
     return (
       this.startMaxValue +
       this.openingsCount * this.maxValueStepPerOpening

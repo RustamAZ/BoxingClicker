@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { secondBossConfig } from "../../../../configs/boss/second";
 import type { Player } from "../../../Player/Player";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
@@ -17,7 +18,10 @@ export class SecondDifficultyBoss extends Enemy {
   readonly isCanAttack = false;
 
   private static readonly explosionDelaySeconds = 3;
-  private static readonly explosionDamage = 165;
+  private static readonly explosionDamage =
+    secondBossConfig.effect?.type === "explosion"
+      ? secondBossConfig.effect.explosion_damage
+      : 0;
   private static readonly chargeScaleMultiplier = 1.18;
   private static readonly chargeShakeOffsetX = 5;
   private static readonly chargeShakeOffsetY = 2;
@@ -83,13 +87,13 @@ export class SecondDifficultyBoss extends Enemy {
     super({
       displayName: "Creeper Boss",
       isBoss: true,
-      maxHealth: 240,
-      xpReward: 450,
-      diamondsReward: 90,
-      coinsReward: 90,
-      emeraldDropChance: 0.2,
-      damagePerHit: SecondDifficultyBoss.explosionDamage,
-      attackCooldownSeconds: 0,
+      maxHealth: secondBossConfig.health,
+      xpReward: secondBossConfig.xp_reward,
+      diamondsReward: secondBossConfig.buff_container_reward,
+      coinsReward: secondBossConfig.lootbox_container_reward,
+      emeraldDropChance: secondBossConfig.emerald_drop_chance,
+      damagePerHit: secondBossConfig.damage,
+      attackCooldownSeconds: secondBossConfig.attack_speed,
     });
 
     this.slot = slot;

@@ -1,4 +1,6 @@
 import { GameObjects, Scene } from "phaser";
+import { firstEnemyConfig } from "../../../../configs/enemies/first";
+import { toEnemyStatRange } from "../../../../configs/enemies/types";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 import { randomInt } from "../../../../utils/randomInt";
@@ -47,32 +49,6 @@ export class FirstDifficultyEnemy extends Enemy {
       },
     ],
   ];
-  private static readonly healthRange = {
-    min: 100,
-    max: 200,
-  };
-  private static readonly xpRewardRange = {
-    min: 50,
-    max: 100,
-  };
-  private static readonly diamondsRewardRange = {
-    min: 8,
-    max: 16,
-  };
-  private static readonly coinsRewardRange = {
-    min: 4,
-    max: 8,
-  };
-  private static readonly emeraldDropChance = 0.08;
-  private static readonly damagePerHitRange = {
-    min: 5,
-    max: 10,
-  };
-  private static readonly attackCooldownSecondsRange = {
-    min: 1,
-    max: 2,
-  };
-
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
   private readonly deathSpriteKey: string;
@@ -93,23 +69,17 @@ export class FirstDifficultyEnemy extends Enemy {
     super({
       displayName: aliveSprite.displayName,
       maxHealth: randomInt(
-        FirstDifficultyEnemy.healthRange,
+        toEnemyStatRange(firstEnemyConfig.health_range),
       ),
-      xpReward: randomInt(
-        FirstDifficultyEnemy.xpRewardRange,
-      ),
-      diamondsReward: randomInt(
-        FirstDifficultyEnemy.diamondsRewardRange,
-      ),
-      coinsReward: randomInt(
-        FirstDifficultyEnemy.coinsRewardRange,
-      ),
-      emeraldDropChance: FirstDifficultyEnemy.emeraldDropChance,
+      xpReward: firstEnemyConfig.xp_reward,
+      diamondsReward: firstEnemyConfig.buff_container_reward,
+      coinsReward: firstEnemyConfig.lootbox_container_reward,
+      emeraldDropChance: firstEnemyConfig.emerald_drop_chance,
       damagePerHit: randomInt(
-        FirstDifficultyEnemy.damagePerHitRange,
+        toEnemyStatRange(firstEnemyConfig.damage_range),
       ),
       attackCooldownSeconds: randomFloat(
-        FirstDifficultyEnemy.attackCooldownSecondsRange,
+        toEnemyStatRange(firstEnemyConfig.attack_speed_range),
       ),
     });
 

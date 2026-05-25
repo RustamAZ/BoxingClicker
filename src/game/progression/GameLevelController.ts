@@ -1,4 +1,5 @@
 import type { Scene } from "phaser";
+import type { RewardContainerLocationId } from "../configs/rewardContainers";
 import type { Player } from "../entities/Player/Player";
 import { gameLevelsConfig } from "./gameLevelsConfig";
 import type { GameLevelConfig } from "./types";
@@ -25,6 +26,10 @@ export class GameLevelController {
 
   getCurrentEnemyDifficulty() {
     return this.getCurrentLevelConfig().enemyDifficulty;
+  }
+
+  getCurrentLocationId(): RewardContainerLocationId {
+    return this.getCurrentLevelConfig().locationId ?? "village";
   }
 
   getCurrentEnemySpawnKind() {

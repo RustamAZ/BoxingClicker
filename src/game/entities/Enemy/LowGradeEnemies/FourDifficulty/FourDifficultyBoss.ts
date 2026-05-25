@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { fourBossConfig } from "../../../../configs/boss/four";
 import type { Player } from "../../../Player/Player";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
@@ -12,7 +13,6 @@ export class FourDifficultyBoss extends Enemy {
   readonly isCanAttack = true;
   readonly shouldPlayDefaultAttackSound = false;
 
-  private static readonly attackCooldownSeconds = 0.9;
   private static readonly attackAnimationDurationMs = 150;
   private static readonly attackAnimationScaleMultiplier = 1.06;
   private static readonly deathAnimationDurationMs = 520;
@@ -64,13 +64,13 @@ export class FourDifficultyBoss extends Enemy {
     super({
       displayName: "Stalker Boss",
       isBoss: true,
-      maxHealth: 1750,
-      xpReward: 760,
-      diamondsReward: 150,
-      coinsReward: 150,
-      emeraldDropChance: 0.24,
-      damagePerHit: 42,
-      attackCooldownSeconds: FourDifficultyBoss.attackCooldownSeconds,
+      maxHealth: fourBossConfig.health,
+      xpReward: fourBossConfig.xp_reward,
+      diamondsReward: fourBossConfig.buff_container_reward,
+      coinsReward: fourBossConfig.lootbox_container_reward,
+      emeraldDropChance: fourBossConfig.emerald_drop_chance,
+      damagePerHit: fourBossConfig.damage,
+      attackCooldownSeconds: fourBossConfig.attack_speed,
     });
 
     this.slot = slot;

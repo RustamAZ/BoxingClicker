@@ -1,4 +1,5 @@
 import { GameObjects, Scene } from "phaser";
+import { firstBossConfig } from "../../../../configs/boss/first";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 
@@ -48,13 +49,13 @@ export class FirstDifficultyBoss extends Enemy {
     super({
       displayName: "Village Boss",
       isBoss: true,
-      maxHealth: 750,
-      xpReward: 350,
-      diamondsReward: 60,
-      coinsReward: 70,
-      emeraldDropChance: 0.2,
-      damagePerHit: 18,
-      attackCooldownSeconds: 0.9,
+      maxHealth: firstBossConfig.health,
+      xpReward: firstBossConfig.xp_reward,
+      diamondsReward: firstBossConfig.buff_container_reward,
+      coinsReward: firstBossConfig.lootbox_container_reward,
+      emeraldDropChance: firstBossConfig.emerald_drop_chance,
+      damagePerHit: firstBossConfig.damage,
+      attackCooldownSeconds: firstBossConfig.attack_speed,
     });
 
     this.slot = slot;
