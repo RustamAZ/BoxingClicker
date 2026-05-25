@@ -48,6 +48,9 @@ export class ShopModal {
   private static readonly lockedItemTextureKey = "shop-item-locked";
   private static readonly lockedItemPath =
     "assets/images/ui/shop/items/shop-item-locked.png";
+  private static readonly unknownItemTextureKey = "shop-item-unknown";
+  private static readonly unknownItemPath =
+    "assets/images/ui/shop/items/unknown-item-icon.png";
   private static readonly priceIconTextureKey = "shop-price-emerald-icon";
   private static readonly priceIconPath = "assets/images/ui/icons/emerald.png";
   private static readonly buttonTextures: ShopButtonTextureConfig[] = [
@@ -118,6 +121,7 @@ export class ShopModal {
     scene.load.image(ShopModal.shopIconTextureKey, ShopModal.shopIconPath);
     scene.load.image(ShopModal.panelTextureKey, ShopModal.panelPath);
     scene.load.image(ShopModal.lockedItemTextureKey, ShopModal.lockedItemPath);
+    scene.load.image(ShopModal.unknownItemTextureKey, ShopModal.unknownItemPath);
     scene.load.image(ShopModal.priceIconTextureKey, ShopModal.priceIconPath);
     ShopModal.buttonTextures.forEach((buttonTexture) => {
       scene.load.image(buttonTexture.textureKey, buttonTexture.texturePath);
@@ -294,6 +298,10 @@ export class ShopModal {
       return;
     }
 
+    if (item.status === "locked") {
+      return;
+    }
+
     if (profile.hasPurchasedItem(item.id)) {
       this.equipItem(item);
       return;
@@ -320,6 +328,12 @@ export class ShopModal {
 
   private setCardText(card: ShopItemCard, item: ShopItemView) {
     this.hideCardPriceIcon(card);
+
+    if (item.status === "locked") {
+      card.buttonLabel.setText("\u041d\u0410\u0419\u0414\u0418");
+      card.buttonLabel.setColor("#d4d4d4");
+      return;
+    }
 
     if (item.isEquipped) {
       card.buttonLabel.setText("НАДЕТО");
@@ -512,6 +526,10 @@ export class ShopModal {
       },
     );
     card.buttonHitArea.on("pointerover", () => {
+      if (card.item?.status === "locked") {
+        return;
+      }
+
       card.buttonImage.setTint(0xb8b8b8);
 
       if (!card.item?.isEquipped) {
@@ -564,7 +582,9 @@ export class ShopModal {
   private setCardVisible(card: ShopItemCard, visible: boolean) {
     card.itemIcon.setVisible(visible && Boolean(card.item));
     card.lockOverlay.setVisible(
-      visible && card.item?.status === "not-purchased",
+      visible &&
+        (card.item?.status === "locked" ||
+          card.item?.status === "not-purchased"),
     );
     card.buttonImage.setVisible(visible);
     card.buttonHitArea.setVisible(visible);
@@ -598,7 +618,7 @@ export class ShopModal {
   }
 
   private setCardInteractive(card: ShopItemCard, isInteractive: boolean) {
-    if (isInteractive) {
+    if (isInteractive && card.item?.status !== "locked") {
       card.buttonHitArea.setInteractive({ useHandCursor: true });
     } else {
       card.buttonHitArea.disableInteractive();
@@ -611,7 +631,11 @@ export class ShopModal {
   }
 
   private setCardIcon(card: ShopItemCard, item: ShopItemView) {
-    card.itemIcon.setTexture(item.iconTextureKey);
+    card.itemIcon.setTexture(
+      item.status === "locked"
+        ? ShopModal.unknownItemTextureKey
+        : item.iconTextureKey,
+    );
     this.fitItemIcon(card.itemIcon);
     card.lockOverlay.setTexture(ShopModal.lockedItemTextureKey);
     this.fitLockedOverlay(card.lockOverlay);

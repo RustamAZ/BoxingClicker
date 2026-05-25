@@ -3,15 +3,20 @@ import type { GameLevelConfig } from "./types";
 export const gameLevelStartPlayerLevels = {
   lobby: 1,
   village: 2,
-  cave: 7,
-  dungeon: 12,
-  hell: 20,
+  cave: 4,
+  lowDungeon: 6,
+  midDungeon: 8,
+  highDungeon: 10,
+  hell: 12,
+  infinite: 15,
 } as const;
 
 export const gameLevelBossPlayerLevels = {
   firstDifficultyBoss: gameLevelStartPlayerLevels.cave,
-  secondDifficultyBoss: gameLevelStartPlayerLevels.dungeon,
-  thirdDifficultyBoss: gameLevelStartPlayerLevels.hell,
+  secondDifficultyBoss: gameLevelStartPlayerLevels.lowDungeon,
+  thirdDifficultyBoss: gameLevelStartPlayerLevels.highDungeon,
+  fourDifficultyBoss: gameLevelStartPlayerLevels.hell,
+  fiveDifficultyBoss: gameLevelStartPlayerLevels.infinite,
 } as const;
 
 export const gameLevelsConfig: readonly GameLevelConfig[] = [
@@ -60,29 +65,72 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
   },
   {
     level: 4,
-    startPlayerLevel: gameLevelStartPlayerLevels.dungeon,
+    startPlayerLevel: gameLevelStartPlayerLevels.lowDungeon,
     background: {
       key: "dungeon-background",
       path: "assets/images/backgrounds/dungeon.png",
     },
-    enemyDifficulty: "second",
+    enemyDifficulty: "third",
     enemySpawnKind: "third-difficulty-enemy",
     music: "action",
   },
   {
     level: 5,
-    startPlayerLevel: gameLevelStartPlayerLevels.hell,
+    startPlayerLevel: gameLevelStartPlayerLevels.midDungeon,
     background: {
-      key: "dungeon-background",
-      path: "assets/images/backgrounds/hell.png",
+      key: "mid-dungeon-background",
+      path: "assets/images/backgrounds/mid-dungeon.png",
     },
     enemyDifficulty: "third",
-    enemySpawnKind: "third-difficulty-boss",
+    enemySpawnKind: "third-difficulty-enemy",
     music: "action",
     boss: {
       id: "third-difficulty-boss",
       requiredPlayerLevel: gameLevelBossPlayerLevels.thirdDifficultyBoss,
       enemySpawnKind: "third-difficulty-boss",
     },
+  },
+  {
+    level: 6,
+    startPlayerLevel: gameLevelStartPlayerLevels.highDungeon,
+    background: {
+      key: "high-dungeon-background",
+      path: "assets/images/backgrounds/high-dungeon.png",
+    },
+    enemyDifficulty: "four",
+    enemySpawnKind: "four-difficulty-enemy",
+    music: "action",
+    boss: {
+      id: "four-difficulty-boss",
+      requiredPlayerLevel: gameLevelBossPlayerLevels.fourDifficultyBoss,
+      enemySpawnKind: "four-difficulty-boss",
+    },
+  },
+  {
+    level: 7,
+    startPlayerLevel: gameLevelStartPlayerLevels.hell,
+    background: {
+      key: "hell-background",
+      path: "assets/images/backgrounds/hell.png",
+    },
+    enemyDifficulty: "five",
+    enemySpawnKind: "five-difficulty-enemy",
+    music: "action",
+    boss: {
+      id: "five-difficulty-boss",
+      requiredPlayerLevel: gameLevelBossPlayerLevels.fiveDifficultyBoss,
+      enemySpawnKind: "five-difficulty-boss",
+    },
+  },
+  {
+    level: 8,
+    startPlayerLevel: gameLevelStartPlayerLevels.infinite,
+    background: {
+      key: "infinite-background",
+      path: "assets/images/backgrounds/infinite.png",
+    },
+    enemyDifficulty: "six",
+    enemySpawnKind: "five-difficulty-enemy",
+    music: "action",
   },
 ];

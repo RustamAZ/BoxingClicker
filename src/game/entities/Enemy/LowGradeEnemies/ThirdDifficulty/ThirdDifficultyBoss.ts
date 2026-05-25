@@ -8,50 +8,38 @@ type BossSpriteConfig = {
   path: string;
 };
 
-type BossSoundConfig = {
-  key: string;
-  path: string;
-};
-
 export class ThirdDifficultyBoss extends Enemy {
-  readonly isCanAttack = false;
+  readonly isCanAttack = true;
 
-  private static readonly explosionDelaySeconds = 3;
-  private static readonly explosionDamage = 165;
-  private static readonly chargeScaleMultiplier = 1.18;
-  private static readonly chargeShakeOffsetX = 5;
-  private static readonly chargeShakeOffsetY = 2;
-  private static readonly chargeShakeDurationMs = 42;
-  private static readonly deathAnimationDurationMs = 500;
-  private static readonly explosionAnimationDurationMs = 420;
-  private static readonly deathAnimationMoveOffsetX = 150;
-  private static readonly deathAnimationMoveOffsetY = 120;
+  private static readonly attackAnimationDurationMs = 180;
+  private static readonly attackCooldownSeconds = 1.5;
+  private static readonly attackAnimationMoveOffsetY = -18;
+  private static readonly attackAnimationAngle = -5;
+  private static readonly webShotAttackSpeedMultiplier = 0.2;
+  private static readonly webShotDebuffDurationSeconds = 0.2;
+  private static readonly webShotAnimationDurationMs = 620;
+  private static readonly webShotStartScale = 0.18;
+  private static readonly webShotEndScale = 7.5;
+  private static readonly deathAnimationDurationMs = 650;
+  private static readonly deathAnimationMoveOffsetX = 180;
+  private static readonly deathAnimationMoveOffsetY = 140;
   private static readonly aliveSprite: BossSpriteConfig = {
-    key: "second-difficulty-boss-creep",
-    path: "assets/images/enemies/second-difficulty/creep-boss.png",
+    key: "third-difficulty-spider-rider-boss",
+    path: "assets/images/enemies/third-difficulty/spider-rider-boss.png",
   };
   private static readonly deadSprite: BossSpriteConfig = {
-    key: "second-difficulty-boss-creep-dead",
-    path: "assets/images/enemies/second-difficulty/creep-boss-die.png",
+    key: "third-difficulty-spider-rider-boss-dead",
+    path: "assets/images/enemies/third-difficulty/spider-rider-boss-die.png",
   };
-  private static readonly explosionSprite: BossSpriteConfig = {
-    key: "second-difficulty-boss-creep-boom",
-    path: "assets/images/enemies/second-difficulty/creep-boss-boom.png",
-  };
-  private static readonly introSound: BossSoundConfig = {
-    key: "second-difficulty-boss-creep-intro",
-    path: "assets/audio/enemies/second-difficulty/creep-intro.mp3",
-  };
-  private static readonly boomSound: BossSoundConfig = {
-    key: "second-difficulty-boss-creep-boom-sound",
-    path: "assets/audio/enemies/second-difficulty/creep-boom.wav",
+  private static readonly webShotSprite: BossSpriteConfig = {
+    key: "third-difficulty-spider-rider-boss-web-shot",
+    path: "assets/images/enemies/third-difficulty/web-shot.png",
   };
 
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
-  private explosionTimerSeconds = ThirdDifficultyBoss.explosionDelaySeconds;
+  private readonly webShots: GameObjects.Image[] = [];
   private isDeathAnimationPlaying = false;
-  private isExplosionAnimationPlaying = false;
 
   static preload(scene: Scene) {
     scene.load.image(
@@ -63,16 +51,8 @@ export class ThirdDifficultyBoss extends Enemy {
       ThirdDifficultyBoss.deadSprite.path,
     );
     scene.load.image(
-      ThirdDifficultyBoss.explosionSprite.key,
-      ThirdDifficultyBoss.explosionSprite.path,
-    );
-    scene.load.audio(
-      ThirdDifficultyBoss.introSound.key,
-      ThirdDifficultyBoss.introSound.path,
-    );
-    scene.load.audio(
-      ThirdDifficultyBoss.boomSound.key,
-      ThirdDifficultyBoss.boomSound.path,
+      ThirdDifficultyBoss.webShotSprite.key,
+      ThirdDifficultyBoss.webShotSprite.path,
     );
   }
 
@@ -81,62 +61,56 @@ export class ThirdDifficultyBoss extends Enemy {
     slot: EnemySpawnSlot,
   ) {
     super({
-      displayName: "Creeper Boss",
+      displayName: "Spider Rider Boss",
       isBoss: true,
-      maxHealth: 240,
-      xpReward: 450,
-      diamondsReward: 90,
-      coinsReward: 90,
-      emeraldDropChance: 0.2,
-      damagePerHit: ThirdDifficultyBoss.explosionDamage,
-      attackCooldownSeconds: 0,
+      maxHealth: 1250,
+      xpReward: 620,
+      diamondsReward: 120,
+      coinsReward: 120,
+      emeraldDropChance: 0.22,
+      damagePerHit: 28,
+      attackCooldownSeconds: ThirdDifficultyBoss.attackCooldownSeconds,
     });
 
     this.slot = slot;
     this.body = scene.add
       .image(slot.x, slot.y, ThirdDifficultyBoss.aliveSprite.key)
-      .setDisplaySize(slot.width * 0.7, slot.height)
+      .setDisplaySize(slot.width * 1.14, slot.height * 1.14)
       .setInteractive({ useHandCursor: true });
-
-    this.scene.sound.play(ThirdDifficultyBoss.introSound.key, {
-      volume: 0.85,
-    });
-    this.startExplosionChargeAnimation();
-  }
-
-  update(deltaSeconds: number, player: Player) {
-    if (
-      this.isDead() ||
-      this.isDeathAnimationPlaying ||
-      this.isExplosionAnimationPlaying
-    ) {
-      return;
-    }
-
-    this.explosionTimerSeconds = Math.max(
-      0,
-      this.explosionTimerSeconds - deltaSeconds,
-    );
-
-    if (this.explosionTimerSeconds <= 0) {
-      this.explode(player);
-    }
   }
 
   onHit(callback: () => void) {
     this.body.on("pointerdown", callback);
   }
 
+  protected onAttack(player: Player) {
+    if (this.isDeathAnimationPlaying) {
+      return;
+    }
+
+    player.applyStatEffect({
+      stat: "punch-speed",
+      mode: "multiply",
+      value: ThirdDifficultyBoss.webShotAttackSpeedMultiplier,
+      durationSeconds: ThirdDifficultyBoss.webShotDebuffDurationSeconds,
+      sourceId: "third-difficulty-boss-web-shot",
+    });
+    this.playAttackAnimation();
+    this.playWebShotAnimation();
+  }
+
   playDeathAnimation(onComplete: () => void) {
-    if (this.isDeathAnimationPlaying || this.isExplosionAnimationPlaying) {
+    if (this.isDeathAnimationPlaying) {
       return;
     }
 
     this.isDeathAnimationPlaying = true;
-    this.stopExplosionChargeAnimation();
+    this.scene.tweens.killTweensOf(this.body);
+    this.destroyWebShots();
     this.body.disableInteractive();
+    this.body.setAngle(0);
     this.body.setTexture(ThirdDifficultyBoss.deadSprite.key);
-    this.body.setDisplaySize(this.slot.width * 0.7, this.slot.height);
+    this.body.setDisplaySize(this.slot.width * 1.14, this.slot.height * 1.14);
 
     const direction = Math.random() < 0.5 ? -1 : 1;
 
@@ -158,68 +132,72 @@ export class ThirdDifficultyBoss extends Enemy {
 
   destroy() {
     this.scene.tweens.killTweensOf(this.body);
+    this.destroyWebShots();
     this.body.destroy();
   }
 
-  private explode(player: Player) {
-    if (this.isExplosionAnimationPlaying || this.isDeathAnimationPlaying) {
-      return;
-    }
-
-    this.isExplosionAnimationPlaying = true;
-    this.health = 0;
-    this.stopExplosionChargeAnimation();
-    this.body.disableInteractive();
-    this.body.setTexture(ThirdDifficultyBoss.explosionSprite.key);
-    this.body.setDisplaySize(this.slot.width * 0.85, this.slot.width * 0.85);
-    this.scene.sound.play(ThirdDifficultyBoss.boomSound.key, {
-      volume: 0.9,
-    });
-    player.takeDamage(ThirdDifficultyBoss.explosionDamage);
-
-    this.body.scene.tweens.add({
-      targets: this.body,
-      alpha: 0,
-      duration: ThirdDifficultyBoss.explosionAnimationDurationMs,
-      ease: "Quad.easeOut",
-      onComplete: () => {
-        this.destroy();
-        this.emitSelfDefeated();
-      },
-    });
-  }
-
-  private startExplosionChargeAnimation() {
-    const baseScaleX = this.body.scaleX;
-    const baseScaleY = this.body.scaleY;
-
-    this.scene.tweens.add({
-      targets: this.body,
-      scaleX: baseScaleX * ThirdDifficultyBoss.chargeScaleMultiplier,
-      scaleY: baseScaleY * ThirdDifficultyBoss.chargeScaleMultiplier,
-      duration: ThirdDifficultyBoss.explosionDelaySeconds * 1000,
-      ease: "Quad.easeIn",
-    });
-
-    this.scene.tweens.add({
-      targets: this.body,
-      x: {
-        from: this.slot.x - ThirdDifficultyBoss.chargeShakeOffsetX,
-        to: this.slot.x + ThirdDifficultyBoss.chargeShakeOffsetX,
-      },
-      y: {
-        from: this.slot.y - ThirdDifficultyBoss.chargeShakeOffsetY,
-        to: this.slot.y + ThirdDifficultyBoss.chargeShakeOffsetY,
-      },
-      duration: ThirdDifficultyBoss.chargeShakeDurationMs,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-  }
-
-  private stopExplosionChargeAnimation() {
+  private playAttackAnimation() {
     this.scene.tweens.killTweensOf(this.body);
     this.body.setPosition(this.slot.x, this.slot.y);
+    this.body.setAngle(0);
+
+    this.scene.tweens.add({
+      targets: this.body,
+      y: this.slot.y + ThirdDifficultyBoss.attackAnimationMoveOffsetY,
+      angle: ThirdDifficultyBoss.attackAnimationAngle,
+      duration: ThirdDifficultyBoss.attackAnimationDurationMs,
+      yoyo: true,
+      ease: "Back.easeOut",
+      onComplete: () => {
+        if (!this.isDeathAnimationPlaying) {
+          this.body.setPosition(this.slot.x, this.slot.y);
+          this.body.setAngle(0);
+        }
+      },
+    });
+  }
+
+  private playWebShotAnimation() {
+    const webShot = this.scene.add
+      .image(
+        this.slot.x,
+        this.slot.y - this.slot.height * 0.22,
+        ThirdDifficultyBoss.webShotSprite.key,
+      )
+      .setScale(ThirdDifficultyBoss.webShotStartScale)
+      .setAlpha(0.95)
+      .setDepth(this.body.depth + 20);
+
+    this.webShots.push(webShot);
+
+    this.scene.tweens.add({
+      targets: webShot,
+      x: this.scene.scale.width / 2,
+      y: this.scene.scale.height / 2,
+      scale: ThirdDifficultyBoss.webShotEndScale,
+      alpha: 0,
+      duration: ThirdDifficultyBoss.webShotAnimationDurationMs,
+      ease: "Quad.easeOut",
+      onComplete: () => {
+        this.removeWebShot(webShot);
+      },
+    });
+  }
+
+  private removeWebShot(webShot: GameObjects.Image) {
+    const index = this.webShots.indexOf(webShot);
+
+    if (index >= 0) {
+      this.webShots.splice(index, 1);
+    }
+
+    webShot.destroy();
+  }
+
+  private destroyWebShots() {
+    this.webShots.splice(0).forEach((webShot) => {
+      this.scene.tweens.killTweensOf(webShot);
+      webShot.destroy();
+    });
   }
 }

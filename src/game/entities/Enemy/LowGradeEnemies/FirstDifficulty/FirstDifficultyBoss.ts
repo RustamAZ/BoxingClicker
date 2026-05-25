@@ -54,7 +54,7 @@ export class FirstDifficultyBoss extends Enemy {
       coinsReward: 70,
       emeraldDropChance: 0.2,
       damagePerHit: 18,
-      attackCooldownSeconds: 1.1,
+      attackCooldownSeconds: 0.9,
     });
 
     this.slot = slot;

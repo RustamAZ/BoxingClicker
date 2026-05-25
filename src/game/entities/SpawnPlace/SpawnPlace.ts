@@ -8,13 +8,19 @@ import type { GlovesCombatProfile } from "../Gloves/types";
 import type { GlovesEquipmentController } from "../Gloves/GlovesEquipmentController";
 import type { Player } from "../Player/Player";
 import type { Enemy } from "../Enemy/Enemy";
-import { EnemyRegistry } from "../Enemy/EnemyRegistry";
+import {
+  EnemyRegistry,
+  type EnemySpawnContext,
+} from "../Enemy/EnemyRegistry";
+import { EnemySpawnResolver } from "../Enemy/EnemySpawnResolver";
 import type { EnemySpawnSlot } from "../Enemy/types";
 
 type EnemyDefeatedCallback = (
   enemy: Enemy,
   position: { x: number; y: number },
 ) => void;
+
+type BossEncounteredCallback = (bossId: string) => void;
 
 export class SpawnPlace {
   private static readonly hitEffectAreaSize = {
@@ -26,6 +32,7 @@ export class SpawnPlace {
   private currentEnemySpawnKind?: EnemySpawnKind;
   private currentBossId?: string;
   private isEnemyDeathAnimationPlaying = false;
+  private readonly enemySpawnResolver = new EnemySpawnResolver();
 
   constructor(
     private readonly scene: Scene,
@@ -36,6 +43,7 @@ export class SpawnPlace {
     private readonly hitSoundPlayer: HitSoundPlayer,
     private readonly enemyAttackSoundPlayer: EnemyAttackSoundPlayer,
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
+    private readonly onBossEncountered?: BossEncounteredCallback,
   ) {
     this.spawnNextEnemy();
   }
@@ -56,20 +64,29 @@ export class SpawnPlace {
     this.destroyCurrentEnemy();
     this.isEnemyDeathAnimationPlaying = false;
 
-    this.currentEnemySpawnKind = this.levelController.getCurrentEnemySpawnKind();
+    const resolvedEnemySpawn = this.enemySpawnResolver.resolve(
+      this.levelController.getCurrentEnemySpawnKind(),
+    );
+
+    this.currentEnemySpawnKind = resolvedEnemySpawn.enemySpawnKind;
     this.currentBossId = this.getBossIdForSpawnKind(this.currentEnemySpawnKind);
     if (this.currentBossId) {
       this.levelController.startBossFight(this.currentBossId);
+      this.onBossEncountered?.(this.currentBossId);
     }
 
     this.currentEnemyValue = this.createEnemyBySpawnKind(
       this.currentEnemySpawnKind,
+      resolvedEnemySpawn.context,
     );
     this.currentEnemyValue.onHit(() => this.handleEnemyHit());
     const enemy = this.currentEnemyValue;
 
     enemy.onAttackPerformed(() => {
-      if (enemy === this.currentEnemyValue) {
+      if (
+        enemy === this.currentEnemyValue &&
+        enemy.shouldPlayDefaultAttackSound
+      ) {
         this.enemyAttackSoundPlayer.play();
       }
     });
@@ -126,12 +143,19 @@ export class SpawnPlace {
 
     if (!enemySurvived) {
       const defeatedBossId = this.currentBossId;
+      const defeatedEnemySpawnKind = this.currentEnemySpawnKind;
 
-      this.player.gainXp(enemy.xpReward);
-      this.onEnemyDefeated?.(enemy, {
-        x: this.slot.x,
-        y: this.slot.y,
-      });
+      if (defeatedEnemySpawnKind === "four-difficulty-stalker") {
+        this.enemySpawnResolver.markFourDifficultyStalkerHit();
+      }
+
+      if (!EnemyRegistry.isEncounter(defeatedEnemySpawnKind)) {
+        this.player.gainXp(enemy.xpReward);
+        this.onEnemyDefeated?.(enemy, {
+          x: this.slot.x,
+          y: this.slot.y,
+        });
+      }
       this.isEnemyDeathAnimationPlaying = true;
       enemy.playDeathAnimation(() => {
         if (defeatedBossId) {
@@ -176,8 +200,11 @@ export class SpawnPlace {
     this.spawnNextEnemy();
   }
 
-  private createEnemyBySpawnKind(enemySpawnKind: EnemySpawnKind) {
-    return EnemyRegistry.create(enemySpawnKind, this.scene, this.slot);
+  private createEnemyBySpawnKind(
+    enemySpawnKind: EnemySpawnKind,
+    context?: EnemySpawnContext,
+  ) {
+    return EnemyRegistry.create(enemySpawnKind, this.scene, this.slot, context);
   }
 
   private getBossIdForSpawnKind(enemySpawnKind: EnemySpawnKind) {

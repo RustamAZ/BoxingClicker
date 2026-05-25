@@ -16,6 +16,7 @@ export type EnemyConfig = {
 export abstract class Enemy
 {
     abstract readonly isCanAttack: boolean;
+    readonly shouldPlayDefaultAttackSound: boolean = true;
 
     readonly displayName: string;
     readonly isBoss: boolean;

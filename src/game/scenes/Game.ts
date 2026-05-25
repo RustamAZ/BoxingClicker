@@ -1,4 +1,4 @@
-import { Scene } from "phaser";
+import { GameObjects, Scene } from "phaser";
 import { Gloves } from "../entities/Gloves/Gloves";
 import { GlovesEquipmentController } from "../entities/Gloves/GlovesEquipmentController";
 import { GameHud } from "../ui/GameHud";
@@ -25,9 +25,13 @@ import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
+import { ScreenFilterController } from "../effects/ScreenFilterController";
+import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
+import { ShopCatalog } from "../shop/ShopCatalog";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 50;
+  private static readonly weaponUnlockToastDurationMs = 1800;
 
   private player: Player;
   private wallet: Wallet;
@@ -52,6 +56,10 @@ export class Game extends Scene {
   private enemyAttackSoundPlayer: EnemyAttackSoundPlayer;
   private breathSoundPlayer: BreathSoundPlayer;
   private backgroundMusicController: BackgroundMusicController;
+  private screenFilterController: ScreenFilterController;
+  private weaponUnlockToastBackground: GameObjects.Rectangle;
+  private weaponUnlockToastText: GameObjects.Text;
+  private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super("Game");
@@ -83,6 +91,7 @@ export class Game extends Scene {
     this.wallet = new Wallet(this.player);
     this.levelController = new GameLevelController(this.player);
     this.pauseController = new PauseController(this);
+    this.screenFilterController = new ScreenFilterController(this);
     this.gameSettings = new GameSettings(this);
     this.pauseController.onPauseChange((isPaused) => {
       this.gameSettings.setAudioPaused(isPaused);
@@ -147,6 +156,9 @@ export class Game extends Scene {
       (enemy, position) => {
         this.handleEnemyRewards(enemy, position);
       },
+      (bossId) => {
+        this.handleBossEncountered(bossId);
+      },
     );
 
     this.hud = new GameHud(
@@ -176,6 +188,20 @@ export class Game extends Scene {
         this.scene.restart();
       }
     );
+    this.createWeaponUnlockToast();
+
+    this.events.on(
+      fiveDifficultyBossAttackEvent,
+      this.handleFiveDifficultyBossAttack,
+      this,
+    );
+    this.events.once("shutdown", () => {
+      this.events.off(
+        fiveDifficultyBossAttackEvent,
+        this.handleFiveDifficultyBossAttack,
+        this,
+      );
+    });
   }
 
   update(_time: number, delta: number) {
@@ -307,5 +333,76 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.pauseController.resume("player-death");
     this.playerDeathModal.hide();
+  }
+
+  private handleFiveDifficultyBossAttack() {
+    this.screenFilterController.playGrayscale(1000);
+  }
+
+  private handleBossEncountered(bossId: string) {
+    const unlockedItem = ShopCatalog.getItemByUnlockBossId(bossId);
+
+    if (!unlockedItem) {
+      return;
+    }
+
+    if (this.player.profile.discoverItem(unlockedItem.id)) {
+      this.showWeaponUnlockToast();
+    }
+  }
+
+  private createWeaponUnlockToast() {
+    const centerX = this.scale.width / 2;
+    const y = this.scale.height - 72;
+
+    this.weaponUnlockToastBackground = this.add
+      .rectangle(centerX, y, 360, 54, 0x4f4f4f, 0.88)
+      .setDepth(1500)
+      .setVisible(false);
+    this.weaponUnlockToastText = this.add
+      .text(centerX, y, "\u041e\u0442\u043a\u0440\u044b\u0442\u043e \u043d\u043e\u0432\u043e\u0435 \u043e\u0440\u0443\u0436\u0438\u0435", {
+        fontFamily: "Hardpixel",
+        fontSize: 22,
+        color: "#ffffff",
+        stroke: "#222222",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(1501)
+      .setVisible(false);
+  }
+
+  private showWeaponUnlockToast() {
+    this.weaponUnlockToastTimer?.remove();
+    this.weaponUnlockToastBackground.setVisible(true).setAlpha(0);
+    this.weaponUnlockToastText.setVisible(true).setAlpha(0);
+
+    this.tweens.add({
+      targets: [this.weaponUnlockToastBackground, this.weaponUnlockToastText],
+      alpha: 1,
+      duration: 120,
+      ease: "Quad.easeOut",
+    });
+
+    this.weaponUnlockToastTimer = this.time.delayedCall(
+      Game.weaponUnlockToastDurationMs,
+      () => {
+        this.tweens.add({
+          targets: [
+            this.weaponUnlockToastBackground,
+            this.weaponUnlockToastText,
+          ],
+          alpha: 0,
+          duration: 180,
+          ease: "Quad.easeIn",
+          onComplete: () => {
+            this.weaponUnlockToastBackground.setVisible(false);
+            this.weaponUnlockToastText.setVisible(false);
+            this.weaponUnlockToastTimer = undefined;
+          },
+        });
+      },
+    );
   }
 }

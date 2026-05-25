@@ -1,4 +1,4 @@
-export type ShopItemStatus = "purchased" | "not-purchased";
+export type ShopItemStatus = "locked" | "purchased" | "not-purchased";
 
 export type ShopItemConfig = {
   id: string;
@@ -7,6 +7,7 @@ export type ShopItemConfig = {
   price: number;
   iconTextureKey: string;
   iconTexturePath: string;
+  unlockBossId?: string;
 };
 
 export type ShopItemView = ShopItemConfig & {

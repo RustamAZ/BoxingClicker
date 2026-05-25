@@ -24,10 +24,16 @@ export class BackgroundMusicController {
     key: "music-boss-fight",
     path: "assets/audio/music/boss-fight.mp3",
   };
+  private static readonly hellBossFightTrack: BackgroundMusicTrack = {
+    id: "hell-boss-fight",
+    key: "music-hell-boss-fight",
+    path: "assets/audio/music/hell-boss-ambient.mp3",
+  };
   private static readonly tracks = [
     BackgroundMusicController.menuAndLobbyTrack,
     BackgroundMusicController.actionTrack,
     BackgroundMusicController.bossFightTrack,
+    BackgroundMusicController.hellBossFightTrack,
   ];
   private static readonly volume = 0.42;
 

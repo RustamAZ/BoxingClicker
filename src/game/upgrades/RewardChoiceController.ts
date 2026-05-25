@@ -51,7 +51,11 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     baseValue: 2,
     getDescription: (value) => `+${value} к урону`,
     apply: (player, value) => {
-      player.increaseDamage(value);
+      player.applyStatEffect({
+        stat: "damage",
+        mode: "add",
+        value,
+      });
     },
   },
   stamina: {
@@ -62,7 +66,11 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     baseValue: 15,
     getDescription: (value) => `+${value} к выносливости`,
     apply: (player, value) => {
-      player.increaseMaxStamina(value);
+      player.applyStatEffect({
+        stat: "max-stamina",
+        mode: "add",
+        value,
+      });
     },
   },
   health: {
@@ -73,7 +81,11 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     baseValue: 10,
     getDescription: (value) => `+${value} к здоровью`,
     apply: (player, value) => {
-      player.increaseMaxHealth(value);
+      player.applyStatEffect({
+        stat: "max-health",
+        mode: "add",
+        value,
+      });
     },
   },
   "attack-speed": {
@@ -84,7 +96,11 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     baseValue: 15,
     getDescription: (value) => `+${value}% к скорости`,
     apply: (player, value) => {
-      player.increasePunchSpeed(value / 100);
+      player.applyStatEffect({
+        stat: "punch-speed",
+        mode: "add",
+        value: value / 100,
+      });
     },
   },
   "stamina-cost": {
@@ -95,7 +111,11 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     baseValue: 1,
     getDescription: (value) => `-${value} к затратам`,
     apply: (player, value) => {
-      player.decreaseStaminaCost(value);
+      player.applyStatEffect({
+        stat: "stamina-cost",
+        mode: "add",
+        value: -value,
+      });
     },
   },
 };

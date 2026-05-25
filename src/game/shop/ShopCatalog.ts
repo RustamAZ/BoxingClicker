@@ -18,6 +18,7 @@ export class ShopCatalog {
       price: 20,
       iconTextureKey: "shop-item-amogus-weapon",
       iconTexturePath: "assets/images/ui/shop/items/amogus-weapon-icon.png",
+      unlockBossId: "first-difficulty-boss",
     },
     {
       id: "pepe-gloves",
@@ -26,6 +27,7 @@ export class ShopCatalog {
       price: 40,
       iconTextureKey: "shop-item-pepe-weapon",
       iconTexturePath: "assets/images/ui/shop/items/pepe-weapon-icon.png",
+      unlockBossId: "second-difficulty-boss",
     },
     {
       id: "mechanic-gloves",
@@ -34,6 +36,7 @@ export class ShopCatalog {
       price: 1,
       iconTextureKey: "shop-item-mechanic-weapon",
       iconTexturePath: "assets/images/ui/shop/items/mechanic-weapon-icon.png",
+      unlockBossId: "third-difficulty-boss",
     },
     {
       id: "infinity-gloves",
@@ -42,6 +45,7 @@ export class ShopCatalog {
       price: 1,
       iconTextureKey: "shop-item-infinity-weapon",
       iconTexturePath: "assets/images/ui/shop/items/infinity-weapon-icon.png",
+      unlockBossId: "four-difficulty-boss",
     },
     {
       id: "six-seven-gloves",
@@ -50,6 +54,7 @@ export class ShopCatalog {
       price: 1,
       iconTextureKey: "shop-item-six-seven-weapon",
       iconTexturePath: "assets/images/ui/shop/items/six-seven-weapon-icon.png",
+      unlockBossId: "five-difficulty-boss",
     },
   ];
 
@@ -61,12 +66,18 @@ export class ShopCatalog {
     return ShopCatalog.items.find((item) => item.id === itemId);
   }
 
+  static getItemByUnlockBossId(bossId: string) {
+    return ShopCatalog.items.find((item) => item.unlockBossId === bossId);
+  }
+
   static getItemViews(profile: PlayerProfile): ShopItemView[] {
     return ShopCatalog.items.map((item) => ({
       ...item,
-      status: profile.hasPurchasedItem(item.id)
-        ? "purchased"
-        : "not-purchased",
+      status: !profile.hasDiscoveredItem(item.id)
+        ? "locked"
+        : profile.hasPurchasedItem(item.id)
+          ? "purchased"
+          : "not-purchased",
       isEquipped: profile.getEquippedItemId() === item.id,
     }));
   }

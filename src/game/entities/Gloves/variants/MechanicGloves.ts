@@ -1,4 +1,5 @@
 import { BaseGloves } from '../BaseGloves';
+import type { GlovesAsset } from '../types';
 
 export class MechanicGloves extends BaseGloves
 {
@@ -12,6 +13,14 @@ export class MechanicGloves extends BaseGloves
     readonly staminaCostMultiplier = 1.3;
     readonly attackSpeedMultiplier = 0.6;
     readonly hitSoundVolume = 0.2;
+    readonly hitEffectSize = 150;
+
+    readonly hitEffectAssets: GlovesAsset[] = [
+        {
+            key: 'mechanic-hit-explosion-effect',
+            path: 'assets/images/effects/mechanic-explosion.png',
+        },
+    ];
 
     readonly hitSoundAssets = [
         {

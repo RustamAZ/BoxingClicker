@@ -2,6 +2,7 @@ export type PlayerProfileSnapshot = {
   id: string;
   emeralds: number;
   purchasedItemIds: string[];
+  discoveredItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
   deathContinueCount: number;
@@ -11,6 +12,7 @@ type StoredPlayerProfile = {
   id?: string;
   emeralds?: number;
   purchasedItemIds?: string[];
+  discoveredItemIds?: string[];
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
@@ -28,6 +30,9 @@ export class PlayerProfile {
   private static readonly defaultPurchasedItemIds = [
     PlayerProfile.defaultEquippedItemId,
   ];
+  private static readonly defaultDiscoveredItemIds = [
+    PlayerProfile.defaultEquippedItemId,
+  ];
   private static readonly legacyItemIdAliases: Record<string, string> = {
     "heavy-gloves": "mechanic-gloves",
   };
@@ -35,6 +40,7 @@ export class PlayerProfile {
   private id: string;
   private emeralds: number;
   private purchasedItemIds: string[];
+  private discoveredItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
   private deathContinueCount: number;
@@ -45,6 +51,7 @@ export class PlayerProfile {
     this.id = profile.id;
     this.emeralds = profile.emeralds;
     this.purchasedItemIds = profile.purchasedItemIds;
+    this.discoveredItemIds = profile.discoveredItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
     this.deathContinueCount = profile.deathContinueCount;
@@ -103,11 +110,30 @@ export class PlayerProfile {
   }
 
   purchaseItem(itemId: string) {
-    if (this.hasPurchasedItem(itemId)) {
+    if (this.hasPurchasedItem(itemId) || !this.hasDiscoveredItem(itemId)) {
       return false;
     }
 
     this.purchasedItemIds.push(itemId);
+    this.save();
+
+    return true;
+  }
+
+  getDiscoveredItemIds() {
+    return [...this.discoveredItemIds];
+  }
+
+  hasDiscoveredItem(itemId: string) {
+    return this.discoveredItemIds.includes(itemId);
+  }
+
+  discoverItem(itemId: string) {
+    if (this.hasDiscoveredItem(itemId)) {
+      return false;
+    }
+
+    this.discoveredItemIds.push(itemId);
     this.save();
 
     return true;
@@ -161,6 +187,7 @@ export class PlayerProfile {
       id: this.id,
       emeralds: this.emeralds,
       purchasedItemIds: this.getPurchasedItemIds(),
+      discoveredItemIds: this.getDiscoveredItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
       deathContinueCount: this.deathContinueCount,
@@ -188,6 +215,11 @@ export class PlayerProfile {
               .filter((itemId): itemId is string => typeof itemId === "string")
               .map((itemId) => this.normalizeItemId(itemId))
           : [...PlayerProfile.defaultPurchasedItemIds],
+        discoveredItemIds: Array.isArray(profile.discoveredItemIds)
+          ? profile.discoveredItemIds
+              .filter((itemId): itemId is string => typeof itemId === "string")
+              .map((itemId) => this.normalizeItemId(itemId))
+          : [...PlayerProfile.defaultDiscoveredItemIds],
         equippedItemId:
           typeof profile.equippedItemId === "string"
             ? this.normalizeItemId(profile.equippedItemId)
@@ -208,6 +240,7 @@ export class PlayerProfile {
       id: this.createId(),
       emeralds: this.loadLegacyEmeralds(),
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],
+      discoveredItemIds: [...PlayerProfile.defaultDiscoveredItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
       deathContinueCount: 0,
@@ -219,8 +252,14 @@ export class PlayerProfile {
       PlayerProfile.defaultEquippedItemId,
       ...this.purchasedItemIds,
     ]);
+    const uniqueDiscoveredItems = new Set([
+      PlayerProfile.defaultEquippedItemId,
+      ...this.discoveredItemIds,
+      ...this.purchasedItemIds,
+    ]);
 
     this.purchasedItemIds = [...uniquePurchasedItems];
+    this.discoveredItemIds = [...uniqueDiscoveredItems];
 
     if (!this.hasPurchasedItem(this.equippedItemId)) {
       this.equippedItemId = PlayerProfile.defaultEquippedItemId;

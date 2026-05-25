@@ -2,6 +2,7 @@ import type { Scene } from "phaser";
 import type { EnemySpawnKind } from "../../progression/types";
 import type { EnemySpawnSlot } from "./types";
 import type { Enemy } from "./Enemy";
+import type { FourDifficultyStalkerState } from "./LowGradeEnemies/FourDifficulty/FourDifficultyStalker";
 import { FirstDifficultyBoss } from "./LowGradeEnemies/FirstDifficulty/FirstDifficultyBoss";
 import { FirstDifficultyEnemy } from "./LowGradeEnemies/FirstDifficulty/FirstDifficultyEnemy";
 import { SecondDifficultyBoss } from "./LowGradeEnemies/SecondDifficulty/SecondDifficultyBoss";
@@ -9,11 +10,25 @@ import { SecondDifficultyEnemy } from "./LowGradeEnemies/SecondDifficulty/Second
 import { PunchingBag } from "./PunchingBag/PunchingBag";
 import { ThirdDifficultyBoss } from "./LowGradeEnemies/ThirdDifficulty/ThirdDifficultyBoss";
 import { ThirdDifficultyEnemy } from "./LowGradeEnemies/ThirdDifficulty/ThirdDifficultyEnemy";
+import { FourDifficultyBoss } from "./LowGradeEnemies/FourDifficulty/FourDifficultyBoss";
+import { FourDifficultyEnemy } from "./LowGradeEnemies/FourDifficulty/FourDifficultyEnemy";
+import { FourDifficultyStalker } from "./LowGradeEnemies/FourDifficulty/FourDifficultyStalker";
+import { FiveDifficultyBoss } from "./LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
+import { FiveDifficultyEnemy } from "./LowGradeEnemies/FiveDifficulty/FiveDifficultyEnemy";
+
+export type EnemySpawnContext = {
+  fourDifficultyStalkerState?: FourDifficultyStalkerState;
+};
 
 type EnemyRegistryItem = {
   preload: (scene: Scene) => void;
-  create: (scene: Scene, slot: EnemySpawnSlot) => Enemy;
+  create: (
+    scene: Scene,
+    slot: EnemySpawnSlot,
+    context?: EnemySpawnContext,
+  ) => Enemy;
   isBoss?: boolean;
+  isEncounter?: boolean;
 };
 
 const enemyRegistry: Record<EnemySpawnKind, EnemyRegistryItem> = {
@@ -40,12 +55,40 @@ const enemyRegistry: Record<EnemySpawnKind, EnemyRegistryItem> = {
     isBoss: true,
   },
   "third-difficulty-enemy": {
-    preload: SecondDifficultyEnemy.preload,
+    preload: ThirdDifficultyEnemy.preload,
     create: (scene, slot) => new ThirdDifficultyEnemy(scene, slot),
   },
   "third-difficulty-boss": {
-    preload: SecondDifficultyBoss.preload,
+    preload: ThirdDifficultyBoss.preload,
     create: (scene, slot) => new ThirdDifficultyBoss(scene, slot),
+    isBoss: true,
+  },
+  "four-difficulty-enemy": {
+    preload: FourDifficultyEnemy.preload,
+    create: (scene, slot) => new FourDifficultyEnemy(scene, slot),
+  },
+  "four-difficulty-stalker": {
+    preload: FourDifficultyStalker.preload,
+    create: (scene, slot, context) =>
+      new FourDifficultyStalker(
+        scene,
+        slot,
+        context?.fourDifficultyStalkerState ?? "passive",
+      ),
+    isEncounter: true,
+  },
+  "four-difficulty-boss": {
+    preload: FourDifficultyBoss.preload,
+    create: (scene, slot) => new FourDifficultyBoss(scene, slot),
+    isBoss: true,
+  },
+  "five-difficulty-enemy": {
+    preload: FiveDifficultyEnemy.preload,
+    create: (scene, slot) => new FiveDifficultyEnemy(scene, slot),
+  },
+  "five-difficulty-boss": {
+    preload: FiveDifficultyBoss.preload,
+    create: (scene, slot) => new FiveDifficultyBoss(scene, slot),
     isBoss: true,
   },
 };
@@ -61,8 +104,9 @@ export class EnemyRegistry {
     enemySpawnKind: EnemySpawnKind,
     scene: Scene,
     slot: EnemySpawnSlot,
+    context?: EnemySpawnContext,
   ) {
-    return enemyRegistry[enemySpawnKind].create(scene, slot);
+    return enemyRegistry[enemySpawnKind].create(scene, slot, context);
   }
 
   static isBoss(enemySpawnKind: EnemySpawnKind) {
@@ -71,5 +115,13 @@ export class EnemyRegistry {
 
   static isTraining(enemySpawnKind?: EnemySpawnKind) {
     return enemySpawnKind === "training";
+  }
+
+  static isEncounter(enemySpawnKind?: EnemySpawnKind) {
+    if (!enemySpawnKind) {
+      return false;
+    }
+
+    return Boolean(enemyRegistry[enemySpawnKind].isEncounter);
   }
 }

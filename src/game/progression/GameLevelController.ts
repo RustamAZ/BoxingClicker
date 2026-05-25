@@ -54,6 +54,10 @@ export class GameLevelController {
   }
 
   getCurrentMusicId() {
+    if (this.activeBossId === "five-difficulty-boss") {
+      return "hell-boss-fight";
+    }
+
     if (this.activeBossId) {
       return "boss-fight";
     }

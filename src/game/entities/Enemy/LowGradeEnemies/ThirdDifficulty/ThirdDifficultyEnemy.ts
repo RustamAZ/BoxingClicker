@@ -26,13 +26,35 @@ export class ThirdDifficultyEnemy extends Enemy {
   private static readonly sprites: EnemySpritePair[] = [
     [
       {
-        key: "third-difficulty-pig-zombie-1",
-        path: "assets/images/enemies/third-difficulty/pig-zombie-v1.png",
-        displayName: "PigZombie",
+        key: "third-difficulty-spider-1",
+        path: "assets/images/enemies/third-difficulty/spider-v1.png",
+        displayName: "Spider",
       },
       {
-        key: "third-difficulty-pig-zombie-1-dead",
-        path: "assets/images/enemies/third-difficulty/pig-zombie-v1-die.png",
+        key: "third-difficulty-spider-1-dead",
+        path: "assets/images/enemies/third-difficulty/spider-v1-die.png",
+      },
+    ],
+    [
+      {
+        key: "third-difficulty-golden-zombie-1",
+        path: "assets/images/enemies/third-difficulty/golden-zombie-v1.png",
+        displayName: "Golden Zombie",
+      },
+      {
+        key: "third-difficulty-golden-zombie-1-dead",
+        path: "assets/images/enemies/third-difficulty/golden-zombie-v1-die.png",
+      },
+    ],
+    [
+      {
+        key: "third-difficulty-skeleton-with-axe-1",
+        path: "assets/images/enemies/third-difficulty/skeleton-with-axe-v1.png",
+        displayName: "Skeleton",
+      },
+      {
+        key: "third-difficulty-skeleton-with-axe-1-dead",
+        path: "assets/images/enemies/third-difficulty/skeleton-with-axe-v1-die.png",
       },
     ],
   ];
