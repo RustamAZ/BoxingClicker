@@ -41,7 +41,6 @@ export class Player {
   damagePerHit = playerConfig.player_start.attack;
 
   punchSpeed = playerConfig.player_start.attack_speed;
-  xpPerHit = 2;
   staminaCostPerHit = playerConfig.player_start.stamina_cost_per_hit;
 
   lowStaminaPercent = 0.15;
@@ -66,7 +65,6 @@ export class Player {
     }
 
     this.stamina -= staminaCost;
-    this.gainXp(this.xpPerHit);
 
     return true;
   }

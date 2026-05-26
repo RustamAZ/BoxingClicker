@@ -1,3 +1,4 @@
+import { getGlovesShopConfigByGlovesId } from "../configs/glovesConfig";
 import type { PlayerProfile } from "../entities/Player/PlayerProfile";
 import type { ShopItemConfig, ShopItemView } from "./types";
 
@@ -59,19 +60,21 @@ export class ShopCatalog {
   ];
 
   static getItems() {
-    return [...ShopCatalog.items];
+    return ShopCatalog.items.map((item) => ShopCatalog.withConfig(item));
   }
 
   static getItemById(itemId: string) {
-    return ShopCatalog.items.find((item) => item.id === itemId);
+    const item = ShopCatalog.items.find((item) => item.id === itemId);
+
+    return item ? ShopCatalog.withConfig(item) : undefined;
   }
 
   static getItemByUnlockBossId(bossId: string) {
-    return ShopCatalog.items.find((item) => item.unlockBossId === bossId);
+    return ShopCatalog.getItems().find((item) => item.unlockBossId === bossId);
   }
 
   static getItemViews(profile: PlayerProfile): ShopItemView[] {
-    return ShopCatalog.items.map((item) => ({
+    return ShopCatalog.getItems().map((item) => ({
       ...item,
       status: !profile.hasDiscoveredItem(item.id)
         ? "locked"
@@ -80,5 +83,20 @@ export class ShopCatalog {
           : "not-purchased",
       isEquipped: profile.getEquippedItemId() === item.id,
     }));
+  }
+
+  private static withConfig(item: ShopItemConfig): ShopItemConfig {
+    const glovesShopConfig = getGlovesShopConfigByGlovesId(item.glovesId);
+
+    if (!glovesShopConfig) {
+      return item;
+    }
+
+    return {
+      ...item,
+      title: glovesShopConfig.name,
+      price: glovesShopConfig.price_emerald,
+      unlockBossId: glovesShopConfig.unlock_boss_id,
+    };
   }
 }

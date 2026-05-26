@@ -127,7 +127,8 @@ export class SpawnPlace {
 
     const currentWeapon = this.glovesEquipmentController.getCurrentWeapon();
     const enemySurvived = enemy.takeDamage(
-      this.player.getDamagePerHit(currentWeapon.damageMultiplier),
+      this.player.getDamagePerHit(currentWeapon.damageMultiplier) +
+        currentWeapon.attackBonus,
     );
 
     this.hitSoundPlayer.playRandom(

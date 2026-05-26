@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from "phaser";
-import { firstBossConfig } from "../../../../configs/boss/first";
+import { firstBossConfig } from "../../../../configs/bosses";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 

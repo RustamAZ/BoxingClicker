@@ -1,4 +1,9 @@
 import type { Scene } from "phaser";
+import {
+  buffConfig,
+  getBuffValue,
+  type BuffRarity,
+} from "../configs/buffConfig";
 import { languageController } from "../localization/LanguageController";
 import type {
   RewardBuffDefinition,
@@ -12,44 +17,40 @@ const rarityConfigs: Record<RewardBuffRarity, RewardBuffRarityConfig> = {
   wooden: {
     id: "wooden",
     label: "buff.rarity.wooden",
+    configRarity: "common",
     textureKey: "wooden-buff-container",
     texturePath: "assets/images/ui/buffs/wooden-buff-container.png",
-    valueMultiplier: 1,
-    weight: 56,
   },
   golden: {
     id: "golden",
     label: "buff.rarity.golden",
+    configRarity: "rare",
     textureKey: "golden-buff-container",
     texturePath: "assets/images/ui/buffs/golden-buff-container.png",
-    valueMultiplier: 1.5,
-    weight: 28,
   },
   emerald: {
     id: "emerald",
     label: "buff.rarity.emerald",
+    configRarity: "epic",
     textureKey: "emerald-buff-container",
     texturePath: "assets/images/ui/buffs/emerald-buff-container.png",
-    valueMultiplier: 2,
-    weight: 12,
   },
   diamond: {
     id: "diamond",
     label: "buff.rarity.diamond",
+    configRarity: "legendary",
     textureKey: "diamond-buff-container",
     texturePath: "assets/images/ui/buffs/diamond-buff-container.png",
-    valueMultiplier: 3,
-    weight: 4,
   },
 };
 
 const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
   damage: {
     id: "damage",
+    configId: "attack",
     iconTextureKey: "buff-icon-attack-damage",
     iconTexturePath: "assets/images/ui/buffs/icons/attackDamage.png",
     titleKey: "buff.damage.title",
-    baseValue: 2,
     descriptionKey: "buff.damage.description",
     apply: (player, value) => {
       player.applyStatEffect({
@@ -61,10 +62,10 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
   },
   stamina: {
     id: "stamina",
+    configId: "stamina",
     iconTextureKey: "buff-icon-increase-stamina",
     iconTexturePath: "assets/images/ui/buffs/icons/increaseStamina.png",
     titleKey: "buff.stamina.title",
-    baseValue: 15,
     descriptionKey: "buff.stamina.description",
     apply: (player, value) => {
       player.applyStatEffect({
@@ -76,10 +77,10 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
   },
   health: {
     id: "health",
+    configId: "health",
     iconTextureKey: "buff-icon-increase-health",
     iconTexturePath: "assets/images/ui/buffs/icons/increaseHealth.png",
     titleKey: "buff.health.title",
-    baseValue: 10,
     descriptionKey: "buff.health.description",
     apply: (player, value) => {
       player.applyStatEffect({
@@ -91,31 +92,31 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
   },
   "attack-speed": {
     id: "attack-speed",
+    configId: "attack_speed",
     iconTextureKey: "buff-icon-attack-speed",
     iconTexturePath: "assets/images/ui/buffs/icons/attackSpeed.png",
     titleKey: "buff.attackSpeed.title",
-    baseValue: 15,
     descriptionKey: "buff.attackSpeed.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "punch-speed",
         mode: "add",
-        value: value / 100,
+        value,
       });
     },
   },
   "stamina-cost": {
     id: "stamina-cost",
+    configId: "stamina_cost_per_hit",
     iconTextureKey: "buff-icon-decrease-cost",
     iconTexturePath: "assets/images/ui/buffs/icons/decreaseCost.png",
     titleKey: "buff.staminaCost.title",
-    baseValue: 1,
     descriptionKey: "buff.staminaCost.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "stamina-cost",
         mode: "add",
-        value: -value,
+        value,
       });
     },
   },
@@ -151,7 +152,10 @@ export class RewardChoiceController {
     return {
       title: languageController.t(choice.titleKey),
       description: languageController.t(choice.descriptionKey, {
-        value: choice.value,
+        value: RewardChoiceController.getDisplayValue(
+          choice.buffId,
+          choice.value,
+        ),
       }),
     };
   }
@@ -160,10 +164,7 @@ export class RewardChoiceController {
     buff: RewardBuffDefinition,
     rarity: RewardBuffRarityConfig,
   ): RewardChoice {
-    const value = Math.max(
-      1,
-      Math.round(buff.baseValue * rarity.valueMultiplier),
-    );
+    const value = getBuffValue(buff.configId, rarity.configRarity);
 
     return {
       id: `${rarity.id}-${buff.id}`,
@@ -171,7 +172,9 @@ export class RewardChoiceController {
       rarity: rarity.id,
       title: languageController.t(buff.titleKey),
       titleKey: buff.titleKey,
-      description: languageController.t(buff.descriptionKey, { value }),
+      description: languageController.t(buff.descriptionKey, {
+        value: RewardChoiceController.getDisplayValue(buff.id, value),
+      }),
       descriptionKey: buff.descriptionKey,
       value,
       rarityTextureKey: rarity.textureKey,
@@ -183,18 +186,41 @@ export class RewardChoiceController {
   }
 
   private static getRandomRarity() {
-    const rarities = Object.values(rarityConfigs);
-    const totalWeight = rarities.reduce((sum, rarity) => sum + rarity.weight, 0);
-    let roll = Math.random() * totalWeight;
+    const rarity = RewardChoiceController.rollBuffRarity();
 
-    for (const rarity of rarities) {
-      roll -= rarity.weight;
+    return (
+      Object.values(rarityConfigs).find(
+        (rarityConfig) => rarityConfig.configRarity === rarity,
+      ) ?? rarityConfigs.wooden
+    );
+  }
+
+  private static rollBuffRarity(): BuffRarity {
+    const rarityChances = Object.entries(
+      buffConfig.buff_rarity_chance,
+    ) as [BuffRarity, number][];
+    let roll = Math.random();
+
+    for (const [rarity, chance] of rarityChances) {
+      roll -= chance;
 
       if (roll <= 0) {
         return rarity;
       }
     }
 
-    return rarityConfigs.wooden;
+    return "common";
+  }
+
+  private static getDisplayValue(buffId: RewardBuffId, value: number) {
+    if (buffId === "attack-speed") {
+      return Math.round(value * 100);
+    }
+
+    if (buffId === "stamina-cost") {
+      return Math.abs(value);
+    }
+
+    return value;
   }
 }

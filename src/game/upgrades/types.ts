@@ -1,4 +1,5 @@
 import type { Player } from "../entities/Player/Player";
+import type { BuffConfigId, BuffRarity } from "../configs/buffConfig";
 
 export type RewardBuffId =
   | "damage"
@@ -11,10 +12,10 @@ export type RewardBuffRarity = "wooden" | "golden" | "emerald" | "diamond";
 
 export type RewardBuffDefinition = {
   id: RewardBuffId;
+  configId: BuffConfigId;
   titleKey: string;
   iconTextureKey: string;
   iconTexturePath: string;
-  baseValue: number;
   descriptionKey: string;
   apply: (player: Player, value: number) => void;
 };
@@ -22,10 +23,9 @@ export type RewardBuffDefinition = {
 export type RewardBuffRarityConfig = {
   id: RewardBuffRarity;
   label: string;
+  configRarity: BuffRarity;
   textureKey: string;
   texturePath: string;
-  valueMultiplier: number;
-  weight: number;
 };
 
 export type RewardChoice = {

@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from "phaser";
-import { fiveBossConfig } from "../../../../configs/boss/five";
+import { fiveBossConfig } from "../../../../configs/bosses";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 

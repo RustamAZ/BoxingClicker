@@ -7,6 +7,7 @@ export type GlovesAsset = {
 
 export type GlovesCombatProfile = {
     id: string;
+    attackBonus: number;
     damageMultiplier: number;
     staminaCostMultiplier: number;
     attackSpeedMultiplier: number;

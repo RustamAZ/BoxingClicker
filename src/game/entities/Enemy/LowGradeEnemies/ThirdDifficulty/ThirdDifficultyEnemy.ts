@@ -1,6 +1,8 @@
 import { GameObjects, Scene } from "phaser";
-import { thirdEnemyConfig } from "../../../../configs/enemies/third";
-import { toEnemyStatRange } from "../../../../configs/enemies/types";
+import {
+  thirdEnemyConfig,
+  toEnemyStatRange,
+} from "../../../../configs/enemies";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 import { randomItem } from "../../../../utils/randomItem";

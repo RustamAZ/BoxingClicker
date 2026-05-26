@@ -1,4 +1,5 @@
 import type { Scene } from 'phaser';
+import { getGlovesShopConfigByGlovesId } from '../../configs/glovesConfig';
 import type { GlovesAsset, GlovesCombatProfile } from './types';
 
 export abstract class BaseGloves {
@@ -59,11 +60,16 @@ export abstract class BaseGloves {
   }
 
   getCombatProfile(): GlovesCombatProfile {
+    const glovesConfig = getGlovesShopConfigByGlovesId(this.id);
+
     return {
       id: this.id,
-      damageMultiplier: this.damageMultiplier,
-      staminaCostMultiplier: this.staminaCostMultiplier,
-      attackSpeedMultiplier: this.attackSpeedMultiplier,
+      attackBonus: glovesConfig?.attack_bonus ?? 0,
+      damageMultiplier: glovesConfig ? 1 : this.damageMultiplier,
+      staminaCostMultiplier: glovesConfig ? 1 : this.staminaCostMultiplier,
+      attackSpeedMultiplier: glovesConfig
+        ? 1 + glovesConfig.attack_speed_bonus
+        : this.attackSpeedMultiplier,
       hitEffectKeys: this.hitEffectAssets.map((asset) => asset.key),
       hitEffectSize: this.hitEffectSize,
       hitSoundKeys: this.hitSoundAssets.map((asset) => asset.key),
