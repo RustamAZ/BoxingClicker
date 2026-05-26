@@ -27,10 +27,10 @@ export const buffConfig: BuffConfig = {
   buffs: {
     attack: {
       values: {
-        common: 3,
-        rare: 6,
-        epic: 10,
-        legendary: 16,
+        common: 2,
+        rare: 4,
+        epic: 7,
+        legendary: 11,
       },
     },
     health: {
@@ -43,27 +43,27 @@ export const buffConfig: BuffConfig = {
     },
     stamina: {
       values: {
-        common: 20,
-        rare: 40,
-        epic: 65,
-        legendary: 100,
+        common: 40,
+        rare: 80,
+        epic: 130,
+        legendary: 200,
       },
     },
     stamina_cost_per_hit: {
       values: {
-        common: -0.5,
-        rare: -1,
-        epic: -1.5,
-        legendary: -2,
+        common: -0.15,
+        rare: -0.3,
+        epic: -0.45,
+        legendary: -0.65,
       },
-      minimum_value: 2,
+      minimum_value: 0.5,
     },
     attack_speed: {
       values: {
-        common: 0.12,
-        rare: 0.25,
-        epic: 0.4,
-        legendary: 0.65,
+        common: 0.45,
+        rare: 0.9,
+        epic: 1.5,
+        legendary: 2.4,
       },
     },
   },

@@ -2,13 +2,13 @@ import type { GameLevelConfig } from "./types";
 
 export const gameLevelStartPlayerLevels = {
   lobby: 1,
-  village: 10,
-  cave: 20,
-  lowDungeon: 30,
-  midDungeon: 40,
-  highDungeon: 50,
-  hell: 60,
-  infinite: 150,
+  village: 2,
+  cave: 11,
+  lowDungeon: 21,
+  midDungeon: 31,
+  highDungeon: 41,
+  hell: 51,
+  infinite: 76,
 } as const;
 
 export const gameLevelBossPlayerLevels = {

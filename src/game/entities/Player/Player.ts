@@ -46,7 +46,7 @@ export class Player {
   lowStaminaPercent = 0.15;
   lowHealthPercent = 0.25;
 
-  private readonly basePunchAnimationDurationMs = 75;
+  private readonly basePunchDurationMs = 1000;
   private readonly levelUpHealthRestorePercent = 0.2;
   private readonly activeStatEffects: ActivePlayerStatEffect[] = [];
 
@@ -81,7 +81,7 @@ export class Player {
     const punchSpeed =
       this.getCurrentPunchSpeed() * Math.max(0.1, attackSpeedMultiplier);
 
-    return this.basePunchAnimationDurationMs / Math.max(punchSpeed, 0.1);
+    return this.basePunchDurationMs / Math.max(punchSpeed, 0.1);
   }
 
   getDamagePerHit(damageMultiplier = 1) {

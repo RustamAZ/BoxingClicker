@@ -34,10 +34,10 @@ export const lootBoxConfig: LootBoxConfig = {
     epic: 0.05,
   },
   lootbox_reward_chance: {
-    health_potion: 0.28,
-    stamina_potion: 0.24,
-    attack_speed_potion: 0.16,
-    attack_power_potion: 0.16,
+    health_potion: 0.3,
+    stamina_potion: 0.25,
+    attack_speed_potion: 0.14,
+    attack_power_potion: 0.15,
     emerald: 0.16,
   },
   lootbox_rewards: {
@@ -46,9 +46,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.healthPotion.description",
       type: "instant_restore_health",
       values: {
-        common: 30,
-        rare: 60,
-        epic: 100,
+        common: 35,
+        rare: 70,
+        epic: 120,
       },
     },
     stamina_potion: {
@@ -56,9 +56,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.staminaPotion.description",
       type: "instant_restore_stamina",
       values: {
-        common: 30,
-        rare: 60,
-        epic: 100,
+        common: 80,
+        rare: 150,
+        epic: 240,
       },
     },
     attack_speed_potion: {
@@ -66,9 +66,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.attackSpeedPotion.description",
       type: "temporary_attack_speed_bonus",
       values: {
-        common: 0.25,
-        rare: 0.45,
-        epic: 0.75,
+        common: 1,
+        rare: 1.8,
+        epic: 3,
       },
     },
     attack_power_potion: {
@@ -76,9 +76,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.attackPowerPotion.description",
       type: "temporary_attack_bonus",
       values: {
-        common: 8,
-        rare: 15,
-        epic: 25,
+        common: 5,
+        rare: 10,
+        epic: 18,
       },
     },
     emerald: {

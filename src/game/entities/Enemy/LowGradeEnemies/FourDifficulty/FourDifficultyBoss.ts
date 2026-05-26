@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from "phaser";
-import { fourBossConfig } from "../../../../configs/bosses";
+import { fourthBossConfig } from "../../../../configs/bosses";
 import type { Player } from "../../../Player/Player";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
@@ -64,13 +64,13 @@ export class FourDifficultyBoss extends Enemy {
     super({
       displayName: "Stalker Boss",
       isBoss: true,
-      maxHealth: fourBossConfig.health,
-      xpReward: fourBossConfig.xp_reward,
-      diamondsReward: fourBossConfig.buff_container_reward,
-      coinsReward: fourBossConfig.lootbox_container_reward,
-      emeraldDropChance: fourBossConfig.emerald_drop_chance,
-      damagePerHit: fourBossConfig.damage,
-      attackCooldownSeconds: fourBossConfig.attack_speed,
+      maxHealth: fourthBossConfig.health,
+      xpReward: fourthBossConfig.xp_reward,
+      diamondsReward: fourthBossConfig.buff_container_reward,
+      coinsReward: fourthBossConfig.lootbox_container_reward,
+      emeraldDropChance: fourthBossConfig.emerald_drop_chance,
+      damagePerHit: fourthBossConfig.damage,
+      attackCooldownSeconds: fourthBossConfig.attack_speed,
     });
 
     this.slot = slot;

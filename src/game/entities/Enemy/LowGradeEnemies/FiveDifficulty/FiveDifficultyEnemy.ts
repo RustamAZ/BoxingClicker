@@ -1,6 +1,6 @@
 import { GameObjects, Scene } from "phaser";
 import {
-  fiveEnemyConfig,
+  fifthEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
 import { Enemy } from "../../Enemy";
@@ -79,14 +79,14 @@ export class FiveDifficultyEnemy extends Enemy {
 
     super({
       displayName: aliveSprite.displayName,
-      maxHealth: randomInt(toEnemyStatRange(fiveEnemyConfig.health_range)),
-      xpReward: fiveEnemyConfig.xp_reward,
-      diamondsReward: fiveEnemyConfig.buff_container_reward,
-      coinsReward: fiveEnemyConfig.lootbox_container_reward,
-      emeraldDropChance: fiveEnemyConfig.emerald_drop_chance,
-      damagePerHit: randomInt(toEnemyStatRange(fiveEnemyConfig.damage_range)),
+      maxHealth: randomInt(toEnemyStatRange(fifthEnemyConfig.health_range)),
+      xpReward: fifthEnemyConfig.xp_reward,
+      diamondsReward: fifthEnemyConfig.buff_container_reward,
+      coinsReward: fifthEnemyConfig.lootbox_container_reward,
+      emeraldDropChance: fifthEnemyConfig.emerald_drop_chance,
+      damagePerHit: randomInt(toEnemyStatRange(fifthEnemyConfig.damage_range)),
       attackCooldownSeconds: randomFloat(
-        toEnemyStatRange(fiveEnemyConfig.attack_speed_range),
+        toEnemyStatRange(fifthEnemyConfig.attack_speed_range),
       ),
     });
 

@@ -56,7 +56,7 @@ export class GlovesView
         this.updateIdleGlove(this.rightHand, -1);
     }
 
-    punch (punchHand: PunchHand, durationMs: number, onComplete: () => void)
+    punch (punchHand: PunchHand, totalDurationMs: number, onComplete: () => void)
     {
         const hand = punchHand === 'left' ? this.leftHand : this.rightHand;
         const startX = hand.image.x;
@@ -72,7 +72,7 @@ export class GlovesView
             y: targetY,
             scaleX: startScaleX * 1.06,
             scaleY: startScaleY * 1.06,
-            duration: durationMs,
+            duration: totalDurationMs / 2,
             yoyo: true,
             ease: 'Quad.easeOut',
             onComplete: () => {

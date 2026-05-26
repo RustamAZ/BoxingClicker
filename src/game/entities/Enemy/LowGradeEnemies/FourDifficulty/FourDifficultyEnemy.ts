@@ -1,6 +1,6 @@
 import { GameObjects, Scene } from "phaser";
 import {
-  fourEnemyConfig,
+  fourthEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
 import { Enemy } from "../../Enemy";
@@ -79,14 +79,14 @@ export class FourDifficultyEnemy extends Enemy {
 
     super({
       displayName: aliveSprite.displayName,
-      maxHealth: randomInt(toEnemyStatRange(fourEnemyConfig.health_range)),
-      xpReward: fourEnemyConfig.xp_reward,
-      diamondsReward: fourEnemyConfig.buff_container_reward,
-      coinsReward: fourEnemyConfig.lootbox_container_reward,
-      emeraldDropChance: fourEnemyConfig.emerald_drop_chance,
-      damagePerHit: randomInt(toEnemyStatRange(fourEnemyConfig.damage_range)),
+      maxHealth: randomInt(toEnemyStatRange(fourthEnemyConfig.health_range)),
+      xpReward: fourthEnemyConfig.xp_reward,
+      diamondsReward: fourthEnemyConfig.buff_container_reward,
+      coinsReward: fourthEnemyConfig.lootbox_container_reward,
+      emeraldDropChance: fourthEnemyConfig.emerald_drop_chance,
+      damagePerHit: randomInt(toEnemyStatRange(fourthEnemyConfig.damage_range)),
       attackCooldownSeconds: randomFloat(
-        toEnemyStatRange(fourEnemyConfig.attack_speed_range),
+        toEnemyStatRange(fourthEnemyConfig.attack_speed_range),
       ),
     });
 

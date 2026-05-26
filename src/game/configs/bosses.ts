@@ -21,9 +21,9 @@ export type BossConfig = {
 };
 
 export const firstBossConfig: BossConfig = {
-  health: 280,
-  damage: 14,
-  attack_speed: 0.55,
+  health: 520,
+  damage: 16,
+  attack_speed: 1.5,
   xp_reward: 1,
   buff_container_reward: 32,
   lootbox_container_reward: 32,
@@ -32,7 +32,7 @@ export const firstBossConfig: BossConfig = {
 };
 
 export const secondBossConfig: BossConfig = {
-  health: 520,
+  health: 900,
   damage: 0,
   attack_speed: 0,
   xp_reward: 1,
@@ -46,33 +46,33 @@ export const secondBossConfig: BossConfig = {
 };
 
 export const thirdBossConfig: BossConfig = {
-  health: 820,
-  damage: 20,
-  attack_speed: 1.5,
+  health: 1350,
+  damage: 24,
+  attack_speed: 1.1,
   xp_reward: 1,
   buff_container_reward: 48,
   lootbox_container_reward: 48,
   emerald_drop_chance: 1.0,
   effect: {
     type: "attack_speed_slow",
-    slow_value: -0.25,
+    slow_value: -0.35,
   },
 };
 
-export const fourBossConfig: BossConfig = {
-  health: 1050,
-  damage: 34,
-  attack_speed: 1.35,
+export const fourthBossConfig: BossConfig = {
+  health: 1750,
+  damage: 36,
+  attack_speed: 0.9,
   xp_reward: 1,
   buff_container_reward: 56,
   lootbox_container_reward: 56,
   emerald_drop_chance: 1.0,
 };
 
-export const fiveBossConfig: BossConfig = {
-  health: 2200,
-  damage: 75,
-  attack_speed: 0.45,
+export const fifthBossConfig: BossConfig = {
+  health: 3600,
+  damage: 90,
+  attack_speed: 1.6,
   xp_reward: 1,
   buff_container_reward: 80,
   lootbox_container_reward: 80,

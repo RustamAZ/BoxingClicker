@@ -8,7 +8,7 @@ export class PunchingBag extends Enemy {
   private static readonly config = {
     displayName: "Punching Bag",
     maxHealth: 100,
-    xpReward: 35,
+    xpReward: 2,
     diamondsReward: 0,
     coinsReward: 0,
     damagePerHit: 4,

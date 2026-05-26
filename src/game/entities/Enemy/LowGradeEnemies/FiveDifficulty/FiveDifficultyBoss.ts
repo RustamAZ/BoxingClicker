@@ -1,5 +1,5 @@
 import { GameObjects, Scene } from "phaser";
-import { fiveBossConfig } from "../../../../configs/bosses";
+import { fifthBossConfig } from "../../../../configs/bosses";
 import { Enemy } from "../../Enemy";
 import type { EnemySpawnSlot } from "../../types";
 
@@ -76,13 +76,13 @@ export class FiveDifficultyBoss extends Enemy {
     super({
       displayName: "Hell Boss",
       isBoss: true,
-      maxHealth: fiveBossConfig.health,
-      xpReward: fiveBossConfig.xp_reward,
-      diamondsReward: fiveBossConfig.buff_container_reward,
-      coinsReward: fiveBossConfig.lootbox_container_reward,
-      emeraldDropChance: fiveBossConfig.emerald_drop_chance,
-      damagePerHit: fiveBossConfig.damage,
-      attackCooldownSeconds: fiveBossConfig.attack_speed,
+      maxHealth: fifthBossConfig.health,
+      xpReward: fifthBossConfig.xp_reward,
+      diamondsReward: fifthBossConfig.buff_container_reward,
+      coinsReward: fifthBossConfig.lootbox_container_reward,
+      emeraldDropChance: fifthBossConfig.emerald_drop_chance,
+      damagePerHit: fifthBossConfig.damage,
+      attackCooldownSeconds: fifthBossConfig.attack_speed,
     });
 
     this.slot = slot;

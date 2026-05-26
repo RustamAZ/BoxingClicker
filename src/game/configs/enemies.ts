@@ -20,9 +20,9 @@ export function toEnemyStatRange(range: EnemyStatRangeConfig): EnemyStatRange {
 }
 
 export const firstEnemyConfig: EnemyConfig = {
-  health_range: [18, 35],
+  health_range: [55, 85],
   damage_range: [4, 7],
-  attack_speed_range: [1, 1.55],
+  attack_speed_range: [1.35, 1.65],
   xp_reward: 1,
   buff_container_reward: 8,
   lootbox_container_reward: 8,
@@ -30,9 +30,9 @@ export const firstEnemyConfig: EnemyConfig = {
 };
 
 export const secondEnemyConfig: EnemyConfig = {
-  health_range: [35, 65],
+  health_range: [110, 160],
   damage_range: [7, 12],
-  attack_speed_range: [0.45, 0.7],
+  attack_speed_range: [1.2, 1.5],
   xp_reward: 1,
   buff_container_reward: 8,
   lootbox_container_reward: 8,
@@ -40,29 +40,29 @@ export const secondEnemyConfig: EnemyConfig = {
 };
 
 export const thirdEnemyConfig: EnemyConfig = {
-  health_range: [65, 105],
-  damage_range: [11, 18],
-  attack_speed_range: [0.6, 0.85],
+  health_range: [185, 260],
+  damage_range: [12, 19],
+  attack_speed_range: [1.05, 1.35],
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 8,
   emerald_drop_chance: 0.13,
 };
 
-export const fourEnemyConfig: EnemyConfig = {
-  health_range: [105, 155],
-  damage_range: [18, 28],
-  attack_speed_range: [0.75, 1.05],
+export const fourthEnemyConfig: EnemyConfig = {
+  health_range: [290, 390],
+  damage_range: [19, 30],
+  attack_speed_range: [0.95, 1.2],
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 12,
   emerald_drop_chance: 0.16,
 };
 
-export const fiveEnemyConfig: EnemyConfig = {
-  health_range: [155, 230],
-  damage_range: [28, 42],
-  attack_speed_range: [0.85, 1.2],
+export const fifthEnemyConfig: EnemyConfig = {
+  health_range: [420, 560],
+  damage_range: [30, 46],
+  attack_speed_range: [0.9, 1.1],
   xp_reward: 1,
   buff_container_reward: 16,
   lootbox_container_reward: 12,
