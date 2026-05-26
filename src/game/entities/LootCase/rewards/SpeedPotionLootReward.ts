@@ -1,41 +1,49 @@
 import {
+  getLootBoxRewardConfig,
+  rewardIdToLootBoxRewardId,
+} from "../../../configs/lootBox";
+import { languageController } from "../../../localization/LanguageController";
+import {
   LootReward,
   type LootRewardApplyContext,
   type LootRewardRarity,
+  lootRewardRarityToName,
 } from "./LootReward";
 
 export class SpeedPotionLootReward extends LootReward {
   readonly id = "speed-potion";
-  readonly title = "Speed Potion";
+  readonly title: string;
   readonly iconTextureKey: string;
   readonly iconTexturePath: string;
   readonly applySoundKey = "loot-case-potion-apply";
   readonly applySoundPath = "assets/audio/ui/diamondReward.mp3";
-  readonly durationSeconds: number;
+  private static readonly durationSeconds = 6;
+  readonly attackSpeedBonus: number;
   readonly description: string;
 
   constructor(readonly rarity: LootRewardRarity) {
     super();
 
+    const rewardConfig = getLootBoxRewardConfig(
+      rewardIdToLootBoxRewardId[this.id],
+    );
+
+    this.title = languageController.t(rewardConfig.nameKey);
     this.iconTextureKey = `loot-case-${rarity}-speed-potion-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-speed-poition.png`;
-    this.durationSeconds = SpeedPotionLootReward.durationByRarity[rarity];
-    this.description = `+30% attack speed for ${this.durationSeconds}s`;
+    this.attackSpeedBonus = rewardConfig.values[lootRewardRarityToName[rarity]];
+    this.description = languageController.t(rewardConfig.descriptionKey, {
+      value: Math.round(this.attackSpeedBonus * 100),
+    });
   }
 
   apply(context: LootRewardApplyContext) {
     context.player.applyStatEffect({
       stat: "punch-speed",
       mode: "multiply",
-      value: 1.3,
-      durationSeconds: this.durationSeconds,
+      value: 1 + this.attackSpeedBonus,
+      durationSeconds: SpeedPotionLootReward.durationSeconds,
       sourceId: "loot-case-speed-potion",
     });
   }
-
-  private static readonly durationByRarity: Record<LootRewardRarity, number> = {
-    s: 2,
-    m: 4,
-    l: 6,
-  };
 }

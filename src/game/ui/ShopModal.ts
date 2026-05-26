@@ -2,6 +2,7 @@ import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import type { GlovesEquipmentController } from "../entities/Gloves/GlovesEquipmentController";
 import type { Wallet } from "../entities/Wallet/Wallet";
+import { languageController } from "../localization/LanguageController";
 import { ShopCatalog } from "../shop/ShopCatalog";
 import type { ShopItemView } from "../shop/types";
 import type { PauseController } from "../state/PauseController";
@@ -114,6 +115,7 @@ export class ShopModal {
   private readonly balanceText: GameObjects.Text;
   private readonly closeButton: ShopCloseButton;
   private readonly cards: ShopItemCard[];
+  private readonly unsubscribeLanguageChange: () => void;
   private isActionLocked = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
@@ -215,6 +217,12 @@ export class ShopModal {
     );
 
     this.setVisible(false);
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refresh();
+    });
+    this.scene.events.once("shutdown", () => {
+      this.unsubscribeLanguageChange();
+    });
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
   }
 
@@ -309,7 +317,7 @@ export class ShopModal {
 
     if (!this.wallet.withdraw(item.price)) {
       this.hideCardPriceIcon(card);
-      card.buttonLabel.setText("НЕТ");
+      card.buttonLabel.setText(languageController.t("shop.noMoney"));
       card.buttonLabel.setColor("#ff5a5a");
       return;
     }
@@ -330,19 +338,19 @@ export class ShopModal {
     this.hideCardPriceIcon(card);
 
     if (item.status === "locked") {
-      card.buttonLabel.setText("\u041d\u0410\u0419\u0414\u0418");
+      card.buttonLabel.setText(languageController.t("shop.find"));
       card.buttonLabel.setColor("#d4d4d4");
       return;
     }
 
     if (item.isEquipped) {
-      card.buttonLabel.setText("НАДЕТО");
+      card.buttonLabel.setText(languageController.t("shop.equipped"));
       card.buttonLabel.setColor("#7dff76");
       return;
     }
 
     if (item.status === "purchased") {
-      card.buttonLabel.setText("НАДЕТЬ");
+      card.buttonLabel.setText(languageController.t("shop.equip"));
       card.buttonLabel.setColor("#ffffff");
       return;
     }
@@ -354,7 +362,7 @@ export class ShopModal {
       return;
     }
 
-    card.buttonLabel.setText("FREE");
+    card.buttonLabel.setText(languageController.t("common.free"));
     card.buttonLabel.setColor("#ffffff");
   }
 

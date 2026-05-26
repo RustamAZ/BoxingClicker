@@ -1,12 +1,18 @@
 import {
+  getLootBoxRewardConfig,
+  rewardIdToLootBoxRewardId,
+} from "../../../configs/lootBox";
+import { languageController } from "../../../localization/LanguageController";
+import {
   LootReward,
   type LootRewardApplyContext,
   type LootRewardRarity,
+  lootRewardRarityToName,
 } from "./LootReward";
 
 export class EmeraldLootReward extends LootReward {
   readonly id = "emerald";
-  readonly title = "Emeralds";
+  readonly title: string;
   readonly iconTextureKey: string;
   readonly iconTexturePath: string;
   readonly applySoundKey = "loot-case-emerald-apply";
@@ -17,19 +23,20 @@ export class EmeraldLootReward extends LootReward {
   constructor(readonly rarity: LootRewardRarity) {
     super();
 
+    const rewardConfig = getLootBoxRewardConfig(
+      rewardIdToLootBoxRewardId[this.id],
+    );
+
+    this.title = languageController.t(rewardConfig.nameKey);
     this.iconTextureKey = `loot-case-${rarity}-emeralds-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-emeralds.png`;
-    this.value = EmeraldLootReward.valueByRarity[rarity];
-    this.description = `+${this.value} emeralds`;
+    this.value = rewardConfig.values[lootRewardRarityToName[rarity]];
+    this.description = languageController.t(rewardConfig.descriptionKey, {
+      value: this.value,
+    });
   }
 
   apply(context: LootRewardApplyContext) {
     context.wallet.deposit(this.value);
   }
-
-  private static readonly valueByRarity: Record<LootRewardRarity, number> = {
-    s: 1,
-    m: 3,
-    l: 5,
-  };
 }

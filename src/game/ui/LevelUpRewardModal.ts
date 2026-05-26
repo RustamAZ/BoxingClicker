@@ -1,5 +1,7 @@
 import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
+import { languageController } from "../localization/LanguageController";
+import { RewardChoiceController } from "../upgrades/RewardChoiceController";
 import type { RewardChoice } from "../upgrades/types";
 
 type RewardCard = {
@@ -29,6 +31,7 @@ export class LevelUpRewardModal {
   private readonly panel: GameObjects.Image;
   private readonly title: GameObjects.Text;
   private readonly cards: RewardCard[];
+  private readonly unsubscribeLanguageChange: () => void;
   private onSelect?: (choice: RewardChoice) => void;
   private isSelectionLocked = false;
   private unlockSelectionTimer?: Phaser.Time.TimerEvent;
@@ -59,7 +62,7 @@ export class LevelUpRewardModal {
       .text(
         centerX,
         centerY + LevelUpRewardModal.titleYOffset,
-        "Выбери награду",
+        languageController.t("levelReward.title"),
         {
           fontFamily: "Hardpixel",
           fontSize: 30,
@@ -80,6 +83,12 @@ export class LevelUpRewardModal {
     ];
 
     this.hide();
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refreshTexts();
+    });
+    this.scene.events.once("shutdown", () => {
+      this.unsubscribeLanguageChange();
+    });
   }
 
   show(choices: RewardChoice[], onSelect: (choice: RewardChoice) => void) {
@@ -204,9 +213,22 @@ export class LevelUpRewardModal {
   }
 
   private setCardData(card: RewardCard, choice: RewardChoice) {
+    const localizedChoice = RewardChoiceController.localizeChoice(choice);
+
     card.container.setTexture(choice.rarityTextureKey);
     card.icon.setTexture(choice.iconTextureKey);
-    card.description.setText(`${choice.title}\n${choice.description}`);
+    card.description.setText(
+      `${localizedChoice.title}\n${localizedChoice.description}`,
+    );
+  }
+
+  private refreshTexts() {
+    this.title.setText(languageController.t("levelReward.title"));
+    this.cards.forEach((card) => {
+      if (card.choice) {
+        this.setCardData(card, card.choice);
+      }
+    });
   }
 
   private setVisible(visible: boolean) {

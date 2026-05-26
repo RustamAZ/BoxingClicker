@@ -19,6 +19,7 @@ export class LootCaseController {
   private isOpen = false;
 
   static preload(scene: Scene) {
+    LootCaseModal.preload(scene);
     LootRewardFactory.preload(scene);
   }
 

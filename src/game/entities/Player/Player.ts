@@ -21,6 +21,8 @@ type ActivePlayerStatEffect = PlayerStatEffect & {
   remainingSeconds: number;
 };
 
+export type PlayerActiveStatEffect = Readonly<ActivePlayerStatEffect>;
+
 export class Player {
   readonly profile = new PlayerProfile();
 
@@ -201,6 +203,10 @@ export class Player {
     }
 
     this.applyPermanentStatEffect(effect);
+  }
+
+  getActiveStatEffects(): PlayerActiveStatEffect[] {
+    return this.activeStatEffects.map((effect) => ({ ...effect }));
   }
 
   restoreFromAd() {

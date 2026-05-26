@@ -1,4 +1,5 @@
 import type { Scene } from "phaser";
+import { lootBoxRarityToRewardRarity } from "../../../configs/lootBox";
 import { AttackPotionLootReward } from "./AttackPotionLootReward";
 import { EmeraldLootReward } from "./EmeraldLootReward";
 import { HealthPotionLootReward } from "./HealthPotionLootReward";
@@ -15,7 +16,9 @@ type LootRewardFactoryFn = (rarity: LootRewardRarity) => LootReward;
 
 export class LootRewardFactory {
   private static readonly placeholderRewardId = "placeholder-reward";
-  private static readonly rarities: LootRewardRarity[] = ["s", "m", "l"];
+  private static readonly rarities: LootRewardRarity[] = Object.values(
+    lootBoxRarityToRewardRarity,
+  );
   private static readonly factories = new Map<
     LootRewardId,
     LootRewardFactoryFn

@@ -15,7 +15,7 @@ type PlayerConfig = {
 export const playerConfig: PlayerConfig = {
   player_start: {
     attack: 100,
-    health: 1000,
+    health: 100,
     stamina: 100,
     stamina_cost_per_hit: 5,
     attack_speed: 2.0,

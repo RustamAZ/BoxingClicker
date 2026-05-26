@@ -1,4 +1,5 @@
 import type { Scene } from "phaser";
+import { languageController } from "../localization/LanguageController";
 import type {
   RewardBuffDefinition,
   RewardBuffId,
@@ -10,7 +11,7 @@ import type {
 const rarityConfigs: Record<RewardBuffRarity, RewardBuffRarityConfig> = {
   wooden: {
     id: "wooden",
-    label: "Дерево",
+    label: "buff.rarity.wooden",
     textureKey: "wooden-buff-container",
     texturePath: "assets/images/ui/buffs/wooden-buff-container.png",
     valueMultiplier: 1,
@@ -18,7 +19,7 @@ const rarityConfigs: Record<RewardBuffRarity, RewardBuffRarityConfig> = {
   },
   golden: {
     id: "golden",
-    label: "Золото",
+    label: "buff.rarity.golden",
     textureKey: "golden-buff-container",
     texturePath: "assets/images/ui/buffs/golden-buff-container.png",
     valueMultiplier: 1.5,
@@ -26,7 +27,7 @@ const rarityConfigs: Record<RewardBuffRarity, RewardBuffRarityConfig> = {
   },
   emerald: {
     id: "emerald",
-    label: "Изумруд",
+    label: "buff.rarity.emerald",
     textureKey: "emerald-buff-container",
     texturePath: "assets/images/ui/buffs/emerald-buff-container.png",
     valueMultiplier: 2,
@@ -34,7 +35,7 @@ const rarityConfigs: Record<RewardBuffRarity, RewardBuffRarityConfig> = {
   },
   diamond: {
     id: "diamond",
-    label: "Алмаз",
+    label: "buff.rarity.diamond",
     textureKey: "diamond-buff-container",
     texturePath: "assets/images/ui/buffs/diamond-buff-container.png",
     valueMultiplier: 3,
@@ -47,9 +48,9 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     id: "damage",
     iconTextureKey: "buff-icon-attack-damage",
     iconTexturePath: "assets/images/ui/buffs/icons/attackDamage.png",
-    title: "Сильный удар",
+    titleKey: "buff.damage.title",
     baseValue: 2,
-    getDescription: (value) => `+${value} к урону`,
+    descriptionKey: "buff.damage.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "damage",
@@ -62,9 +63,9 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     id: "stamina",
     iconTextureKey: "buff-icon-increase-stamina",
     iconTexturePath: "assets/images/ui/buffs/icons/increaseStamina.png",
-    title: "Запас сил",
+    titleKey: "buff.stamina.title",
     baseValue: 15,
-    getDescription: (value) => `+${value} к выносливости`,
+    descriptionKey: "buff.stamina.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "max-stamina",
@@ -77,9 +78,9 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     id: "health",
     iconTextureKey: "buff-icon-increase-health",
     iconTexturePath: "assets/images/ui/buffs/icons/increaseHealth.png",
-    title: "Крепкий корпус",
+    titleKey: "buff.health.title",
     baseValue: 10,
-    getDescription: (value) => `+${value} к здоровью`,
+    descriptionKey: "buff.health.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "max-health",
@@ -92,9 +93,9 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     id: "attack-speed",
     iconTextureKey: "buff-icon-attack-speed",
     iconTexturePath: "assets/images/ui/buffs/icons/attackSpeed.png",
-    title: "Быстрые руки",
+    titleKey: "buff.attackSpeed.title",
     baseValue: 15,
-    getDescription: (value) => `+${value}% к скорости`,
+    descriptionKey: "buff.attackSpeed.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "punch-speed",
@@ -107,9 +108,9 @@ const buffDefinitions: Record<RewardBuffId, RewardBuffDefinition> = {
     id: "stamina-cost",
     iconTextureKey: "buff-icon-decrease-cost",
     iconTexturePath: "assets/images/ui/buffs/icons/decreaseCost.png",
-    title: "Легкий удар",
+    titleKey: "buff.staminaCost.title",
     baseValue: 1,
-    getDescription: (value) => `-${value} к затратам`,
+    descriptionKey: "buff.staminaCost.description",
     apply: (player, value) => {
       player.applyStatEffect({
         stat: "stamina-cost",
@@ -146,18 +147,32 @@ export class RewardChoiceController {
     return choices;
   }
 
+  static localizeChoice(choice: RewardChoice) {
+    return {
+      title: languageController.t(choice.titleKey),
+      description: languageController.t(choice.descriptionKey, {
+        value: choice.value,
+      }),
+    };
+  }
+
   private static createChoice(
     buff: RewardBuffDefinition,
     rarity: RewardBuffRarityConfig,
   ): RewardChoice {
-    const value = Math.max(1, Math.round(buff.baseValue * rarity.valueMultiplier));
+    const value = Math.max(
+      1,
+      Math.round(buff.baseValue * rarity.valueMultiplier),
+    );
 
     return {
       id: `${rarity.id}-${buff.id}`,
       buffId: buff.id,
       rarity: rarity.id,
-      title: buff.title,
-      description: buff.getDescription(value),
+      title: languageController.t(buff.titleKey),
+      titleKey: buff.titleKey,
+      description: languageController.t(buff.descriptionKey, { value }),
+      descriptionKey: buff.descriptionKey,
       value,
       rarityTextureKey: rarity.textureKey,
       iconTextureKey: buff.iconTextureKey,

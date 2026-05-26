@@ -4,6 +4,7 @@ import { GlovesEquipmentController } from "../entities/Gloves/GlovesEquipmentCon
 import { GameHud } from "../ui/GameHud";
 import { PauseMenu } from "../ui/PauseMenu";
 import { ShopModal } from "../ui/ShopModal";
+import { StatusBar } from "../ui/StatusBar";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
 import { EnemyAttackSoundPlayer } from "../audio/EnemyAttackSoundPlayer";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
@@ -29,6 +30,7 @@ import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
 import { getRewardContainerRequirements } from "../configs/rewardContainers";
+import { languageController } from "../localization/LanguageController";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 50;
@@ -53,6 +55,7 @@ export class Game extends Scene {
   private hud: GameHud;
   private pauseMenu: PauseMenu;
   private shopModal: ShopModal;
+  private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
@@ -63,7 +66,9 @@ export class Game extends Scene {
   private weaponUnlockToastBackground: GameObjects.Rectangle;
   private weaponUnlockToastText: GameObjects.Text;
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
+  private unsubscribeLanguageChange?: () => void;
   private previousGameLevel: number;
+  private isDeathAdContinueUsed = false;
 
   constructor() {
     super("Game");
@@ -75,6 +80,7 @@ export class Game extends Scene {
     GameHud.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
+    StatusBar.preload(this);
     PlayerDeathModal.preload(this);
     LootCaseController.preload(this);
     LevelUpRewardController.preload(this);
@@ -193,6 +199,7 @@ export class Game extends Scene {
       this.wallet,
       this.glovesEquipmentController,
     );
+    this.statusBar = new StatusBar(this);
     this.updateShopModalVisibility();
     this.playerDeathModal = new PlayerDeathModal(
       this,
@@ -202,6 +209,9 @@ export class Game extends Scene {
       }
     );
     this.createWeaponUnlockToast();
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refreshLocalizedTexts();
+    });
 
     this.events.on(
       fiveDifficultyBossAttackEvent,
@@ -214,6 +224,7 @@ export class Game extends Scene {
         this.handleFiveDifficultyBossAttack,
         this,
       );
+      this.unsubscribeLanguageChange?.();
     });
   }
 
@@ -233,6 +244,7 @@ export class Game extends Scene {
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
+    this.statusBar.update(this.player, _time);
 
     if (this.player.isAlive()) {
       this.enemySpawnPlace.update(deltaSeconds);
@@ -315,11 +327,12 @@ export class Game extends Scene {
   }
 
   private getPlayerDeathContinueOption() {
-    if (this.player.profile.getDeathContinueCount() <= 0) {
+    if (!this.isDeathAdContinueUsed) {
       return {
-        label: "РџСЂРѕРґРѕР»Р¶РёС‚СЊ Р·Р° СЂРµРєР»Р°РјСѓ",
+        label: languageController.t("death.continue"),
         isEnabled: true,
         onContinue: () => {
+          this.isDeathAdContinueUsed = true;
           this.player.profile.incrementDeathContinueCount();
           this.restorePlayerAfterDeath();
         },
@@ -329,8 +342,11 @@ export class Game extends Scene {
     const cost = Game.deathContinueEmeraldCost;
 
     return {
-      label: `РџСЂРѕРґРѕР»Р¶РёС‚СЊ Р·Р° ${cost}`,
+      label: languageController.t("death.continueForEmerald", {
+        amount: cost,
+      }),
       isEnabled: this.wallet.canWithdraw(cost),
+      showEmeraldPrice: true,
       onContinue: () => {
         if (!this.wallet.withdraw(cost)) {
           return;
@@ -387,7 +403,7 @@ export class Game extends Scene {
       .setDepth(1500)
       .setVisible(false);
     this.weaponUnlockToastText = this.add
-      .text(centerX, y, "\u041e\u0442\u043a\u0440\u044b\u0442\u043e \u043d\u043e\u0432\u043e\u0435 \u043e\u0440\u0443\u0436\u0438\u0435", {
+      .text(centerX, y, languageController.t("toast.weaponUnlocked"), {
         fontFamily: "Hardpixel",
         fontSize: 22,
         color: "#ffffff",
@@ -398,6 +414,16 @@ export class Game extends Scene {
       .setResolution(2)
       .setDepth(1501)
       .setVisible(false);
+  }
+
+  private refreshLocalizedTexts() {
+    this.weaponUnlockToastText.setText(
+      languageController.t("toast.weaponUnlocked"),
+    );
+
+    if (this.playerDeathModal.isShown) {
+      this.playerDeathModal.show(this.getPlayerDeathContinueOption());
+    }
   }
 
   private showWeaponUnlockToast() {

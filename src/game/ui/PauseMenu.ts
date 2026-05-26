@@ -1,5 +1,6 @@
 import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
+import { languageController } from "../localization/LanguageController";
 import type { GameSettings } from "../state/GameSettings";
 import type { PauseController } from "../state/PauseController";
 
@@ -40,6 +41,8 @@ export class PauseMenu {
   private static readonly voiceIconPath = "assets/images/ui/icons/voice.png";
   private static readonly settingsButtonSize = 72;
   private static readonly settingsIconSize = 64;
+  private static readonly menuPanelWidth = 480;
+  private static readonly menuPanelHeight = 440;
 
   private readonly settingsButton: PauseMenuIconButton;
   private readonly muteButton: PauseMenuIconButton;
@@ -49,6 +52,8 @@ export class PauseMenu {
   private readonly volumeSlider: VolumeSlider;
   private readonly continueButton: PauseMenuButton;
   private readonly restartButton: PauseMenuButton;
+  private readonly languageButton: PauseMenuButton;
+  private readonly unsubscribeLanguageChange: () => void;
 
   static preload(scene: Scene) {
     scene.load.image(PauseMenu.settingsIconTextureKey, PauseMenu.settingsIconPath);
@@ -83,11 +88,12 @@ export class PauseMenu {
 
     this.panel = this.scene.add
       .image(512, 384, PauseMenu.settingsMenuBackgroundTextureKey)
+      .setDisplaySize(PauseMenu.menuPanelWidth, PauseMenu.menuPanelHeight)
       .setDepth(PauseMenu.depth + 11)
       .setVisible(false);
 
     this.title = this.scene.add
-      .text(512, 250, "Настройки", {
+      .text(512, 250, languageController.t("settings.title"), {
         fontFamily: "Hardpixel",
         fontSize: 30,
         color: "#ffffff",
@@ -98,17 +104,47 @@ export class PauseMenu {
       .setVisible(false);
 
     this.volumeSlider = this.createVolumeSlider(512, 340);
-    this.continueButton = this.createButton(512, 430, 240, 48, "Продолжить", () => {
-      this.close();
-    });
-    this.restartButton = this.createButton(512, 496, 240, 48, "Начать заново", () => {
-      this.close();
-      this.onRestart();
-    });
+    this.continueButton = this.createButton(
+      512,
+      430,
+      240,
+      48,
+      languageController.t("settings.continue"),
+      () => {
+        this.close();
+      },
+    );
+    this.restartButton = this.createButton(
+      512,
+      496,
+      240,
+      48,
+      languageController.t("settings.restart"),
+      () => {
+        this.close();
+        this.onRestart();
+      },
+    );
+    this.languageButton = this.createButton(
+      512,
+      562,
+      240,
+      48,
+      languageController.t("settings.language"),
+      () => {
+        languageController.toggleLanguage();
+      },
+    );
 
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
     this.syncMuteButtonTexture();
     this.setMenuVisible(false);
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refreshTexts();
+    });
+    this.scene.events.once("shutdown", () => {
+      this.unsubscribeLanguageChange();
+    });
     this.scene.input.keyboard?.on("keydown-ESC", this.toggle, this);
   }
 
@@ -124,6 +160,7 @@ export class PauseMenu {
     this.pauseController.pause("settings");
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
     this.syncMuteButtonTexture();
+    this.refreshTexts();
     this.setMenuVisible(true);
   }
 
@@ -289,10 +326,20 @@ export class PauseMenu {
     const fillWidth = PauseMenu.volumeSliderWidth * normalizedVolume;
 
     this.volumeSlider.label.setText(
-      `Звук: ${Math.round(normalizedVolume * 100)}%`,
+      languageController.t("settings.volume", {
+        value: Math.round(normalizedVolume * 100),
+      }),
     );
     this.volumeSlider.fill.width = fillWidth;
     this.volumeSlider.knob.x = trackLeft + fillWidth;
+  }
+
+  private refreshTexts() {
+    this.title.setText(languageController.t("settings.title"));
+    this.continueButton.label.setText(languageController.t("settings.continue"));
+    this.restartButton.label.setText(languageController.t("settings.restart"));
+    this.languageButton.label.setText(languageController.t("settings.language"));
+    this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
   }
 
   private setMenuVisible(visible: boolean) {
@@ -308,6 +355,7 @@ export class PauseMenu {
     this.setVolumeSliderVisible(visible);
     this.setButtonVisible(this.continueButton, visible);
     this.setButtonVisible(this.restartButton, visible);
+    this.setButtonVisible(this.languageButton, visible);
   }
 
   private createButton(

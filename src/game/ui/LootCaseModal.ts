@@ -1,9 +1,10 @@
 import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import type { LootReward } from "../entities/LootCase/rewards/LootReward";
+import { languageController } from "../localization/LanguageController";
 
 type LootCaseButton = {
-  background: GameObjects.Rectangle;
+  background: GameObjects.Image;
   label: GameObjects.Text;
 };
 
@@ -20,58 +21,99 @@ type LootCaseModalShowConfig = {
 
 export class LootCaseModal {
   private static readonly depth = 1300;
+  private static readonly lootContainerTextureKey = "loot-case-container";
+  private static readonly lootContainerPath =
+    "assets/images/loot-case/loot-container.png";
+  private static readonly glowLargeTextureKey = "loot-case-glow-large";
+  private static readonly glowLargePath =
+    "assets/images/loot-case/diamonds-l-bright.png";
+  private static readonly glowMediumTextureKey = "loot-case-glow-medium";
+  private static readonly glowMediumPath =
+    "assets/images/loot-case/diamonds-m-bright.png";
+  private static readonly glowSmallTextureKey = "loot-case-glow-small";
+  private static readonly glowSmallPath =
+    "assets/images/loot-case/diamonds-s-bright.png";
+  private static readonly goldenButtonTextureKey = "loot-case-golden-button";
+  private static readonly goldenButtonPath =
+    "assets/images/loot-case/buttons/golden-shop-button.png";
+  private static readonly absidianButtonTextureKey = "loot-case-absidian-button";
+  private static readonly absidianButtonPath =
+    "assets/images/loot-case/buttons/absidian-shop-button.png";
+  private static readonly openSoundKey = "loot-case-open-sound";
+  private static readonly openSoundPath = "assets/audio/ui/loot-case-open.mp3";
+  private static readonly openSoundVolume = 3;
   private static readonly rollSteps = 17;
   private static readonly minRollStepDelayMs = 45;
   private static readonly maxRollStepDelayMs = 210;
-  private static readonly rollingIconSize = 72;
-  private static readonly rewardIconSize = 94;
-  private static readonly rewardIconStartSize = 28;
+  private static readonly rollingIconSize = 128;
+  private static readonly rewardSlotSize = 128;
+  private static readonly rewardIconSize = 128;
+  private static readonly lootContainerSize = 560;
+  private static readonly glowSize = 980;
+  private static readonly lootContainerOffsetY = 54;
+  private static readonly rewardIconStartOffsetY = 72;
+  private static readonly rewardIconTargetOffsetY = -92;
   private static readonly buttonWidth = 190;
   private static readonly buttonHeight = 48;
 
   private readonly overlay: GameObjects.Rectangle;
-  private readonly panel: GameObjects.Rectangle;
-  private readonly title: GameObjects.Text;
   private readonly loaderText: GameObjects.Text;
+  private readonly glowLarge: GameObjects.Image;
+  private readonly glowMedium: GameObjects.Image;
+  private readonly glowSmall: GameObjects.Image;
+  private readonly lootContainer: GameObjects.Image;
   private readonly rewardSlot: GameObjects.Rectangle;
   private readonly rewardIcon: GameObjects.Image;
   private readonly rewardTitle: GameObjects.Text;
   private readonly rewardDescription: GameObjects.Text;
   private readonly continueButton: LootCaseButton;
   private readonly extraButton: LootCaseButton;
+  private readonly unsubscribeLanguageChange: () => void;
   private rollTimer?: Phaser.Time.TimerEvent;
+  private isGlowRotationActive = false;
   private onContinue?: () => void;
   private onExtra?: () => void;
   private isRolling = false;
   private isActionLocked = false;
 
+  static preload(scene: Scene) {
+    scene.load.image(
+      LootCaseModal.lootContainerTextureKey,
+      LootCaseModal.lootContainerPath,
+    );
+    scene.load.image(
+      LootCaseModal.glowLargeTextureKey,
+      LootCaseModal.glowLargePath,
+    );
+    scene.load.image(
+      LootCaseModal.glowMediumTextureKey,
+      LootCaseModal.glowMediumPath,
+    );
+    scene.load.image(
+      LootCaseModal.glowSmallTextureKey,
+      LootCaseModal.glowSmallPath,
+    );
+    scene.load.image(
+      LootCaseModal.goldenButtonTextureKey,
+      LootCaseModal.goldenButtonPath,
+    );
+    scene.load.image(
+      LootCaseModal.absidianButtonTextureKey,
+      LootCaseModal.absidianButtonPath,
+    );
+    scene.load.audio(LootCaseModal.openSoundKey, LootCaseModal.openSoundPath);
+  }
+
   constructor(private readonly scene: Scene) {
     const centerX = this.scene.scale.width / 2;
     const centerY = this.scene.scale.height / 2;
+    const lootContainerY = centerY + LootCaseModal.lootContainerOffsetY;
+    const rewardTargetY = centerY + LootCaseModal.rewardIconTargetOffsetY;
 
     this.overlay = this.scene.add
       .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.62)
       .setDepth(LootCaseModal.depth)
       .setInteractive()
-      .setVisible(false);
-
-    this.panel = this.scene.add
-      .rectangle(centerX, centerY, 500, 360, 0x1d1d1d, 0.98)
-      .setDepth(LootCaseModal.depth + 1)
-      .setStrokeStyle(2, 0xffd05a, 0.72)
-      .setVisible(false);
-
-    this.title = this.scene.add
-      .text(centerX, centerY - 136, "Loot Case", {
-        fontFamily: "Hardpixel",
-        fontSize: 32,
-        color: "#ffffff",
-        stroke: "#1f1f1f",
-        strokeThickness: 5,
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(LootCaseModal.depth + 2)
       .setVisible(false);
 
     this.loaderText = this.scene.add
@@ -84,26 +126,72 @@ export class LootCaseModal {
       })
       .setOrigin(0.5)
       .setResolution(2)
+      .setDepth(LootCaseModal.depth + 8)
+      .setVisible(false);
+
+    this.glowLarge = this.scene.add
+      .image(
+        centerX,
+        lootContainerY,
+        LootCaseModal.glowLargeTextureKey,
+      )
+      .setDisplaySize(LootCaseModal.glowSize, LootCaseModal.glowSize)
       .setDepth(LootCaseModal.depth + 2)
+      .setVisible(false);
+
+    this.glowMedium = this.scene.add
+      .image(
+        centerX,
+        lootContainerY,
+        LootCaseModal.glowMediumTextureKey,
+      )
+      .setDisplaySize(LootCaseModal.glowSize, LootCaseModal.glowSize)
+      .setDepth(LootCaseModal.depth + 3)
+      .setVisible(false);
+
+    this.glowSmall = this.scene.add
+      .image(
+        centerX,
+        lootContainerY,
+        LootCaseModal.glowSmallTextureKey,
+      )
+      .setDisplaySize(LootCaseModal.glowSize, LootCaseModal.glowSize)
+      .setDepth(LootCaseModal.depth + 4)
+      .setVisible(false);
+
+    this.lootContainer = this.scene.add
+      .image(centerX, lootContainerY, LootCaseModal.lootContainerTextureKey)
+      .setDisplaySize(
+        LootCaseModal.lootContainerSize,
+        LootCaseModal.lootContainerSize,
+      )
+      .setDepth(LootCaseModal.depth + 5)
       .setVisible(false);
 
     this.rewardSlot = this.scene.add
-      .rectangle(centerX, centerY - 8, 96, 96, 0xffffff, 0.96)
-      .setDepth(LootCaseModal.depth + 2)
-      .setStrokeStyle(2, 0xffffff, 0.72)
+      .rectangle(
+        centerX,
+        rewardTargetY,
+        LootCaseModal.rewardSlotSize,
+        LootCaseModal.rewardSlotSize,
+        0x111111,
+        0.18,
+      )
+      .setDepth(LootCaseModal.depth + 6)
+      .setStrokeStyle(2, 0xffd05a, 0.45)
       .setVisible(false);
 
     this.rewardIcon = this.scene.add
-      .image(centerX, centerY - 8, "loot-case-placeholder-icon")
+      .image(centerX, rewardTargetY, "loot-case-placeholder-icon")
       .setDisplaySize(
         LootCaseModal.rewardIconSize,
         LootCaseModal.rewardIconSize,
       )
-      .setDepth(LootCaseModal.depth + 3)
+      .setDepth(LootCaseModal.depth + 7)
       .setVisible(false);
 
     this.rewardTitle = this.scene.add
-      .text(centerX, centerY + 68, "", {
+      .text(centerX, centerY + 272, "", {
         fontFamily: "Hardpixel",
         fontSize: 22,
         color: "#ffffff",
@@ -112,11 +200,11 @@ export class LootCaseModal {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(LootCaseModal.depth + 2)
+      .setDepth(LootCaseModal.depth + 8)
       .setVisible(false);
 
     this.rewardDescription = this.scene.add
-      .text(centerX, centerY + 98, "", {
+      .text(centerX, centerY + 302, "", {
         fontFamily: "Hardpixel",
         fontSize: 17,
         color: "#d2d2d2",
@@ -125,22 +213,28 @@ export class LootCaseModal {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(LootCaseModal.depth + 2)
+      .setDepth(LootCaseModal.depth + 8)
       .setVisible(false);
 
     this.continueButton = this.createButton(
       centerX - 108,
-      centerY + 154,
-      "Получить",
+      centerY + 350,
+      languageController.t("lootCase.continue"),
       "continue",
     );
     this.extraButton = this.createButton(
       centerX + 108,
-      centerY + 154,
-      "Получить еще",
+      centerY + 350,
+      languageController.t("lootCase.extra"),
       "extra",
     );
     this.hide();
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refreshTexts();
+    });
+    this.scene.events.once("shutdown", () => {
+      this.unsubscribeLanguageChange();
+    });
   }
 
   show(config: LootCaseModalShowConfig) {
@@ -158,12 +252,14 @@ export class LootCaseModal {
     this.clearRollTimer();
     this.loaderText.setText("");
     this.loaderText.setVisible(false);
-    this.rewardSlot.setFillStyle(0x555555, 0.96);
-    this.rewardSlot.setStrokeStyle(2, 0xffffff, 0.48);
+    this.resetRollVisuals();
+    this.rewardSlot.setFillStyle(0x111111, 0.18);
+    this.rewardSlot.setStrokeStyle(2, 0xffd05a, 0.45);
     this.setRollingRewardVisible(true);
     this.rewardTitle.setVisible(false);
     this.rewardDescription.setVisible(false);
     this.setButtonsVisible(false, false);
+    this.playOpenSound();
     this.playRollStep(config, 0);
   }
 
@@ -173,6 +269,7 @@ export class LootCaseModal {
     this.isRolling = false;
     this.isActionLocked = false;
     this.clearRollTimer();
+    this.stopGlowRotation();
     this.setVisible(false);
   }
 
@@ -182,17 +279,14 @@ export class LootCaseModal {
     text: string,
     action: LootCaseButtonAction,
   ): LootCaseButton {
+    const textureKey =
+      action === "continue"
+        ? LootCaseModal.goldenButtonTextureKey
+        : LootCaseModal.absidianButtonTextureKey;
     const background = this.scene.add
-      .rectangle(
-        x,
-        y,
-        LootCaseModal.buttonWidth,
-        LootCaseModal.buttonHeight,
-        0x2d2d2d,
-        0.95,
-      )
-      .setDepth(LootCaseModal.depth + 2)
-      .setStrokeStyle(2, 0xffffff, 0.45)
+      .image(x, y, textureKey)
+      .setDisplaySize(LootCaseModal.buttonWidth, LootCaseModal.buttonHeight)
+      .setDepth(LootCaseModal.depth + 9)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
     const label = this.scene.add
@@ -205,7 +299,7 @@ export class LootCaseModal {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(LootCaseModal.depth + 3)
+      .setDepth(LootCaseModal.depth + 10)
       .setVisible(false);
 
     background.on(
@@ -231,10 +325,16 @@ export class LootCaseModal {
         return;
       }
 
-      background.setFillStyle(0x3a3a3a, 0.98);
+      background.setDisplaySize(
+        LootCaseModal.buttonWidth * 1.03,
+        LootCaseModal.buttonHeight * 1.03,
+      );
     });
     background.on("pointerout", () => {
-      background.setFillStyle(0x2d2d2d, 0.95);
+      background.setDisplaySize(
+        LootCaseModal.buttonWidth,
+        LootCaseModal.buttonHeight,
+      );
     });
 
     return {
@@ -244,10 +344,15 @@ export class LootCaseModal {
   }
 
   private setReward(reward: LootReward, rewardsCount: number) {
-    this.rewardSlot.setFillStyle(reward.getRarityColor(), 0.96);
+    this.rewardSlot.setFillStyle(reward.getRarityColor(), 0.24);
     this.rewardIcon.setTexture(reward.getIconTextureKey());
     this.rewardTitle.setText(`${reward.getTitle()} x${rewardsCount}`);
     this.rewardDescription.setText(reward.getDescription());
+  }
+
+  private refreshTexts() {
+    this.continueButton.label.setText(languageController.t("lootCase.continue"));
+    this.extraButton.label.setText(languageController.t("lootCase.extra"));
   }
 
   private handleContinue() {
@@ -277,17 +382,24 @@ export class LootCaseModal {
     this.handleExtra();
   }
 
+  private playOpenSound() {
+    this.scene.sound.play(LootCaseModal.openSoundKey, {
+      volume: LootCaseModal.openSoundVolume,
+    });
+  }
+
   private setVisible(visible: boolean) {
     this.overlay.setVisible(visible);
-    this.panel.setVisible(visible);
-    this.title.setVisible(visible);
     this.loaderText.setVisible(false);
+    this.setCaseVisible(visible);
     this.setRewardVisible(false);
 
     if (visible) {
       this.overlay.setInteractive();
+      this.startGlowRotation();
     } else {
       this.overlay.disableInteractive();
+      this.stopGlowRotation();
       this.setButtonsVisible(false, false);
     }
   }
@@ -298,15 +410,22 @@ export class LootCaseModal {
   }
 
   private setRewardVisible(visible: boolean) {
-    this.rewardSlot.setVisible(visible);
+    this.rewardSlot.setVisible(false);
     this.rewardIcon.setVisible(visible);
     this.rewardTitle.setVisible(visible);
     this.rewardDescription.setVisible(visible);
   }
 
   private setRollingRewardVisible(visible: boolean) {
-    this.rewardSlot.setVisible(visible);
+    this.rewardSlot.setVisible(false);
     this.rewardIcon.setVisible(visible);
+  }
+
+  private setCaseVisible(visible: boolean) {
+    this.glowLarge.setVisible(visible);
+    this.glowMedium.setVisible(visible);
+    this.glowSmall.setVisible(visible);
+    this.lootContainer.setVisible(visible);
   }
 
   private setButtonVisible(button: LootCaseButton, visible: boolean) {
@@ -340,13 +459,17 @@ export class LootCaseModal {
       LootCaseModal.rewardIconSize,
     );
 
-    this.scene.tweens.killTweensOf(this.rewardIcon);
     this.rewardIcon
       .setTexture(iconTextureKey)
       .setScale(
         this.getRewardIconScale(iconTextureKey, LootCaseModal.rollingIconSize),
       )
       .setAlpha(1)
+      .setY(
+        this.getRewardIconRollY(
+          step / Math.max(1, LootCaseModal.rollSteps - 1),
+        ),
+      )
       .setVisible(true);
 
     this.scene.tweens.add({
@@ -380,10 +503,69 @@ export class LootCaseModal {
         LootCaseModal.rewardIconSize,
         LootCaseModal.rewardIconSize,
       )
-      .setDepth(LootCaseModal.depth + 3)
+      .setY(this.getRewardIconTargetY())
+      .setDepth(LootCaseModal.depth + 7)
       .setAlpha(1)
       .setVisible(true);
     this.setButtonsVisible(true, config.canRollExtra);
+  }
+
+  private resetRollVisuals() {
+    this.scene.tweens.killTweensOf([
+      this.rewardIcon,
+    ]);
+    this.glowLarge.setAngle(0).setAlpha(0.85);
+    this.glowMedium.setAngle(32).setAlpha(0.8);
+    this.glowSmall.setAngle(-24).setAlpha(0.8);
+    this.rewardIcon
+      .setY(this.getRewardIconStartY())
+      .setDepth(LootCaseModal.depth + 7);
+  }
+
+  private startGlowRotation() {
+    if (this.isGlowRotationActive) {
+      return;
+    }
+
+    this.isGlowRotationActive = true;
+    this.scene.events.on("update", this.updateGlowRotation, this);
+  }
+
+  private stopGlowRotation() {
+    if (!this.isGlowRotationActive) {
+      return;
+    }
+
+    this.isGlowRotationActive = false;
+    this.scene.events.off("update", this.updateGlowRotation, this);
+  }
+
+  private updateGlowRotation(_time: number, delta: number) {
+    const deltaSeconds = delta / 1000;
+
+    this.glowLarge.angle += 40 * deltaSeconds;
+    this.glowMedium.angle -= 30 * deltaSeconds;
+    this.glowSmall.angle += 22 * deltaSeconds;
+  }
+
+  private getRewardIconRollY(progress: number) {
+    return (
+      this.getRewardIconStartY() +
+      (this.getRewardIconTargetY() - this.getRewardIconStartY()) *
+        Math.min(1, Math.max(0, progress)) ** 0.85
+    );
+  }
+
+  private getRewardIconStartY() {
+    return (
+      this.scene.scale.height / 2 + LootCaseModal.rewardIconStartOffsetY
+    );
+  }
+
+  private getRewardIconTargetY() {
+    return (
+      this.scene.scale.height / 2 + LootCaseModal.rewardIconTargetOffsetY
+    );
   }
 
   private getRewardIconScale(textureKey: string, targetSize: number) {

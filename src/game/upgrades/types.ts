@@ -11,11 +11,11 @@ export type RewardBuffRarity = "wooden" | "golden" | "emerald" | "diamond";
 
 export type RewardBuffDefinition = {
   id: RewardBuffId;
-  title: string;
+  titleKey: string;
   iconTextureKey: string;
   iconTexturePath: string;
   baseValue: number;
-  getDescription: (value: number) => string;
+  descriptionKey: string;
   apply: (player: Player, value: number) => void;
 };
 
@@ -33,7 +33,9 @@ export type RewardChoice = {
   buffId: RewardBuffId;
   rarity: RewardBuffRarity;
   title: string;
+  titleKey: string;
   description: string;
+  descriptionKey: string;
   value: number;
   rarityTextureKey: string;
   iconTextureKey: string;

@@ -1,41 +1,49 @@
 import {
+  getLootBoxRewardConfig,
+  rewardIdToLootBoxRewardId,
+} from "../../../configs/lootBox";
+import { languageController } from "../../../localization/LanguageController";
+import {
   LootReward,
   type LootRewardApplyContext,
   type LootRewardRarity,
+  lootRewardRarityToName,
 } from "./LootReward";
 
 export class AttackPotionLootReward extends LootReward {
   readonly id = "attack-potion";
-  readonly title = "Attack Potion";
+  readonly title: string;
   readonly iconTextureKey: string;
   readonly iconTexturePath: string;
   readonly applySoundKey = "loot-case-potion-apply";
   readonly applySoundPath = "assets/audio/ui/diamondReward.mp3";
-  readonly durationSeconds: number;
+  private static readonly durationSeconds = 6;
+  readonly attackPowerBonus: number;
   readonly description: string;
 
   constructor(readonly rarity: LootRewardRarity) {
     super();
 
+    const rewardConfig = getLootBoxRewardConfig(
+      rewardIdToLootBoxRewardId[this.id],
+    );
+
+    this.title = languageController.t(rewardConfig.nameKey);
     this.iconTextureKey = `loot-case-${rarity}-attack-potion-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-attack-poition.png`;
-    this.durationSeconds = AttackPotionLootReward.durationByRarity[rarity];
-    this.description = `+30% attack power for ${this.durationSeconds}s`;
+    this.attackPowerBonus = rewardConfig.values[lootRewardRarityToName[rarity]];
+    this.description = languageController.t(rewardConfig.descriptionKey, {
+      value: this.attackPowerBonus,
+    });
   }
 
   apply(context: LootRewardApplyContext) {
     context.player.applyStatEffect({
       stat: "damage",
-      mode: "multiply",
-      value: 1.3,
-      durationSeconds: this.durationSeconds,
+      mode: "add",
+      value: this.attackPowerBonus,
+      durationSeconds: AttackPotionLootReward.durationSeconds,
       sourceId: "loot-case-attack-potion",
     });
   }
-
-  private static readonly durationByRarity: Record<LootRewardRarity, number> = {
-    s: 2,
-    m: 4,
-    l: 6,
-  };
 }

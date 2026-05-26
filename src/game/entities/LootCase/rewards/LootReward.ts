@@ -9,6 +9,8 @@ export type LootRewardRarity =
   | "m"
   | "l";
 
+export type LootRewardRarityName = "common" | "rare" | "epic";
+
 export type LootRewardApplyContext = {
   player: Player;
   wallet: Wallet;
@@ -62,4 +64,13 @@ export const lootRewardRarityColors: Record<LootRewardRarity, number> = {
   s: 0x9a9a9a,
   m: 0xffd05a,
   l: 0x7ed7ff,
+};
+
+export const lootRewardRarityToName: Record<
+  LootRewardRarity,
+  LootRewardRarityName
+> = {
+  s: "common",
+  m: "rare",
+  l: "epic",
 };

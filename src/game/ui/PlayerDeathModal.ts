@@ -1,17 +1,20 @@
 import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
+import { languageController } from "../localization/LanguageController";
 import type { PauseController } from "../state/PauseController";
 
 type PlayerDeathButton = {
-  background: GameObjects.Rectangle;
+  background: GameObjects.Image;
   label: GameObjects.Text;
+  priceIcon: GameObjects.Image;
   enabled: boolean;
-  baseFillColor: number;
+  showPriceIcon: boolean;
 };
 
 export type PlayerDeathContinueOption = {
   label: string;
   isEnabled: boolean;
+  showEmeraldPrice?: boolean;
   onContinue: () => void;
 };
 
@@ -21,19 +24,42 @@ export class PlayerDeathModal {
   private static readonly soundKey = "player-death";
   private static readonly soundPath = "assets/audio/ui/player-death.mp3";
   private static readonly deathSoundVolume = 0.8;
+  private static readonly backgroundTextureKey = "player-death-menu-background";
+  private static readonly backgroundPath =
+    "assets/images/ui/buttons/settings-menu-bg.png";
+  private static readonly buttonTextureKey = "player-death-button-background";
+  private static readonly buttonPath =
+    "assets/images/ui/buttons/settings-button-bg.png";
+  private static readonly emeraldIconTextureKey = "player-death-emerald-icon";
+  private static readonly emeraldIconPath = "assets/images/ui/icons/emerald.png";
+  private static readonly priceIconSize = 22;
+  private static readonly priceIconGap = 8;
 
   private readonly overlay: GameObjects.Rectangle;
-  private readonly panel: GameObjects.Rectangle;
+  private readonly panel: GameObjects.Image;
   private readonly title: GameObjects.Text;
   private readonly subtitle: GameObjects.Text;
   private readonly restartButton: PlayerDeathButton;
   private readonly continueButton: PlayerDeathButton;
+  private readonly unsubscribeLanguageChange: () => void;
   private onContinue?: () => void;
   private isActionLocked = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   static preload(scene: Scene) {
     scene.load.audio(PlayerDeathModal.soundKey, PlayerDeathModal.soundPath);
+    scene.load.image(
+      PlayerDeathModal.backgroundTextureKey,
+      PlayerDeathModal.backgroundPath,
+    );
+    scene.load.image(
+      PlayerDeathModal.buttonTextureKey,
+      PlayerDeathModal.buttonPath,
+    );
+    scene.load.image(
+      PlayerDeathModal.emeraldIconTextureKey,
+      PlayerDeathModal.emeraldIconPath,
+    );
   }
 
   constructor(
@@ -48,13 +74,12 @@ export class PlayerDeathModal {
       .setVisible(false);
 
     this.panel = this.scene.add
-      .rectangle(512, 384, 430, 310, 0x1b1b1b, 0.98)
+      .image(512, 384, PlayerDeathModal.backgroundTextureKey)
       .setDepth(PlayerDeathModal.depth + 1)
-      .setStrokeStyle(2, 0xffffff, 0.6)
       .setVisible(false);
 
     this.title = this.scene.add
-      .text(512, 286, "Ты проиграл", {
+      .text(512, 286, languageController.t("death.title"), {
         fontFamily: "Hardpixel",
         fontSize: 34,
         color: "#ffffff",
@@ -65,7 +90,7 @@ export class PlayerDeathModal {
       .setVisible(false);
 
     this.subtitle = this.scene.add
-      .text(512, 324, "Попробуй еще раз", {
+      .text(512, 324, languageController.t("death.subtitle"), {
         fontFamily: "Hardpixel",
         fontSize: 19,
         color: "#d2d2d2",
@@ -80,7 +105,7 @@ export class PlayerDeathModal {
       390,
       280,
       48,
-      "Начать заново",
+      languageController.t("death.restart"),
       () => this.restart(),
     );
     this.continueButton = this.createButton(
@@ -88,11 +113,17 @@ export class PlayerDeathModal {
       456,
       280,
       48,
-      "Продолжить за рекламу",
+      languageController.t("death.continue"),
       () => this.onContinue?.(),
     );
 
     this.hide();
+    this.unsubscribeLanguageChange = languageController.onChange(() => {
+      this.refreshTexts();
+    });
+    this.scene.events.once("shutdown", () => {
+      this.unsubscribeLanguageChange();
+    });
   }
 
   get isShown() {
@@ -101,6 +132,7 @@ export class PlayerDeathModal {
 
   show(continueOption: PlayerDeathContinueOption) {
     if (this.isShown) {
+      this.setContinueOption(continueOption);
       return;
     }
 
@@ -146,9 +178,9 @@ export class PlayerDeathModal {
     onClick: () => void,
   ): PlayerDeathButton {
     const background = this.scene.add
-      .rectangle(x, y, width, height, 0x2d2d2d, 0.95)
+      .image(x, y, PlayerDeathModal.buttonTextureKey)
+      .setDisplaySize(width, height)
       .setDepth(PlayerDeathModal.depth + 2)
-      .setStrokeStyle(2, 0xffffff, 0.45)
       .setInteractive({ useHandCursor: true });
     const label = this.scene.add
       .text(x, y, text, {
@@ -159,12 +191,21 @@ export class PlayerDeathModal {
       .setOrigin(0.5)
       .setResolution(2)
       .setDepth(PlayerDeathModal.depth + 3);
+    const priceIcon = this.scene.add
+      .image(x, y, PlayerDeathModal.emeraldIconTextureKey)
+      .setDisplaySize(
+        PlayerDeathModal.priceIconSize,
+        PlayerDeathModal.priceIconSize,
+      )
+      .setDepth(PlayerDeathModal.depth + 3)
+      .setVisible(false);
 
-    const button = {
+    const button: PlayerDeathButton = {
       background,
       label,
+      priceIcon,
       enabled: true,
-      baseFillColor: 0x2d2d2d,
+      showPriceIcon: false,
     };
 
     background.on("pointerdown", () => {
@@ -180,7 +221,7 @@ export class PlayerDeathModal {
         return;
       }
 
-      background.setFillStyle(0x3a3a3a, 0.98);
+      background.setTint(0xb8b8b8);
     });
     background.on("pointerout", () => {
       this.applyButtonFill(button);
@@ -207,6 +248,7 @@ export class PlayerDeathModal {
   private setButtonVisible(button: PlayerDeathButton, visible: boolean) {
     button.background.setVisible(visible);
     button.label.setVisible(visible);
+    button.priceIcon.setVisible(visible && button.showPriceIcon);
 
     if (visible && button.enabled) {
       button.background.setInteractive({ useHandCursor: true });
@@ -246,18 +288,39 @@ export class PlayerDeathModal {
     this.onContinue = option.onContinue;
     this.continueButton.label.setText(option.label);
     this.continueButton.enabled = option.isEnabled;
+    this.continueButton.showPriceIcon = Boolean(option.showEmeraldPrice);
+    this.layoutButton(this.continueButton);
     this.continueButton.label.setAlpha(option.isEnabled ? 1 : 0.55);
     this.applyButtonFill(this.continueButton);
   }
 
-  private applyButtonFill(button: PlayerDeathButton) {
-    if (button.enabled) {
-      button.background.setFillStyle(button.baseFillColor, 0.95);
-      button.background.setAlpha(1);
+  private refreshTexts() {
+    this.title.setText(languageController.t("death.title"));
+    this.subtitle.setText(languageController.t("death.subtitle"));
+    this.restartButton.label.setText(languageController.t("death.restart"));
+  }
+
+  private layoutButton(button: PlayerDeathButton) {
+    if (!button.showPriceIcon) {
+      button.label.setX(button.background.x);
+      button.priceIcon.setVisible(false);
       return;
     }
 
-    button.background.setFillStyle(0x1f1f1f, 0.72);
-    button.background.setAlpha(0.72);
+    const iconX =
+      button.background.x +
+      button.label.width / 2 +
+      PlayerDeathModal.priceIconGap +
+      PlayerDeathModal.priceIconSize / 2;
+
+    button.priceIcon
+      .setPosition(iconX, button.background.y)
+      .setVisible(button.background.visible);
+  }
+
+  private applyButtonFill(button: PlayerDeathButton) {
+    button.background.clearTint();
+    button.background.setAlpha(button.enabled ? 1 : 0.62);
+    button.priceIcon.setAlpha(button.enabled ? 1 : 0.55);
   }
 }

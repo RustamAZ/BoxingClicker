@@ -1,3 +1,9 @@
+import {
+  lootBoxConfig,
+  lootBoxRarityToRewardRarity,
+  type LootBoxRarity,
+  type LootBoxRewardId,
+} from "../../configs/lootBox";
 import type {
   LootRewardId,
   LootRewardRarity,
@@ -6,50 +12,50 @@ import type {
 export type LootCaseDropConfig = {
   rewardId: LootRewardId;
   rarity: LootRewardRarity;
-  weight: number;
 };
 
-export const lootCaseDrops: readonly LootCaseDropConfig[] = [
-  { rewardId: "emerald", rarity: "s", weight: 18 },
-  { rewardId: "emerald", rarity: "m", weight: 8 },
-  { rewardId: "emerald", rarity: "l", weight: 3 },
-  { rewardId: "health-potion", rarity: "s", weight: 18 },
-  { rewardId: "health-potion", rarity: "m", weight: 8 },
-  { rewardId: "health-potion", rarity: "l", weight: 3 },
-  { rewardId: "stamina-potion", rarity: "s", weight: 18 },
-  { rewardId: "stamina-potion", rarity: "m", weight: 8 },
-  { rewardId: "stamina-potion", rarity: "l", weight: 3 },
-  { rewardId: "speed-potion", rarity: "s", weight: 18 },
-  { rewardId: "speed-potion", rarity: "m", weight: 8 },
-  { rewardId: "speed-potion", rarity: "l", weight: 3 },
-  { rewardId: "attack-potion", rarity: "s", weight: 18 },
-  { rewardId: "attack-potion", rarity: "m", weight: 8 },
-  { rewardId: "attack-potion", rarity: "l", weight: 3 },
-];
+const lootBoxRewardIdToRewardId: Record<LootBoxRewardId, LootRewardId> = {
+  health_potion: "health-potion",
+  stamina_potion: "stamina-potion",
+  attack_speed_potion: "speed-potion",
+  attack_power_potion: "attack-potion",
+  emerald: "emerald",
+};
 
-export function rollLootCaseDrop(
-  drops = lootCaseDrops,
-  random = Math.random,
+export function rollLootCaseDrop(random = Math.random): LootCaseDropConfig {
+  const rewardId = rollWeighted(lootBoxConfig.lootbox_reward_chance, random);
+  const rarity = rollWeighted(lootBoxConfig.lootbox_rarity_chance, random);
+
+  return {
+    rewardId: lootBoxRewardIdToRewardId[rewardId],
+    rarity: lootBoxRarityToRewardRarity[rarity],
+  };
+}
+
+function rollWeighted<T extends string>(
+  chances: Record<T, number>,
+  random: () => number,
 ) {
-  const availableDrops = drops.filter((drop) => drop.weight > 0);
-  const totalWeight = availableDrops.reduce(
-    (sum, drop) => sum + drop.weight,
+  const entries = Object.entries(chances) as Array<[T, number]>;
+  const availableEntries = entries.filter(([, chance]) => chance > 0);
+  const totalChance = availableEntries.reduce(
+    (sum, [, chance]) => sum + chance,
     0,
   );
 
-  if (availableDrops.length === 0 || totalWeight <= 0) {
-    return lootCaseDrops[0];
+  if (availableEntries.length === 0 || totalChance <= 0) {
+    return entries[0][0];
   }
 
-  let randomWeight = random() * totalWeight;
+  let randomChance = random() * totalChance;
 
-  for (const drop of availableDrops) {
-    randomWeight -= drop.weight;
+  for (const [id, chance] of availableEntries) {
+    randomChance -= chance;
 
-    if (randomWeight <= 0) {
-      return drop;
+    if (randomChance <= 0) {
+      return id;
     }
   }
 
-  return availableDrops[availableDrops.length - 1];
+  return availableEntries[availableEntries.length - 1][0];
 }
