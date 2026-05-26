@@ -1,4 +1,4 @@
-import { Math as PhaserMath } from "phaser";
+import { GameObjects, Math as PhaserMath } from "phaser";
 import type { Scene } from "phaser";
 import type { EnemyAttackSoundPlayer } from "../../audio/EnemyAttackSoundPlayer";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
@@ -27,12 +27,14 @@ export class SpawnPlace {
     width: 190,
     height: 260,
   };
+  private static readonly touchHitAreaPaddingY = 150;
 
   private currentEnemyValue?: Enemy;
   private currentEnemySpawnKind?: EnemySpawnKind;
   private currentBossId?: string;
   private isEnemyDeathAnimationPlaying = false;
   private readonly enemySpawnResolver = new EnemySpawnResolver();
+  private readonly touchHitArea: GameObjects.Zone;
 
   constructor(
     private readonly scene: Scene,
@@ -45,6 +47,7 @@ export class SpawnPlace {
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
     private readonly onBossEncountered?: BossEncounteredCallback,
   ) {
+    this.touchHitArea = this.createTouchHitArea();
     this.spawnNextEnemy();
   }
 
@@ -102,6 +105,10 @@ export class SpawnPlace {
     this.currentEnemyValue?.update(deltaSeconds, this.player);
   }
 
+  hitCurrentEnemy() {
+    return this.handleEnemyHit();
+  }
+
   destroyCurrentEnemy() {
     if (this.currentBossId) {
       this.levelController.stopBossFight(this.currentBossId);
@@ -111,6 +118,20 @@ export class SpawnPlace {
     this.currentEnemyValue = undefined;
     this.currentEnemySpawnKind = undefined;
     this.currentBossId = undefined;
+  }
+
+  private createTouchHitArea() {
+    return this.scene.add
+      .zone(
+        this.scene.scale.width / 2,
+        this.slot.y,
+        this.scene.scale.width,
+        this.slot.height + SpawnPlace.touchHitAreaPaddingY,
+      )
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => {
+        this.handleEnemyHit();
+      });
   }
 
   private handleEnemyHit() {

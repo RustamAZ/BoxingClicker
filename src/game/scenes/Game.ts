@@ -219,12 +219,14 @@ export class Game extends Scene {
       this.handleFiveDifficultyBossAttack,
       this,
     );
+    window.addEventListener("keydown", this.handleGlobalKeyDown);
     this.events.once("shutdown", () => {
       this.events.off(
         fiveDifficultyBossAttackEvent,
         this.handleFiveDifficultyBossAttack,
         this,
       );
+      window.removeEventListener("keydown", this.handleGlobalKeyDown);
       this.unsubscribeLanguageChange?.();
     });
   }
@@ -382,6 +384,41 @@ export class Game extends Scene {
   private handleFiveDifficultyBossAttack() {
     this.screenFilterController.playGrayscale(1000);
   }
+
+  private readonly handleGlobalKeyDown = (event: KeyboardEvent) => {
+    if (event.code === "Escape" || event.key === "Escape") {
+      event.preventDefault();
+
+      if (this.pauseController.has("shop")) {
+        this.shopModal.close();
+        return;
+      }
+
+      this.pauseMenu.toggle();
+      return;
+    }
+
+    if (
+      event.code !== "Space" &&
+      event.code !== "Enter" &&
+      event.key !== " " &&
+      event.key !== "Enter"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (
+      this.pauseController.isPaused ||
+      this.player.isDead() ||
+      this.enemySpawnPlace.isDeathAnimationPlaying
+    ) {
+      return;
+    }
+
+    this.enemySpawnPlace.hitCurrentEnemy();
+  };
 
   private handleBossEncountered(bossId: string) {
     const unlockedItem = ShopCatalog.getItemByUnlockBossId(bossId);

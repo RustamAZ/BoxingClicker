@@ -156,3 +156,9 @@ Created by [Phaser Studio](mailto:support@phaser.io). Powered by coffee, anime, 
 The Phaser logo and characters are &copy; 2011 - 2025 Phaser Studio Inc.
 
 All rights reserved.
+
+TODO:: проверить адаптив
+TODO:: поднять модальное окно с наградой выше
+TODO:: добавить фулл-скрин
+TODO:: присутпить к изучению яндекса
+

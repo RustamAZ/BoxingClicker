@@ -145,7 +145,6 @@ export class PauseMenu {
     this.scene.events.once("shutdown", () => {
       this.unsubscribeLanguageChange();
     });
-    this.scene.input.keyboard?.on("keydown-ESC", this.toggle, this);
   }
 
   get isPaused() {
@@ -173,7 +172,7 @@ export class PauseMenu {
     this.setMenuVisible(false);
   }
 
-  private toggle() {
+  toggle() {
     if (this.pauseController.has("settings")) {
       this.close();
       return;
