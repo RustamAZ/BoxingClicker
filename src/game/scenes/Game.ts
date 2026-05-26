@@ -75,6 +75,7 @@ export class Game extends Scene {
   }
 
   preload() {
+    this.load.setBaseURL(import.meta.env.BASE_URL);
     GameBackground.preload(this);
     SpawnPlace.preload(this);
     GameHud.preload(this);

@@ -5,7 +5,7 @@ const loadGameFont = async () => {
         return;
     }
 
-    await document.fonts.load('16px "Hardpixel"');
+    await document.fonts.load('16px "Hardpixel"').catch(() => undefined);
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
