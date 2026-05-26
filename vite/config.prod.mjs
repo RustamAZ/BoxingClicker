@@ -17,31 +17,29 @@ const phasermsg = () => {
 }   
 
 export default defineConfig({
-    base: './',
-    logLevel: 'warning',
-    build: {
-        rollupOptions: {
-            output: {
-                manualChunks: {
-                    phaser: ['phaser']
-                }
-            }
+  base: "/BoxingClicker/",
+  logLevel: "warning",
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ["phaser"],
         },
-        minify: 'terser',
-        terserOptions: {
-            compress: {
-                passes: 2
-            },
-            mangle: true,
-            format: {
-                comments: false
-            }
-        }
+      },
     },
-    server: {
-        port: 8080
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        passes: 2,
+      },
+      mangle: true,
+      format: {
+        comments: false,
+      },
     },
-    plugins: [
-        phasermsg()
-    ]
+  },
+  server: {
+    port: 8080,
+  },
+  plugins: [phasermsg()],
 });
