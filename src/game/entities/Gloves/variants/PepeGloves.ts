@@ -11,7 +11,7 @@ export class PepeGloves extends BaseGloves
     readonly damageMultiplier = 0.9;
     readonly staminaCostMultiplier = 0.8;
     readonly attackSpeedMultiplier = 1.2;
-    readonly hitSoundVolume = 0.8;
+    readonly hitSoundVolume = 0.4;
 
     readonly hitSoundAssets = [
         {

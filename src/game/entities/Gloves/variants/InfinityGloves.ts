@@ -11,7 +11,7 @@ export class InfinityGloves extends BaseGloves
     readonly damageMultiplier = 1.42;
     readonly staminaCostMultiplier = 1.18;
     readonly attackSpeedMultiplier = 1.12;
-    readonly hitSoundVolume = 0.8;
+    readonly hitSoundVolume = 0.4;
 
     readonly hitSoundAssets = [
         {
@@ -19,8 +19,8 @@ export class InfinityGloves extends BaseGloves
             path: 'assets/audio/gloves/infinity/joined.mp3',
         },
         {
-            key: 'infinity-hit-joined-g-minor',
-            path: 'assets/audio/gloves/infinity/joined-g-minor.mp3',
+            key: 'infinity-hit-joined-d-flat',
+            path: 'assets/audio/gloves/infinity/joined-d-flat.mp3',
         },
         {
             key: 'infinity-hit-joined-b-flat',

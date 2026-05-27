@@ -11,5 +11,20 @@ export class SixSevenGloves extends BaseGloves
     readonly damageMultiplier = 1.32;
     readonly staminaCostMultiplier = 0.95;
     readonly attackSpeedMultiplier = 1.18;
-    readonly hitSoundVolume = 0.8;
+    readonly hitSoundVolume = 0.3;
+
+    readonly hitSoundAssets = [
+        {
+            key: 'six-seven-hit-anvil',
+            path: 'assets/audio/gloves/six-seven/anvil-hit.mp3',
+        },
+        {
+            key: 'six-seven-hit-anvil-b-flat',
+            path: 'assets/audio/gloves/six-seven/anvil-hit-b-flat.mp3',
+        },
+        {
+            key: 'six-seven-hit-anvil-f',
+            path: 'assets/audio/gloves/six-seven/anvil-hit-f.mp3',
+        },
+    ];
 }
