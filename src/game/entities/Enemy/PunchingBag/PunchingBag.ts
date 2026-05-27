@@ -4,6 +4,8 @@ import type { EnemySpawnSlot } from "../types";
 
 export class PunchingBag extends Enemy {
   readonly isCanAttack = false;
+  private static readonly spriteOffsetY = -90;
+  private static readonly spriteDisplayHeight = 550;
 
   private static readonly config = {
     displayName: "Punching Bag",
@@ -29,9 +31,16 @@ export class PunchingBag extends Enemy {
 
     this.slot = slot;
 
+    const textureSource = scene.textures
+      .get("punching-bag")
+      .getSourceImage() as { width: number; height: number };
+    const spriteAspectRatio = textureSource.width / textureSource.height;
+    const spriteDisplayWidth =
+      PunchingBag.spriteDisplayHeight * spriteAspectRatio;
+
     this.body = scene.add
-      .image(slot.x, slot.y, "punching-bag")
-      .setDisplaySize(this.slot.width, this.slot.height)
+      .image(slot.x, slot.y + PunchingBag.spriteOffsetY, "punching-bag")
+      .setDisplaySize(spriteDisplayWidth, PunchingBag.spriteDisplayHeight)
       .setInteractive({ useHandCursor: true });
   }
 
