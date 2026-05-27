@@ -1,4 +1,5 @@
 import type { Scene } from "phaser";
+import { languageController } from "../../../localization/LanguageController";
 import type { Player } from "../../Player/Player";
 import type { Wallet } from "../../Wallet/Wallet";
 
@@ -74,3 +75,12 @@ export const lootRewardRarityToName: Record<
   m: "rare",
   l: "epic",
 };
+
+export function getLootPotionTitle(nameKey: string, rarity: LootRewardRarity) {
+  const rarityName = lootRewardRarityToName[rarity];
+
+  return languageController.t("loot.potionTitle", {
+    size: languageController.t(`loot.potionSize.${rarityName}`),
+    name: languageController.t(nameKey),
+  });
+}

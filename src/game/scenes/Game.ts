@@ -7,6 +7,7 @@ import { ShopModal } from "../ui/ShopModal";
 import { StatusBar } from "../ui/StatusBar";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
 import { EnemyAttackSoundPlayer } from "../audio/EnemyAttackSoundPlayer";
+import { EnemyDeathSoundPlayer } from "../audio/EnemyDeathSoundPlayer";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
 import { BreathSoundPlayer } from "../audio/BreathSoundPlayer";
 import { BackgroundMusicController } from "../audio/BackgroundMusicController";
@@ -60,6 +61,7 @@ export class Game extends Scene {
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
   private enemyAttackSoundPlayer: EnemyAttackSoundPlayer;
+  private enemyDeathSoundPlayer: EnemyDeathSoundPlayer;
   private breathSoundPlayer: BreathSoundPlayer;
   private backgroundMusicController: BackgroundMusicController;
   private screenFilterController: ScreenFilterController;
@@ -92,6 +94,7 @@ export class Game extends Scene {
     Gloves.preload(this);
     HitSoundPlayer.preload(this);
     EnemyAttackSoundPlayer.preload(this);
+    EnemyDeathSoundPlayer.preload(this);
     UiSoundPlayer.preload(this);
     BreathSoundPlayer.preload(this);
     BackgroundMusicController.preload(this);
@@ -155,6 +158,7 @@ export class Game extends Scene {
     );
     this.hitSoundPlayer = new HitSoundPlayer(this);
     this.enemyAttackSoundPlayer = new EnemyAttackSoundPlayer(this);
+    this.enemyDeathSoundPlayer = new EnemyDeathSoundPlayer(this);
     this.breathSoundPlayer = new BreathSoundPlayer(this);
     this.backgroundMusicController = new BackgroundMusicController(
       this,
@@ -173,6 +177,7 @@ export class Game extends Scene {
       this.glovesEquipmentController,
       this.hitSoundPlayer,
       this.enemyAttackSoundPlayer,
+      this.enemyDeathSoundPlayer,
       (enemy, position) => {
         this.handleEnemyRewards(enemy, position);
       },

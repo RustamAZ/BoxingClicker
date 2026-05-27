@@ -10,9 +10,10 @@ export class GameHud {
   private static readonly xpBarFullPath =
     "assets/images/ui/bars/expbar-full.png";
   private static readonly xpBarDepth = 900;
+  private static readonly xpBarBottomOffsetY = 25;
   private static readonly levelTextColor = "#7dff76";
   private static readonly levelTextStroke = "#123b12";
-  private static readonly levelTextBottomOffsetY = 18;
+  private static readonly levelTextBottomOffsetY = 43;
   private static readonly healthBarEmptyTextureKey = "health-bar-empty";
   private static readonly healthBarFullTextureKey = "health-bar-full";
   private static readonly healthBarEmptyPath =
@@ -90,7 +91,8 @@ export class GameHud {
     const xpBarFrame = scene.textures.getFrame(GameHud.xpBarEmptyTextureKey);
     const xpBarX = 0;
     const xpBarHeight = xpBarFrame.height;
-    const xpBarY = scene.scale.height - xpBarHeight;
+    const xpBarY =
+      scene.scale.height - xpBarHeight - GameHud.xpBarBottomOffsetY;
 
     scene.add
       .image(xpBarX, xpBarY, GameHud.xpBarEmptyTextureKey)

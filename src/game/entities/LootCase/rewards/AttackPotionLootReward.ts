@@ -5,6 +5,7 @@ import {
 import { languageController } from "../../../localization/LanguageController";
 import {
   LootReward,
+  getLootPotionTitle,
   type LootRewardApplyContext,
   type LootRewardRarity,
   lootRewardRarityToName,
@@ -28,7 +29,7 @@ export class AttackPotionLootReward extends LootReward {
       rewardIdToLootBoxRewardId[this.id],
     );
 
-    this.title = languageController.t(rewardConfig.nameKey);
+    this.title = getLootPotionTitle(rewardConfig.nameKey, rarity);
     this.iconTextureKey = `loot-case-${rarity}-attack-potion-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-attack-poition.png`;
     this.attackPowerBonus = rewardConfig.values[lootRewardRarityToName[rarity]];

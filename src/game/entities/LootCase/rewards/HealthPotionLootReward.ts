@@ -5,6 +5,7 @@ import {
 import { languageController } from "../../../localization/LanguageController";
 import {
   LootReward,
+  getLootPotionTitle,
   type LootRewardApplyContext,
   type LootRewardRarity,
   lootRewardRarityToName,
@@ -28,7 +29,7 @@ export class HealthPotionLootReward extends LootReward {
     );
     const restorePercent = rewardConfig.values[lootRewardRarityToName[rarity]];
 
-    this.title = languageController.t(rewardConfig.nameKey);
+    this.title = getLootPotionTitle(rewardConfig.nameKey, rarity);
     this.iconTextureKey = `loot-case-${rarity}-health-potion-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-health-poition.png`;
     this.restorePercent = restorePercent / 100;

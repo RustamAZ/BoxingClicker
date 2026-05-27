@@ -27,7 +27,9 @@ export class EmeraldLootReward extends LootReward {
       rewardIdToLootBoxRewardId[this.id],
     );
 
-    this.title = languageController.t(rewardConfig.nameKey);
+    const rarityName = lootRewardRarityToName[rarity];
+
+    this.title = languageController.t(`${rewardConfig.nameKey}.${rarityName}`);
     this.iconTextureKey = `loot-case-${rarity}-emeralds-icon`;
     this.iconTexturePath = `assets/images/loot-case/rewards/${rarity}-emeralds.png`;
     this.value = rewardConfig.values[lootRewardRarityToName[rarity]];

@@ -81,6 +81,7 @@ export class LootCaseController {
   private getModalConfig() {
     return {
       reward: this.currentRewards[this.currentRewards.length - 1],
+      previousRewards: this.currentRewards.slice(0, -1),
       rewardsCount: this.currentRewards.length,
       rollerIconTextureKeys: LootRewardFactory.getVisualRewardIconKeys(),
       canRollExtra:

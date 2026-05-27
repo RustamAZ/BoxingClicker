@@ -1,6 +1,7 @@
 import { GameObjects, Math as PhaserMath } from "phaser";
 import type { Scene } from "phaser";
 import type { EnemyAttackSoundPlayer } from "../../audio/EnemyAttackSoundPlayer";
+import type { EnemyDeathSoundPlayer } from "../../audio/EnemyDeathSoundPlayer";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
 import type { GameLevelController } from "../../progression/GameLevelController";
 import type { EnemySpawnKind } from "../../progression/types";
@@ -44,6 +45,7 @@ export class SpawnPlace {
     private readonly glovesEquipmentController: GlovesEquipmentController,
     private readonly hitSoundPlayer: HitSoundPlayer,
     private readonly enemyAttackSoundPlayer: EnemyAttackSoundPlayer,
+    private readonly enemyDeathSoundPlayer: EnemyDeathSoundPlayer,
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
     private readonly onBossEncountered?: BossEncounteredCallback,
   ) {
@@ -172,6 +174,13 @@ export class SpawnPlace {
       }
 
       if (!EnemyRegistry.isEncounter(defeatedEnemySpawnKind)) {
+        if (
+          !defeatedBossId &&
+          !EnemyRegistry.isTraining(defeatedEnemySpawnKind)
+        ) {
+          this.enemyDeathSoundPlayer.play();
+        }
+
         this.player.gainXp(enemy.xpReward);
         this.onEnemyDefeated?.(enemy, {
           x: this.slot.x,

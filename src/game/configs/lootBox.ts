@@ -29,9 +29,9 @@ type LootBoxConfig = {
 
 export const lootBoxConfig: LootBoxConfig = {
   lootbox_rarity_chance: {
-    common: 0.7,
+    common: 0.65,
     rare: 0.25,
-    epic: 0.05,
+    epic: 0.1,
   },
   lootbox_reward_chance: {
     health_potion: 0.3,
