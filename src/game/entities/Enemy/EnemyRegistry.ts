@@ -100,6 +100,10 @@ export class EnemyRegistry {
     });
   }
 
+  static preloadSpawnKind(scene: Scene, enemySpawnKind: EnemySpawnKind) {
+    enemyRegistry[enemySpawnKind].preload(scene);
+  }
+
   static create(
     enemySpawnKind: EnemySpawnKind,
     scene: Scene,

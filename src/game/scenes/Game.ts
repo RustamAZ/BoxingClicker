@@ -23,6 +23,7 @@ import { ResourceParticleFlow } from "../entities/ResourceContainers/ResourcePar
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
 import { Wallet } from "../entities/Wallet/Wallet";
 import { GameLevelController } from "../progression/GameLevelController";
+import { LocationAssetPreloader } from "../progression/LocationAssetPreloader";
 import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
@@ -42,6 +43,7 @@ export class Game extends Scene {
   private player: Player;
   private wallet: Wallet;
   private levelController: GameLevelController;
+  private locationAssetPreloader: LocationAssetPreloader;
   private gameSettings: GameSettings;
   private pauseController: PauseController;
   private background: GameBackground;
@@ -78,8 +80,7 @@ export class Game extends Scene {
 
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
-    GameBackground.preload(this);
-    SpawnPlace.preload(this);
+    LocationAssetPreloader.preloadInitial(this);
     GameHud.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
@@ -104,6 +105,7 @@ export class Game extends Scene {
     this.player = new Player();
     this.wallet = new Wallet(this.player);
     this.levelController = new GameLevelController(this.player);
+    this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
     this.screenFilterController = new ScreenFilterController(this);
@@ -215,6 +217,9 @@ export class Game extends Scene {
       }
     );
     this.createWeaponUnlockToast();
+    this.locationAssetPreloader.prefetchNextGameLevel(
+      this.levelController.getCurrentGameLevel(),
+    );
     this.unsubscribeLanguageChange = languageController.onChange(() => {
       this.refreshLocalizedTexts();
     });
@@ -381,6 +386,10 @@ export class Game extends Scene {
       currentGameLevel === Game.villageGameLevel
     ) {
       this.player.restoreStamina();
+    }
+
+    if (this.previousGameLevel !== currentGameLevel) {
+      this.locationAssetPreloader.prefetchNextGameLevel(currentGameLevel);
     }
 
     this.previousGameLevel = currentGameLevel;

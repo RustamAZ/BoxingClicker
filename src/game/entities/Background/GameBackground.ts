@@ -1,5 +1,6 @@
 import { GameObjects, Scene } from "phaser";
 import { GameLevelController } from "../../progression/GameLevelController";
+import type { GameLevelBackgroundConfig } from "../../progression/types";
 
 export class GameBackground {
   private static readonly width = 1024;
@@ -10,6 +11,10 @@ export class GameBackground {
 
   static preload(scene: Scene) {
     GameLevelController.preloadBackgrounds(scene);
+  }
+
+  static preloadBackground(scene: Scene, background: GameLevelBackgroundConfig) {
+    scene.load.image(background.key, background.path);
   }
 
   constructor(
