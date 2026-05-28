@@ -471,7 +471,7 @@ export class TrainingModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        TrainingModal.stopPropagation(event);
+        event.stopPropagation();
         UiSoundPlayer.playClick(this.scene);
         onClick();
       },
@@ -674,14 +674,6 @@ export class TrainingModal {
     }
 
     background.clearTint();
-  }
-
-  private static stopPropagation(event: Phaser.Types.Input.EventData) {
-    try {
-      event.stopPropagation();
-    } catch {
-      // Some mobile browsers throw when Phaser touches readonly event fields.
-    }
   }
 
   private static loadAssets(scene: Scene, onComplete: () => void) {

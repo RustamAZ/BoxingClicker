@@ -212,7 +212,7 @@ export class ShopModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        ShopModal.stopPropagation(event);
+        event.stopPropagation();
       },
     );
 
@@ -528,7 +528,7 @@ export class ShopModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        ShopModal.stopPropagation(event);
+        event.stopPropagation();
         UiSoundPlayer.playClick(this.scene);
         this.handleItemAction(card);
       },
@@ -686,13 +686,5 @@ export class ShopModal {
       ShopModal.buttonTextures[itemIndex]?.textureKey ??
       ShopModal.buttonTextures[0].textureKey
     );
-  }
-
-  private static stopPropagation(event: Phaser.Types.Input.EventData) {
-    try {
-      event.stopPropagation();
-    } catch {
-      // Some mobile browsers throw when Phaser touches readonly event fields.
-    }
   }
 }
