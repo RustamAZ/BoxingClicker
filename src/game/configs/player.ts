@@ -16,8 +16,8 @@ export const playerConfig: PlayerConfig = {
   player_start: {
     attack: 9,
     health: 100,
-    stamina: 220,
-    stamina_cost_per_hit: 1.5,
+    stamina: 200,
+    stamina_cost_per_hit: 2,
     attack_speed: 3.5,
     stamina_regen_per_second: 2.5,
   },

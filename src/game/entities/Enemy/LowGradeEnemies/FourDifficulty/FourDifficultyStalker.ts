@@ -35,6 +35,7 @@ export class FourDifficultyStalker extends Enemy {
     path: "assets/audio/enemies/four-difficulty/stalker-attack.mp3",
   };
   private static readonly attackCooldownSeconds = 1.1;
+  private static readonly initialAttackDelaySeconds = 0.35;
   private static readonly attackAnimationDurationMs = 140;
   private static readonly attackAnimationScaleMultiplier = 1.05;
   private static readonly escapeAnimationDurationMs = 230;
@@ -82,6 +83,8 @@ export class FourDifficultyStalker extends Enemy {
       emeraldDropChance: 0,
       damagePerHit: state === "aggressive" ? 50 : 0,
       attackCooldownSeconds: FourDifficultyStalker.attackCooldownSeconds,
+      initialAttackDelaySeconds:
+        FourDifficultyStalker.initialAttackDelaySeconds,
     });
 
     this.isCanAttack = state === "aggressive";

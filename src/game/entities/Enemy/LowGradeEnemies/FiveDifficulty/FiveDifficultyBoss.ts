@@ -83,6 +83,7 @@ export class FiveDifficultyBoss extends Enemy {
       emeraldDropChance: fifthBossConfig.emerald_drop_chance,
       damagePerHit: fifthBossConfig.damage,
       attackCooldownSeconds: fifthBossConfig.attack_speed,
+      initialAttackDelaySeconds: fifthBossConfig.initial_attack_delay,
     });
 
     this.slot = slot;

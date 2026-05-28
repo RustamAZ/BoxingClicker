@@ -56,6 +56,7 @@ export class FirstDifficultyBoss extends Enemy {
       emeraldDropChance: firstBossConfig.emerald_drop_chance,
       damagePerHit: firstBossConfig.damage,
       attackCooldownSeconds: firstBossConfig.attack_speed,
+      initialAttackDelaySeconds: firstBossConfig.initial_attack_delay,
     });
 
     this.slot = slot;

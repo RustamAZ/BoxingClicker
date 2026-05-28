@@ -71,6 +71,7 @@ export class FourDifficultyBoss extends Enemy {
       emeraldDropChance: fourthBossConfig.emerald_drop_chance,
       damagePerHit: fourthBossConfig.damage,
       attackCooldownSeconds: fourthBossConfig.attack_speed,
+      initialAttackDelaySeconds: fourthBossConfig.initial_attack_delay,
     });
 
     this.slot = slot;

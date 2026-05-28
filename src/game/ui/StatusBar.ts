@@ -4,7 +4,8 @@ import type { Player } from "../entities/Player/Player";
 type StatusBarEffectId =
   | "attack-potion"
   | "speed-potion"
-  | "web-slow";
+  | "web-slow"
+  | "fire-burn";
 
 type StatusBarEffectConfig = {
   id: StatusBarEffectId;
@@ -45,6 +46,12 @@ export class StatusBar {
       textureKey: "status-bar-web-slow",
       texturePath: "assets/images/enemies/third-difficulty/web-shot.png",
       tint: 0xcff8ff,
+    },
+    {
+      id: "fire-burn",
+      sourceId: "hell-fireball-burn",
+      textureKey: "status-bar-fire-burn",
+      texturePath: "assets/images/enemies/five-difficulty/fire-ball.png",
     },
   ];
 
@@ -99,6 +106,9 @@ export class StatusBar {
         .map((effect) => effect.sourceId)
         .filter((sourceId): sourceId is string => sourceId !== undefined),
     );
+    player.getActiveDamageOverTimeEffects().forEach((effect) => {
+      activeSourceIds.add(effect.sourceId);
+    });
     const blinkAlpha =
       0.52 + Math.sin((timeMs / 1000) * StatusBar.blinkSpeed) * 0.28;
 

@@ -94,6 +94,7 @@ export class SecondDifficultyBoss extends Enemy {
       emeraldDropChance: secondBossConfig.emerald_drop_chance,
       damagePerHit: secondBossConfig.damage,
       attackCooldownSeconds: secondBossConfig.attack_speed,
+      initialAttackDelaySeconds: secondBossConfig.initial_attack_delay,
     });
 
     this.slot = slot;

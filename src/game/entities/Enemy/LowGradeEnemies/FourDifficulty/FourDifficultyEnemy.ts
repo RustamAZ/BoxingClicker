@@ -88,6 +88,9 @@ export class FourDifficultyEnemy extends Enemy {
       attackCooldownSeconds: randomFloat(
         toEnemyStatRange(fourthEnemyConfig.attack_speed_range),
       ),
+      initialAttackDelaySeconds: randomFloat(
+        toEnemyStatRange(fourthEnemyConfig.initial_attack_delay_range),
+      ),
     });
 
     this.slot = slot;

@@ -8,14 +8,20 @@ import type { EnemySpawnSlot } from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
+import type { Player } from "../../../Player/Player";
 
 type EnemySpriteConfig = {
   key: string;
   path: string;
 };
 
+type EnemyAttackEffect = "fireball";
+
 type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
+  alive: EnemySpriteConfig & {
+    displayName: string;
+    attackEffect?: EnemyAttackEffect;
+  },
   dead: EnemySpriteConfig,
 ];
 
@@ -24,9 +30,19 @@ export class FiveDifficultyEnemy extends Enemy {
 
   private static readonly attackAnimationDurationMs = 90;
   private static readonly attackAnimationScaleMultiplier = 1.04;
+  private static readonly fireballAnimationDurationMs = 560;
+  private static readonly fireballStartScale = 0.18;
+  private static readonly fireballEndScale = 3.4;
+  private static readonly fireballBurnSourceId = "hell-fireball-burn";
+  private static readonly fireballBurnDamagePerSecond = 5;
+  private static readonly fireballBurnDurationSeconds = 2;
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
+  private static readonly fireballSprite: EnemySpriteConfig = {
+    key: "five-difficulty-fire-ball",
+    path: "assets/images/enemies/five-difficulty/fire-ball.png",
+  };
   private static readonly sprites: EnemySpritePair[] = [
     [
       {
@@ -61,10 +77,24 @@ export class FiveDifficultyEnemy extends Enemy {
         path: "assets/images/enemies/five-difficulty/hell-pig-v1-die.png",
       },
     ],
+    [
+      {
+        key: "five-difficulty-hell-ghast-1",
+        path: "assets/images/enemies/five-difficulty/hell-ghast-v1.png",
+        displayName: "Hell Ghast",
+        attackEffect: "fireball",
+      },
+      {
+        key: "five-difficulty-hell-ghast-1-dead",
+        path: "assets/images/enemies/five-difficulty/hell-ghast-v1-die.png",
+      },
+    ],
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
+  private readonly attackEffect?: EnemyAttackEffect;
   private readonly deathSpriteKey: string;
+  private readonly fireballs: GameObjects.Image[] = [];
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
@@ -72,6 +102,10 @@ export class FiveDifficultyEnemy extends Enemy {
       scene.load.image(aliveSprite.key, aliveSprite.path);
       scene.load.image(deadSprite.key, deadSprite.path);
     });
+    scene.load.image(
+      FiveDifficultyEnemy.fireballSprite.key,
+      FiveDifficultyEnemy.fireballSprite.path,
+    );
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
@@ -88,9 +122,13 @@ export class FiveDifficultyEnemy extends Enemy {
       attackCooldownSeconds: randomFloat(
         toEnemyStatRange(fifthEnemyConfig.attack_speed_range),
       ),
+      initialAttackDelaySeconds: randomFloat(
+        toEnemyStatRange(fifthEnemyConfig.initial_attack_delay_range),
+      ),
     });
 
     this.slot = slot;
+    this.attackEffect = aliveSprite.attackEffect;
     this.deathSpriteKey = deadSprite.key;
     this.body = scene.add
       .image(slot.x, slot.y, aliveSprite.key)
@@ -102,9 +140,18 @@ export class FiveDifficultyEnemy extends Enemy {
     this.body.on("pointerdown", callback);
   }
 
-  protected onAttack() {
+  protected onAttack(player: Player) {
     if (this.isDeathAnimationPlaying) {
       return;
+    }
+
+    if (this.attackEffect === "fireball") {
+      this.playFireballAnimation();
+      player.applyDamageOverTime({
+        sourceId: FiveDifficultyEnemy.fireballBurnSourceId,
+        damagePerSecond: FiveDifficultyEnemy.fireballBurnDamagePerSecond,
+        durationSeconds: FiveDifficultyEnemy.fireballBurnDurationSeconds,
+      });
     }
 
     const baseScaleX = this.body.scaleX;
@@ -126,6 +173,7 @@ export class FiveDifficultyEnemy extends Enemy {
     }
 
     this.isDeathAnimationPlaying = true;
+    this.destroyFireballs();
     this.body.disableInteractive();
     this.body.setTexture(this.deathSpriteKey);
     this.body.setDisplaySize(this.slot.width, this.slot.height);
@@ -147,6 +195,52 @@ export class FiveDifficultyEnemy extends Enemy {
   }
 
   destroy() {
+    this.body.scene.tweens.killTweensOf(this.body);
+    this.destroyFireballs();
     this.body.destroy();
+  }
+
+  private playFireballAnimation() {
+    const fireball = this.body.scene.add
+      .image(
+        this.slot.x,
+        this.slot.y - this.slot.height * 0.2,
+        FiveDifficultyEnemy.fireballSprite.key,
+      )
+      .setScale(FiveDifficultyEnemy.fireballStartScale)
+      .setAlpha(0.95)
+      .setDepth(this.body.depth + 20);
+
+    this.fireballs.push(fireball);
+
+    this.body.scene.tweens.add({
+      targets: fireball,
+      x: this.body.scene.scale.width / 2,
+      y: this.body.scene.scale.height / 2,
+      scale: FiveDifficultyEnemy.fireballEndScale,
+      alpha: 0,
+      duration: FiveDifficultyEnemy.fireballAnimationDurationMs,
+      ease: "Quad.easeOut",
+      onComplete: () => {
+        this.removeFireball(fireball);
+      },
+    });
+  }
+
+  private removeFireball(fireball: GameObjects.Image) {
+    const index = this.fireballs.indexOf(fireball);
+
+    if (index >= 0) {
+      this.fireballs.splice(index, 1);
+    }
+
+    fireball.destroy();
+  }
+
+  private destroyFireballs() {
+    this.fireballs.splice(0).forEach((fireball) => {
+      this.body.scene.tweens.killTweensOf(fireball);
+      fireball.destroy();
+    });
   }
 }

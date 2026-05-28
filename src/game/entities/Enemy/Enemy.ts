@@ -10,6 +10,7 @@ export type EnemyConfig = {
     emeraldDropChance?: number;
     damagePerHit: number;
     attackCooldownSeconds: number;
+    initialAttackDelaySeconds?: number;
 };
 
 export abstract class Enemy
@@ -45,7 +46,8 @@ export abstract class Enemy
         this.emeraldDropChance = Math.max(0, Math.min(1, config.emeraldDropChance ?? 0));
         this.damagePerHit = config.damagePerHit;
         this.attackCooldownSeconds = config.attackCooldownSeconds;
-        this.attackCooldownRemaining = config.attackCooldownSeconds;
+        this.attackCooldownRemaining =
+            config.initialAttackDelaySeconds ?? config.attackCooldownSeconds;
     }
 
     get timeUntilNextHit ()

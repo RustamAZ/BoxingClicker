@@ -83,6 +83,9 @@ export class FirstDifficultyEnemy extends Enemy {
       attackCooldownSeconds: randomFloat(
         toEnemyStatRange(firstEnemyConfig.attack_speed_range),
       ),
+      initialAttackDelaySeconds: randomFloat(
+        toEnemyStatRange(firstEnemyConfig.initial_attack_delay_range),
+      ),
     });
 
     this.slot = slot;

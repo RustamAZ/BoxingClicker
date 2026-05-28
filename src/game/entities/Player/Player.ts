@@ -23,6 +23,19 @@ type ActivePlayerStatEffect = PlayerStatEffect & {
 
 export type PlayerActiveStatEffect = Readonly<ActivePlayerStatEffect>;
 
+export type PlayerDamageOverTimeEffect = {
+  sourceId: string;
+  damagePerSecond: number;
+  durationSeconds: number;
+};
+
+type ActivePlayerDamageOverTimeEffect = PlayerDamageOverTimeEffect & {
+  remainingSeconds: number;
+};
+
+export type PlayerActiveDamageOverTimeEffect =
+  Readonly<ActivePlayerDamageOverTimeEffect>;
+
 export class Player {
   readonly profile = new PlayerProfile();
 
@@ -47,8 +60,10 @@ export class Player {
   lowHealthPercent = 0.25;
 
   private readonly basePunchDurationMs = 1000;
-  private readonly levelUpHealthRestorePercent = 0.2;
+  private readonly levelUpHealthRestorePercent = 0.1;
   private readonly activeStatEffects: ActivePlayerStatEffect[] = [];
+  private readonly activeDamageOverTimeEffects: ActivePlayerDamageOverTimeEffect[] =
+    [];
 
   canHit(staminaCostMultiplier = 1) {
     return (
@@ -71,6 +86,7 @@ export class Player {
 
   regenerateStamina(deltaSeconds: number) {
     this.updateActiveStatEffects(deltaSeconds);
+    this.updateActiveDamageOverTimeEffects(deltaSeconds);
     this.stamina = Math.min(
       this.maxStamina,
       this.stamina + this.staminaRegenPerSecond * deltaSeconds,
@@ -207,9 +223,39 @@ export class Player {
     return this.activeStatEffects.map((effect) => ({ ...effect }));
   }
 
+  applyDamageOverTime(effect: PlayerDamageOverTimeEffect) {
+    const durationSeconds = Math.max(0, effect.durationSeconds);
+
+    if (durationSeconds <= 0 || effect.damagePerSecond <= 0) {
+      return;
+    }
+
+    const existingEffect = this.activeDamageOverTimeEffects.find(
+      (activeEffect) => activeEffect.sourceId === effect.sourceId,
+    );
+
+    if (existingEffect) {
+      existingEffect.damagePerSecond = effect.damagePerSecond;
+      existingEffect.durationSeconds = durationSeconds;
+      existingEffect.remainingSeconds = durationSeconds;
+      return;
+    }
+
+    this.activeDamageOverTimeEffects.push({
+      ...effect,
+      durationSeconds,
+      remainingSeconds: durationSeconds,
+    });
+  }
+
+  getActiveDamageOverTimeEffects(): PlayerActiveDamageOverTimeEffect[] {
+    return this.activeDamageOverTimeEffects.map((effect) => ({ ...effect }));
+  }
+
   restoreFromAd() {
     this.health = this.maxHealth;
     this.restoreStamina();
+    this.activeDamageOverTimeEffects.length = 0;
   }
 
   isLowHealth() {
@@ -303,6 +349,33 @@ export class Player {
 
       if (effect.remainingSeconds <= 0) {
         this.activeStatEffects.splice(index, 1);
+      }
+    }
+  }
+
+  private updateActiveDamageOverTimeEffects(deltaSeconds: number) {
+    const safeDeltaSeconds = Math.max(0, deltaSeconds);
+
+    if (safeDeltaSeconds <= 0 || this.activeDamageOverTimeEffects.length === 0) {
+      return;
+    }
+
+    for (
+      let index = this.activeDamageOverTimeEffects.length - 1;
+      index >= 0;
+      index -= 1
+    ) {
+      const effect = this.activeDamageOverTimeEffects[index];
+      const tickSeconds = Math.min(safeDeltaSeconds, effect.remainingSeconds);
+
+      if (tickSeconds > 0 && this.isAlive()) {
+        this.takeDamage(effect.damagePerSecond * tickSeconds);
+      }
+
+      effect.remainingSeconds -= safeDeltaSeconds;
+
+      if (effect.remainingSeconds <= 0 || this.isDead()) {
+        this.activeDamageOverTimeEffects.splice(index, 1);
       }
     }
   }

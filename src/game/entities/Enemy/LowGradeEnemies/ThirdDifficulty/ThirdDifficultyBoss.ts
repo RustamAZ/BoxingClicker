@@ -73,6 +73,7 @@ export class ThirdDifficultyBoss extends Enemy {
       emeraldDropChance: thirdBossConfig.emerald_drop_chance,
       damagePerHit: thirdBossConfig.damage,
       attackCooldownSeconds: thirdBossConfig.attack_speed,
+      initialAttackDelaySeconds: thirdBossConfig.initial_attack_delay,
     });
 
     this.slot = slot;
