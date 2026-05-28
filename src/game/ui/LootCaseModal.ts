@@ -383,7 +383,7 @@ export class LootCaseModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        event.stopPropagation();
+        LootCaseModal.stopPropagation(event);
 
         if (this.isRolling || this.isActionLocked) {
           return;
@@ -682,5 +682,13 @@ export class LootCaseModal {
     const height = source.height || targetSize;
 
     return Math.min(targetSize / width, targetSize / height);
+  }
+
+  private static stopPropagation(event: Phaser.Types.Input.EventData) {
+    try {
+      event.stopPropagation();
+    } catch {
+      // Some mobile browsers throw when Phaser touches readonly event fields.
+    }
   }
 }

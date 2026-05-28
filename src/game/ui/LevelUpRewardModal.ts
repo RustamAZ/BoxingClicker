@@ -89,7 +89,7 @@ export class LevelUpRewardModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        event.stopPropagation();
+        LevelUpRewardModal.stopPropagation(event);
       },
     );
 
@@ -209,18 +209,18 @@ export class LevelUpRewardModal {
         _localY: number,
         event: Phaser.Types.Input.EventData,
       ) => {
-        event.stopPropagation();
+        LevelUpRewardModal.stopPropagation(event);
 
-      const choice = card.choice;
-      const onSelect = this.onSelect;
+        const choice = card.choice;
+        const onSelect = this.onSelect;
 
-      if (this.isSelectionLocked || !choice || !onSelect) {
-        return;
-      }
+        if (this.isSelectionLocked || !choice || !onSelect) {
+          return;
+        }
 
-      UiSoundPlayer.playClick(this.scene);
-      this.onSelect = undefined;
-      onSelect(choice);
+        UiSoundPlayer.playClick(this.scene);
+        this.onSelect = undefined;
+        onSelect(choice);
       },
     );
     hitArea.on("pointerover", () => {
@@ -288,5 +288,13 @@ export class LevelUpRewardModal {
   private clearUnlockSelectionTimer() {
     this.unlockSelectionTimer?.remove();
     this.unlockSelectionTimer = undefined;
+  }
+
+  private static stopPropagation(event: Phaser.Types.Input.EventData) {
+    try {
+      event.stopPropagation();
+    } catch {
+      // Some mobile browsers throw when Phaser touches readonly event fields.
+    }
   }
 }
