@@ -23,12 +23,12 @@ export function toEnemyStatRange(range: EnemyStatRangeConfig): EnemyStatRange {
 export const firstEnemyConfig: EnemyConfig = {
   health_range: [55, 85],
   damage_range: [4, 7],
-  attack_speed_range: [0.8, 1.2],
+  attack_speed_range: [1.4, 1.8],
   initial_attack_delay_range: [0.2, 0.35],
   xp_reward: 1,
   buff_container_reward: 8,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.08,
+  emerald_drop_chance: 0.1,
 };
 
 export const secondEnemyConfig: EnemyConfig = {

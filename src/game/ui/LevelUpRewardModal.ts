@@ -14,7 +14,7 @@ type RewardCard = {
 
 export class LevelUpRewardModal {
   private static readonly depth = 1200;
-  private static readonly selectionLockDurationMs = 300;
+  private static readonly selectionLockDurationMs = 800;
   private static readonly backgroundTextureKey = "buff-container-empty";
   private static readonly backgroundPath =
     "assets/images/ui/buffs/buff-container-empty.png";
@@ -81,6 +81,17 @@ export class LevelUpRewardModal {
       this.createRewardCard(centerX, centerY),
       this.createRewardCard(centerX + LevelUpRewardModal.cardGap, centerY),
     ];
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
 
     this.hide();
     this.unsubscribeLanguageChange = languageController.onChange(() => {
@@ -190,7 +201,16 @@ export class LevelUpRewardModal {
     card.hitArea = hitArea;
     card.description = description;
 
-    hitArea.on("pointerdown", () => {
+    hitArea.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+
       const choice = card.choice;
       const onSelect = this.onSelect;
 
@@ -201,7 +221,8 @@ export class LevelUpRewardModal {
       UiSoundPlayer.playClick(this.scene);
       this.onSelect = undefined;
       onSelect(choice);
-    });
+      },
+    );
     hitArea.on("pointerover", () => {
       card.container.setTint(0xe8e8e8);
     });
