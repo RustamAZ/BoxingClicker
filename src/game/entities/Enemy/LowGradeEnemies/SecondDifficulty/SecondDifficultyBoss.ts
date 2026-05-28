@@ -56,6 +56,8 @@ export class SecondDifficultyBoss extends Enemy {
   private explosionTimerSeconds = SecondDifficultyBoss.explosionDelaySeconds;
   private isDeathAnimationPlaying = false;
   private isExplosionAnimationPlaying = false;
+  private isExplosionCompleted = false;
+  private explosionCompleteTimer?: Phaser.Time.TimerEvent;
 
   static preload(scene: Scene) {
     scene.load.image(
@@ -162,6 +164,8 @@ export class SecondDifficultyBoss extends Enemy {
   }
 
   destroy() {
+    this.explosionCompleteTimer?.remove();
+    this.explosionCompleteTimer = undefined;
     this.scene.tweens.killTweensOf(this.body);
     this.body.destroy();
   }
@@ -187,11 +191,23 @@ export class SecondDifficultyBoss extends Enemy {
       alpha: 0,
       duration: SecondDifficultyBoss.explosionAnimationDurationMs,
       ease: "Quad.easeOut",
-      onComplete: () => {
-        this.destroy();
-        this.emitSelfDefeated();
-      },
     });
+    this.explosionCompleteTimer = this.scene.time.delayedCall(
+      SecondDifficultyBoss.explosionAnimationDurationMs,
+      () => {
+        this.completeExplosion();
+      },
+    );
+  }
+
+  private completeExplosion() {
+    if (this.isExplosionCompleted) {
+      return;
+    }
+
+    this.isExplosionCompleted = true;
+    this.destroy();
+    this.emitSelfDefeated();
   }
 
   private startExplosionChargeAnimation() {

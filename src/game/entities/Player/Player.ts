@@ -11,7 +11,7 @@ export type PlayerStat =
 
 export type PlayerStatEffect = {
   stat: PlayerStat;
-  mode: "add" | "multiply";
+  mode: "add" | "multiply" | "cap-max";
   value: number;
   durationSeconds?: number;
   sourceId?: string;
@@ -409,13 +409,28 @@ export class Player {
   }
 
   private applyStatEffectMultipliers(stat: PlayerStat, value: number) {
-    return this.activeStatEffects.reduce((result, effect) => {
-      if (effect.stat !== stat) {
+    const statEffects = this.activeStatEffects.filter(
+      (effect) => effect.stat === stat,
+    );
+    const valueAfterBonuses = statEffects.reduce((result, effect) => {
+      if (effect.mode === "cap-max") {
         return result;
       }
 
       return this.applyStatEffectValue(result, effect);
     }, value);
+
+    return statEffects.reduce((result, effect) => {
+      if (effect.stat !== stat) {
+        return result;
+      }
+
+      if (effect.mode !== "cap-max") {
+        return result;
+      }
+
+      return this.applyStatEffectValue(result, effect);
+    }, valueAfterBonuses);
   }
 
   private applyMaxStaminaEffect(effect: PlayerStatEffect) {
@@ -447,6 +462,10 @@ export class Player {
   private applyStatEffectValue(value: number, effect: PlayerStatEffect) {
     if (effect.mode === "multiply") {
       return value * Math.max(0, effect.value);
+    }
+
+    if (effect.mode === "cap-max") {
+      return Math.min(value, Math.max(0, effect.value));
     }
 
     return value + effect.value;

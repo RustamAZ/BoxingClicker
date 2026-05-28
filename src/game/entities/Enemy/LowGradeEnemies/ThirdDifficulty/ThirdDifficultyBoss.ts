@@ -15,11 +15,11 @@ export class ThirdDifficultyBoss extends Enemy {
   private static readonly attackAnimationDurationMs = 180;
   private static readonly attackAnimationMoveOffsetY = -18;
   private static readonly attackAnimationAngle = -5;
-  private static readonly webShotAttackSpeedMultiplier =
+  private static readonly webShotMaxPunchSpeed =
     thirdBossConfig.effect?.type === "attack_speed_slow"
-      ? Math.max(0, 1 + thirdBossConfig.effect.slow_value)
-      : 1;
-  private static readonly webShotDebuffDurationSeconds = 0.2;
+      ? (thirdBossConfig.effect.max_attack_speed ?? 3)
+      : 3;
+  private static readonly webShotDebuffDurationSeconds = 0.8;
   private static readonly webShotAnimationDurationMs = 620;
   private static readonly webShotStartScale = 0.18;
   private static readonly webShotEndScale = 7.5;
@@ -94,8 +94,8 @@ export class ThirdDifficultyBoss extends Enemy {
 
     player.applyStatEffect({
       stat: "punch-speed",
-      mode: "multiply",
-      value: ThirdDifficultyBoss.webShotAttackSpeedMultiplier,
+      mode: "cap-max",
+      value: ThirdDifficultyBoss.webShotMaxPunchSpeed,
       durationSeconds: ThirdDifficultyBoss.webShotDebuffDurationSeconds,
       sourceId: "third-difficulty-boss-web-shot",
     });

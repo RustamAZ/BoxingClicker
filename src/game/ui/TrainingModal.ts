@@ -14,6 +14,7 @@ import {
 
 type TrainingButton = {
   background: GameObjects.Image | GameObjects.Rectangle;
+  icon?: GameObjects.Image;
   label: GameObjects.Text;
   hitArea: GameObjects.Rectangle;
 };
@@ -43,6 +44,7 @@ export class TrainingModal {
   private static readonly openButtonX = 82;
   private static readonly openButtonY = 382;
   private static readonly openButtonSize = 128;
+  private static readonly openButtonHoverSize = 138;
   private static readonly panelWidth = 760;
   private static readonly panelHeight = 560;
   private static readonly rowWidth = 650;
@@ -52,6 +54,9 @@ export class TrainingModal {
   private static readonly openButtonColor = 0x3a2a43;
   private static readonly openButtonHoverColor = 0x4a3a53;
   private static readonly openButtonAlpha = 0.95;
+  private static readonly openButtonIconTextureKey = "training-button-icon";
+  private static readonly openButtonIconPath =
+    "assets/images/ui/training/training-button-icon.png";
   private static readonly emeraldIconTextureKey = "training-emerald-icon";
   private static readonly emeraldIconPath = "assets/images/ui/icons/emerald.png";
   private static readonly assets: TrainingAssetConfig[] = [
@@ -76,6 +81,13 @@ export class TrainingModal {
       path: TrainingModal.emeraldIconPath,
     },
   ];
+
+  static preload(scene: Scene) {
+    scene.load.image(
+      TrainingModal.openButtonIconTextureKey,
+      TrainingModal.openButtonIconPath,
+    );
+  }
 
   private readonly openButton: TrainingButton;
   private readonly loaderText: GameObjects.Text;
@@ -127,15 +139,19 @@ export class TrainingModal {
   }
 
   setButtonVisible(visible: boolean) {
-    this.openButton.background.setVisible(visible);
-    this.openButton.label.setVisible(visible);
+    this.openButton.background.setVisible(false);
+    this.openButton.icon?.setVisible(visible);
+    this.openButton.label.setVisible(false);
     this.openButton.hitArea.setVisible(visible);
 
     if (visible) {
       this.openButton.hitArea.setInteractive({ useHandCursor: true });
     } else {
       this.openButton.hitArea.disableInteractive();
-      TrainingModal.clearButtonBackgroundTint(this.openButton.background);
+      this.openButton.icon?.setDisplaySize(
+        TrainingModal.openButtonSize,
+        TrainingModal.openButtonSize,
+      );
     }
   }
 
@@ -269,12 +285,23 @@ export class TrainingModal {
         TrainingModal.openButtonAlpha,
       )
       .setDepth(TrainingModal.buttonDepth)
-      .setStrokeStyle(3, 0xffd55f, 0.95);
+      .setVisible(false);
+    const icon = this.scene.add
+      .image(
+        TrainingModal.openButtonX,
+        TrainingModal.openButtonY,
+        TrainingModal.openButtonIconTextureKey,
+      )
+      .setDisplaySize(
+        TrainingModal.openButtonSize,
+        TrainingModal.openButtonSize,
+      )
+      .setDepth(TrainingModal.buttonDepth + 1);
     const label = this.scene.add
       .text(
         TrainingModal.openButtonX,
-        TrainingModal.openButtonY,
-        languageController.t("training.button"),
+        TrainingModal.openButtonY + 38,
+        "",
         {
           fontFamily: "Hardpixel",
           fontSize: 18,
@@ -289,7 +316,8 @@ export class TrainingModal {
       )
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(TrainingModal.buttonDepth + 1);
+      .setDepth(TrainingModal.buttonDepth + 1)
+      .setVisible(false);
     const hitArea = this.scene.add
       .rectangle(
         TrainingModal.openButtonX,
@@ -307,14 +335,21 @@ export class TrainingModal {
       this.open();
     });
     hitArea.on("pointerover", () => {
-      TrainingModal.setButtonBackgroundTint(background);
+      icon.setDisplaySize(
+        TrainingModal.openButtonHoverSize,
+        TrainingModal.openButtonHoverSize,
+      );
     });
     hitArea.on("pointerout", () => {
-      TrainingModal.clearButtonBackgroundTint(background);
+      icon.setDisplaySize(
+        TrainingModal.openButtonSize,
+        TrainingModal.openButtonSize,
+      );
     });
 
     return {
       background,
+      icon,
       label,
       hitArea,
     };
@@ -602,6 +637,7 @@ export class TrainingModal {
     }
 
     button.background.setVisible(visible);
+    button.icon?.setVisible(visible);
     button.label.setVisible(visible);
     button.hitArea.setVisible(visible);
 

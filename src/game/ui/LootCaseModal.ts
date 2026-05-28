@@ -244,7 +244,7 @@ export class LootCaseModal {
     this.previousRewardTitle = this.scene.add
       .text(centerX, centerY + LootCaseModal.rewardTextOffsetY, "", {
         fontFamily: "Hardpixel",
-        fontSize: 18,
+        fontSize: 22,
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 5,

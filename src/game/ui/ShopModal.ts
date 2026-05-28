@@ -265,7 +265,7 @@ export class ShopModal {
     if (visible) {
       this.shopButton.hitArea.setInteractive({ useHandCursor: true });
     } else {
-      this.shopButton.icon.clearTint();
+      this.shopButton.icon.setDisplaySize(ShopModal.iconSize, ShopModal.iconSize);
       this.shopButton.hitArea.disableInteractive();
     }
   }
@@ -388,10 +388,10 @@ export class ShopModal {
       this.open();
     });
     hitArea.on("pointerover", () => {
-      icon.setTint(0xb8b8b8);
+      icon.setDisplaySize(ShopModal.iconSize * 1.08, ShopModal.iconSize * 1.08);
     });
     hitArea.on("pointerout", () => {
-      icon.clearTint();
+      icon.setDisplaySize(ShopModal.iconSize, ShopModal.iconSize);
     });
 
     return {

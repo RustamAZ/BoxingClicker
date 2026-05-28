@@ -12,8 +12,8 @@ export class MechanicGloves extends BaseGloves
     readonly damageMultiplier = 1.5;
     readonly staminaCostMultiplier = 1.3;
     readonly attackSpeedMultiplier = 0.6;
-    readonly hitSoundVolume = 0.2;
-    readonly hitEffectSize = 150;
+    readonly hitSoundVolume = 0.1;
+    readonly hitEffectSize = 200;
 
     readonly hitEffectAssets: GlovesAsset[] = [
         {

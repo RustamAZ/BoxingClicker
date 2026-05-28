@@ -6,7 +6,7 @@ export type BossEffectConfig =
     }
   | {
       type: "attack_speed_slow";
-      slow_value: number;
+      max_attack_speed?: number;
     };
 
 export type BossConfig = {
@@ -59,7 +59,7 @@ export const thirdBossConfig: BossConfig = {
   emerald_drop_chance: 1.0,
   effect: {
     type: "attack_speed_slow",
-    slow_value: -0.35,
+    max_attack_speed: 3,
   },
 };
 

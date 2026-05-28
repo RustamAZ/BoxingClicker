@@ -28,7 +28,7 @@ export abstract class BaseGloves {
       path: "assets/images/effects/pow.png",
     },
   ];
-  readonly hitEffectSize = 100;
+  readonly hitEffectSize: number = 100;
   readonly hitSoundAssets: GlovesAsset[] = [
     {
       key: "hit-v1",

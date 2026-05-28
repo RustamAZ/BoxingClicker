@@ -90,6 +90,7 @@ export class Game extends Scene {
     ShopModal.preload(this);
     StatusBar.preload(this);
     PlayerDeathModal.preload(this);
+    TrainingModal.preload(this);
     LootCaseController.preload(this);
     LevelUpRewardController.preload(this);
     ResourceParticleFlow.preload(this);
