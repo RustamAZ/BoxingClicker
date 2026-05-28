@@ -1,14 +1,11 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: "/BoxingClicker/",
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          phaser: ["phaser"],
-        },
-      },
+  resolve: {
+    alias: {
+      phaser: fileURLToPath(new URL("../src/game/phaser.ts", import.meta.url)),
     },
   },
   server: {

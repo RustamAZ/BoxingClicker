@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
 const phasermsg = () => {
@@ -19,14 +20,12 @@ const phasermsg = () => {
 export default defineConfig({
   base: "/BoxingClicker/",
   logLevel: "warning",
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          phaser: ["phaser"],
-        },
-      },
+  resolve: {
+    alias: {
+      phaser: fileURLToPath(new URL("../src/game/phaser.ts", import.meta.url)),
     },
+  },
+  build: {
     minify: "terser",
     terserOptions: {
       compress: {
