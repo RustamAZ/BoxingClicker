@@ -1,4 +1,5 @@
 import { BaseGloves } from '../BaseGloves';
+import type { GlovesAsset } from '../types';
 
 export class SixSevenGloves extends BaseGloves
 {
@@ -12,6 +13,18 @@ export class SixSevenGloves extends BaseGloves
     readonly staminaCostMultiplier = 0.95;
     readonly attackSpeedMultiplier = 1.18;
     readonly hitSoundVolume = 0.3;
+    readonly hitEffectSize = 120;
+
+    readonly hitEffectAssets: GlovesAsset[] = [
+        {
+            key: 'six-seven-hit-effect-six',
+            path: 'assets/images/effects/six.png',
+        },
+        {
+            key: 'six-seven-hit-effect-seven',
+            path: 'assets/images/effects/seven.png',
+        },
+    ];
 
     readonly hitSoundAssets = [
         {
