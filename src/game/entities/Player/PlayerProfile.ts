@@ -56,6 +56,24 @@ export class PlayerProfile {
   private deathContinueCount: number;
   private trainingLevels: TrainingLevels;
 
+  static getStoredEquippedItemId() {
+    try {
+      const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
+
+      if (!rawProfile) {
+        return PlayerProfile.defaultEquippedItemId;
+      }
+
+      const profile = JSON.parse(rawProfile) as StoredPlayerProfile;
+
+      return typeof profile.equippedItemId === "string"
+        ? PlayerProfile.normalizeItemId(profile.equippedItemId)
+        : PlayerProfile.defaultEquippedItemId;
+    } catch {
+      return PlayerProfile.defaultEquippedItemId;
+    }
+  }
+
   constructor() {
     const profile = this.loadProfile();
 
@@ -250,16 +268,16 @@ export class PlayerProfile {
         purchasedItemIds: Array.isArray(profile.purchasedItemIds)
           ? profile.purchasedItemIds
               .filter((itemId): itemId is string => typeof itemId === "string")
-              .map((itemId) => this.normalizeItemId(itemId))
+              .map((itemId) => PlayerProfile.normalizeItemId(itemId))
           : [...PlayerProfile.defaultPurchasedItemIds],
         discoveredItemIds: Array.isArray(profile.discoveredItemIds)
           ? profile.discoveredItemIds
               .filter((itemId): itemId is string => typeof itemId === "string")
-              .map((itemId) => this.normalizeItemId(itemId))
+              .map((itemId) => PlayerProfile.normalizeItemId(itemId))
           : [...PlayerProfile.defaultDiscoveredItemIds],
         equippedItemId:
           typeof profile.equippedItemId === "string"
-            ? this.normalizeItemId(profile.equippedItemId)
+            ? PlayerProfile.normalizeItemId(profile.equippedItemId)
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
         deathContinueCount:
@@ -311,7 +329,7 @@ export class PlayerProfile {
     this.trainingLevels = this.normalizeTrainingLevels(this.trainingLevels);
   }
 
-  private normalizeItemId(itemId: string) {
+  private static normalizeItemId(itemId: string) {
     return PlayerProfile.legacyItemIdAliases[itemId] ?? itemId;
   }
 

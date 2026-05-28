@@ -6,6 +6,7 @@ import { languageController } from "../localization/LanguageController";
 import { ShopCatalog } from "../shop/ShopCatalog";
 import type { ShopItemView } from "../shop/types";
 import type { PauseController } from "../state/PauseController";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 type ShopIconButton = {
   hitArea: GameObjects.Rectangle;
@@ -36,6 +37,11 @@ type ShopItemSlot = {
 };
 
 type ShopButtonTextureConfig = {
+  textureKey: string;
+  texturePath: string;
+};
+
+type ShopAssetConfig = {
   textureKey: string;
   texturePath: string;
 };
@@ -84,6 +90,7 @@ export class ShopModal {
   private static readonly panelHeight = 640;
   private static readonly buttonSize = 128;
   private static readonly iconSize = 128;
+  private static readonly iconHoverSize = 138;
   private static readonly actionLockDurationMs = 300;
   private static readonly itemIconMaxSize = 112;
   private static readonly lockedOverlaySize = 128;
@@ -109,28 +116,21 @@ export class ShopModal {
   ];
 
   private readonly shopButton: ShopIconButton;
-  private readonly overlay: GameObjects.Rectangle;
-  private readonly panel: GameObjects.Image;
-  private readonly panelBlocker: GameObjects.Rectangle;
-  private readonly balanceText: GameObjects.Text;
-  private readonly closeButton: ShopCloseButton;
-  private readonly cards: ShopItemCard[];
+  private readonly loaderSpinner: LoadingSpinner;
+  private overlay?: GameObjects.Rectangle;
+  private panel?: GameObjects.Image;
+  private panelBlocker?: GameObjects.Rectangle;
+  private balanceText?: GameObjects.Text;
+  private closeButton?: ShopCloseButton;
+  private cards: ShopItemCard[] = [];
   private readonly unsubscribeLanguageChange: () => void;
   private isActionLocked = false;
+  private isAssetsLoaded = false;
+  private isLoadingAssets = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   static preload(scene: Scene) {
     scene.load.image(ShopModal.shopIconTextureKey, ShopModal.shopIconPath);
-    scene.load.image(ShopModal.panelTextureKey, ShopModal.panelPath);
-    scene.load.image(ShopModal.lockedItemTextureKey, ShopModal.lockedItemPath);
-    scene.load.image(ShopModal.unknownItemTextureKey, ShopModal.unknownItemPath);
-    scene.load.image(ShopModal.priceIconTextureKey, ShopModal.priceIconPath);
-    ShopModal.buttonTextures.forEach((buttonTexture) => {
-      scene.load.image(buttonTexture.textureKey, buttonTexture.texturePath);
-    });
-    ShopCatalog.getItems().forEach((item) => {
-      scene.load.image(item.iconTextureKey, item.iconTexturePath);
-    });
   }
 
   constructor(
@@ -139,112 +139,45 @@ export class ShopModal {
     private readonly wallet: Wallet,
     private readonly glovesEquipmentController: GlovesEquipmentController,
   ) {
-    const centerX = this.scene.scale.width / 2;
-    const centerY = this.scene.scale.height / 2;
-
     this.shopButton = this.createShopButton(82, 240);
-
-    this.overlay = this.scene.add
-      .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.62)
-      .setDepth(ShopModal.depth)
-      .setInteractive()
-      .setVisible(false);
-
-    this.panel = this.scene.add
-      .image(centerX, centerY, ShopModal.panelTextureKey)
-      .setDepth(ShopModal.depth + 1)
-      .setVisible(false);
-
-    this.panelBlocker = this.scene.add
-      .rectangle(
-        centerX,
-        centerY,
-        ShopModal.panelWidth,
-        ShopModal.panelHeight,
-        0x000000,
-        0,
-      )
-      .setDepth(ShopModal.depth + 2)
-      .setInteractive()
-      .setVisible(false);
-
-    this.balanceText = this.scene.add
-      .text(
-        centerX + ShopModal.balanceOffsetX,
-        centerY + ShopModal.balanceOffsetY,
-        "",
-        {
-          fontFamily: "Hardpixel",
-          fontSize: 24,
-          color: "#7dff76",
-          stroke: "#123b12",
-          strokeThickness: 4,
-        },
-      )
-      .setOrigin(0, 0.5)
-      .setResolution(2)
-      .setDepth(ShopModal.depth + 3)
-      .setVisible(false);
-
-    this.closeButton = this.createCloseButton(
-      centerX + ShopModal.closeButtonOffsetX,
-      centerY + ShopModal.closeButtonOffsetY,
+    this.loaderSpinner = new LoadingSpinner(
+      this.scene,
+      this.scene.scale.width / 2,
+      this.scene.scale.height / 2,
+      ShopModal.depth + 20,
     );
 
-    this.cards = ShopModal.itemSlots.map((slot, index) =>
-      this.createItemCard(
-        centerX + slot.x,
-        centerY + slot.iconY,
-        centerY + slot.buttonY,
-        index,
-      ),
-    );
-
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
-    this.panelBlocker.on(
-      "pointerdown",
-      (
-        _pointer: Phaser.Input.Pointer,
-        _localX: number,
-        _localY: number,
-        event: Phaser.Types.Input.EventData,
-      ) => {
-        event.stopPropagation();
-      },
-    );
-
-    this.setVisible(false);
     this.unsubscribeLanguageChange = languageController.onChange(() => {
       this.refresh();
     });
     this.scene.events.once("shutdown", () => {
       this.unsubscribeLanguageChange();
+      this.loaderSpinner.destroy();
     });
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
   }
 
   open() {
-    if (this.pauseController.isPaused) {
+    if (this.pauseController.isPaused || this.isLoadingAssets) {
       return;
     }
 
-    this.pauseController.pause("shop");
-    this.isActionLocked = true;
-    this.clearUnlockActionTimer();
-    this.refresh();
-    this.setVisible(true);
-    this.setCardsInteractive(false);
-    this.unlockActionTimer = this.scene.time.delayedCall(
-      ShopModal.actionLockDurationMs,
-      () => {
-        this.isActionLocked = false;
-        this.unlockActionTimer = undefined;
-        this.setCardsInteractive(true);
-      },
-    );
+    if (!this.isAssetsLoaded && !ShopModal.areAssetsLoaded(this.scene)) {
+      this.showLoader();
+      this.isLoadingAssets = true;
+      ShopModal.loadAssets(this.scene, () => {
+        this.isLoadingAssets = false;
+        this.hideLoader();
+        this.isAssetsLoaded = true;
+        this.ensureCreated();
+        this.show();
+      });
+      return;
+    }
+
+    this.isAssetsLoaded = true;
+    this.ensureCreated();
+    this.show();
   }
 
   close() {
@@ -270,7 +203,104 @@ export class ShopModal {
     }
   }
 
+  private show() {
+    this.pauseController.pause("shop");
+    this.isActionLocked = true;
+    this.clearUnlockActionTimer();
+    this.refresh();
+    this.setVisible(true);
+    this.setCardsInteractive(false);
+    this.unlockActionTimer = this.scene.time.delayedCall(
+      ShopModal.actionLockDurationMs,
+      () => {
+        this.isActionLocked = false;
+        this.unlockActionTimer = undefined;
+        this.setCardsInteractive(true);
+      },
+    );
+  }
+
+  private ensureCreated() {
+    if (this.panel) {
+      return;
+    }
+
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+
+    this.overlay = this.scene.add
+      .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.62)
+      .setDepth(ShopModal.depth)
+      .setInteractive()
+      .setVisible(false);
+    this.panel = this.scene.add
+      .image(centerX, centerY, ShopModal.panelTextureKey)
+      .setDepth(ShopModal.depth + 1)
+      .setVisible(false);
+    this.panelBlocker = this.scene.add
+      .rectangle(
+        centerX,
+        centerY,
+        ShopModal.panelWidth,
+        ShopModal.panelHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(ShopModal.depth + 2)
+      .setInteractive()
+      .setVisible(false);
+    this.balanceText = this.scene.add
+      .text(
+        centerX + ShopModal.balanceOffsetX,
+        centerY + ShopModal.balanceOffsetY,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 24,
+          color: "#7dff76",
+          stroke: "#123b12",
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0, 0.5)
+      .setResolution(2)
+      .setDepth(ShopModal.depth + 3)
+      .setVisible(false);
+    this.closeButton = this.createCloseButton(
+      centerX + ShopModal.closeButtonOffsetX,
+      centerY + ShopModal.closeButtonOffsetY,
+    );
+    this.cards = ShopModal.itemSlots.map((slot, index) =>
+      this.createItemCard(
+        centerX + slot.x,
+        centerY + slot.iconY,
+        centerY + slot.buttonY,
+        index,
+      ),
+    );
+
+    this.overlay.on("pointerdown", () => {
+      UiSoundPlayer.playClick(this.scene);
+      this.close();
+    });
+    this.panelBlocker.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
+  }
+
   private refresh() {
+    if (!this.panel || !this.balanceText) {
+      return;
+    }
+
     const profile = this.wallet.getPlayer().profile;
     const itemViews = ShopCatalog.getItemViews(profile);
 
@@ -290,7 +320,7 @@ export class ShopModal {
         this.setEmptyCardIcon(card);
       }
 
-      this.setCardVisible(card, this.panel.visible);
+      this.setCardVisible(card, this.panel?.visible === true);
     });
   }
 
@@ -302,11 +332,7 @@ export class ShopModal {
     const item = card.item;
     const profile = this.wallet.getPlayer().profile;
 
-    if (item.isEquipped) {
-      return;
-    }
-
-    if (item.status === "locked") {
+    if (item.isEquipped || item.status === "locked") {
       return;
     }
 
@@ -327,11 +353,23 @@ export class ShopModal {
   }
 
   private equipItem(item: ShopItemView) {
-    if (!this.glovesEquipmentController.equipShopItem(item.id)) {
-      return;
-    }
+    this.isActionLocked = true;
+    this.showLoader();
+    this.setCardsInteractive(false);
+    this.glovesEquipmentController.loadAndEquipShopItem(
+      this.scene,
+      item.id,
+      (isEquipped) => {
+        this.hideLoader();
+        this.isActionLocked = false;
 
-    this.refresh();
+        if (isEquipped) {
+          this.refresh();
+        }
+
+        this.setCardsInteractive(true);
+      },
+    );
   }
 
   private setCardText(card: ShopItemCard, item: ShopItemView) {
@@ -368,14 +406,7 @@ export class ShopModal {
 
   private createShopButton(x: number, y: number): ShopIconButton {
     const hitArea = this.scene.add
-      .rectangle(
-        x,
-        y,
-        ShopModal.buttonSize,
-        ShopModal.buttonSize,
-        0x000000,
-        0,
-      )
+      .rectangle(x, y, ShopModal.buttonSize, ShopModal.buttonSize, 0x000000, 0)
       .setDepth(1000)
       .setInteractive({ useHandCursor: true });
     const icon = this.scene.add
@@ -388,7 +419,7 @@ export class ShopModal {
       this.open();
     });
     hitArea.on("pointerover", () => {
-      icon.setDisplaySize(ShopModal.iconSize * 1.08, ShopModal.iconSize * 1.08);
+      icon.setDisplaySize(ShopModal.iconHoverSize, ShopModal.iconHoverSize);
     });
     hitArea.on("pointerout", () => {
       icon.setDisplaySize(ShopModal.iconSize, ShopModal.iconSize);
@@ -402,14 +433,7 @@ export class ShopModal {
 
   private createCloseButton(x: number, y: number): ShopCloseButton {
     const background = this.scene.add
-      .rectangle(
-        x,
-        y,
-        ShopModal.closeButtonSize,
-        ShopModal.closeButtonSize,
-        0x2d1717,
-        0.92,
-      )
+      .rectangle(x, y, ShopModal.closeButtonSize, ShopModal.closeButtonSize, 0x2d1717, 0.92)
       .setDepth(ShopModal.depth + 6)
       .setStrokeStyle(2, 0xffd05a, 0.85)
       .setVisible(false);
@@ -426,14 +450,7 @@ export class ShopModal {
       .setDepth(ShopModal.depth + 7)
       .setVisible(false);
     const hitArea = this.scene.add
-      .rectangle(
-        x,
-        y,
-        ShopModal.closeButtonSize,
-        ShopModal.closeButtonSize,
-        0x000000,
-        0,
-      )
+      .rectangle(x, y, ShopModal.closeButtonSize, ShopModal.closeButtonSize, 0x000000, 0)
       .setDepth(ShopModal.depth + 8)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
@@ -472,10 +489,7 @@ export class ShopModal {
 
     card.lockOverlay = this.scene.add
       .image(x, iconY, ShopModal.lockedItemTextureKey)
-      .setDisplaySize(
-        ShopModal.lockedOverlaySize,
-        ShopModal.lockedOverlaySize,
-      )
+      .setDisplaySize(ShopModal.lockedOverlaySize, ShopModal.lockedOverlaySize)
       .setAlpha(ShopModal.lockedOverlayAlpha)
       .setDepth(ShopModal.depth + 4)
       .setVisible(false);
@@ -485,23 +499,12 @@ export class ShopModal {
       .setDepth(ShopModal.depth + 3)
       .setVisible(false);
     card.buttonHitArea = this.scene.add
-      .rectangle(
-        x,
-        buttonY,
-        ShopModal.buttonWidth,
-        ShopModal.buttonHeight,
-        0x000000,
-        0,
-      )
+      .rectangle(x, buttonY, ShopModal.buttonWidth, ShopModal.buttonHeight, 0x000000, 0)
       .setDepth(ShopModal.depth + 4)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
     card.priceIcon = this.scene.add
-      .image(
-        x + ShopModal.priceIconOffsetX,
-        buttonY,
-        ShopModal.priceIconTextureKey,
-      )
+      .image(x + ShopModal.priceIconOffsetX, buttonY, ShopModal.priceIconTextureKey)
       .setDisplaySize(ShopModal.priceIconWidth, ShopModal.priceIconHeight)
       .setDepth(ShopModal.depth + 5)
       .setVisible(false);
@@ -556,18 +559,18 @@ export class ShopModal {
   }
 
   private setVisible(visible: boolean) {
-    this.overlay.setVisible(visible);
-    this.panel.setVisible(visible);
-    this.panelBlocker.setVisible(visible);
-    this.balanceText.setVisible(visible);
+    this.overlay?.setVisible(visible);
+    this.panel?.setVisible(visible);
+    this.panelBlocker?.setVisible(visible);
+    this.balanceText?.setVisible(visible);
     this.setCloseButtonVisible(visible);
 
     if (visible) {
-      this.overlay.setInteractive();
-      this.panelBlocker.setInteractive();
+      this.overlay?.setInteractive();
+      this.panelBlocker?.setInteractive();
     } else {
-      this.overlay.disableInteractive();
-      this.panelBlocker.disableInteractive();
+      this.overlay?.disableInteractive();
+      this.panelBlocker?.disableInteractive();
     }
 
     this.cards.forEach((card) => {
@@ -576,6 +579,10 @@ export class ShopModal {
   }
 
   private setCloseButtonVisible(visible: boolean) {
+    if (!this.closeButton) {
+      return;
+    }
+
     this.closeButton.background.setVisible(visible);
     this.closeButton.icon.setVisible(visible);
     this.closeButton.hitArea.setVisible(visible);
@@ -638,6 +645,14 @@ export class ShopModal {
     this.unlockActionTimer = undefined;
   }
 
+  private showLoader() {
+    this.loaderSpinner.show();
+  }
+
+  private hideLoader() {
+    this.loaderSpinner.hide();
+  }
+
   private setCardIcon(card: ShopItemCard, item: ShopItemView) {
     card.itemIcon.setTexture(
       item.status === "locked"
@@ -679,6 +694,52 @@ export class ShopModal {
 
     UiSoundPlayer.playClick(this.scene);
     this.close();
+  }
+
+  private static getAssets(): ShopAssetConfig[] {
+    return [
+      {
+        textureKey: ShopModal.panelTextureKey,
+        texturePath: ShopModal.panelPath,
+      },
+      {
+        textureKey: ShopModal.lockedItemTextureKey,
+        texturePath: ShopModal.lockedItemPath,
+      },
+      {
+        textureKey: ShopModal.unknownItemTextureKey,
+        texturePath: ShopModal.unknownItemPath,
+      },
+      {
+        textureKey: ShopModal.priceIconTextureKey,
+        texturePath: ShopModal.priceIconPath,
+      },
+      ...ShopModal.buttonTextures,
+      ...ShopCatalog.getItems().map((item) => ({
+        textureKey: item.iconTextureKey,
+        texturePath: item.iconTexturePath,
+      })),
+    ];
+  }
+
+  private static areAssetsLoaded(scene: Scene) {
+    return ShopModal.getAssets().every((asset) =>
+      scene.textures.exists(asset.textureKey),
+    );
+  }
+
+  private static loadAssets(scene: Scene, onComplete: () => void) {
+    ShopModal.getAssets().forEach((asset) => {
+      if (!scene.textures.exists(asset.textureKey)) {
+        scene.load.image(asset.textureKey, asset.texturePath);
+      }
+    });
+
+    scene.load.once("complete", onComplete);
+
+    if (!scene.load.isLoading()) {
+      scene.load.start();
+    }
   }
 
   private static getButtonTextureKey(itemIndex: number) {

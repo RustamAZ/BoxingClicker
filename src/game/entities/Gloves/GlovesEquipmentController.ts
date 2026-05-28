@@ -1,5 +1,6 @@
 import type { PlayerProfile } from '../Player/PlayerProfile';
 import type { BaseGloves } from './BaseGloves';
+import type { Scene } from 'phaser';
 import type { Gloves } from './Gloves';
 import { GlovesCatalog } from './GlovesCatalog';
 import type { GlovesCombatProfile } from './types';
@@ -44,6 +45,23 @@ export class GlovesEquipmentController
         }
 
         return this.gloves.equipById(item.glovesId);
+    }
+
+    loadAndEquipShopItem (
+        scene: Scene,
+        itemId: string,
+        onComplete: (isEquipped: boolean) => void
+    )
+    {
+        const item = ShopCatalog.getItemById(itemId);
+
+        if (!item || !this.profile.equipItem(item.id))
+        {
+            onComplete(false);
+            return;
+        }
+
+        this.gloves.loadAndEquipById(scene, item.glovesId, onComplete);
     }
 
     getCurrentGloves (): BaseGloves

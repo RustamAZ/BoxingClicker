@@ -14,6 +14,7 @@ import { BackgroundMusicController } from "../audio/BackgroundMusicController";
 import { GameBackground } from "../entities/Background/GameBackground";
 import type { Enemy } from "../entities/Enemy/Enemy";
 import { Player } from "../entities/Player/Player";
+import { PlayerProfile } from "../entities/Player/PlayerProfile";
 import { LootCaseController } from "../entities/LootCase/LootCaseController";
 import { CoinContainer } from "../entities/ResourceContainers/CoinContainer";
 import { DiamondContainer } from "../entities/ResourceContainers/DiamondContainer";
@@ -29,12 +30,14 @@ import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 import { TrainingModal } from "../ui/TrainingModal";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
 import { getRewardContainerRequirements } from "../configs/rewardContainers";
 import { languageController } from "../localization/LanguageController";
 import { TrainingController } from "../training/TrainingController";
+import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 50;
@@ -86,6 +89,7 @@ export class Game extends Scene {
     this.load.setBaseURL(import.meta.env.BASE_URL);
     LocationAssetPreloader.preloadInitial(this);
     GameHud.preload(this);
+    LoadingSpinner.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
     StatusBar.preload(this);
@@ -97,7 +101,7 @@ export class Game extends Scene {
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
     EmeraldContainer.preload(this);
-    Gloves.preload(this);
+    Gloves.preload(this, Game.getStoredEquippedGlovesId());
     HitSoundPlayer.preload(this);
     EnemyAttackSoundPlayer.preload(this);
     EnemyDeathSoundPlayer.preload(this);
@@ -160,7 +164,7 @@ export class Game extends Scene {
     });
     this.updateResourceContainersVisibility();
 
-    this.gloves = new Gloves(this);
+    this.gloves = new Gloves(this, Game.getEquippedGlovesId(this.player.profile));
     this.glovesEquipmentController = new GlovesEquipmentController(
       this.player.profile,
       this.gloves,
@@ -236,6 +240,7 @@ export class Game extends Scene {
     this.unsubscribeLanguageChange = languageController.onChange(() => {
       this.refreshLocalizedTexts();
     });
+    AppLoadingScreen.hide();
 
     this.events.on(
       fiveDifficultyBossAttackEvent,
@@ -533,6 +538,20 @@ export class Game extends Scene {
           },
         });
       },
+    );
+  }
+
+  private static getStoredEquippedGlovesId() {
+    return (
+      ShopCatalog.getItemById(PlayerProfile.getStoredEquippedItemId())
+        ?.glovesId ?? PlayerProfile.getStoredEquippedItemId()
+    );
+  }
+
+  private static getEquippedGlovesId(profile: PlayerProfile) {
+    return (
+      ShopCatalog.getItemById(profile.getEquippedItemId())?.glovesId ??
+      profile.getEquippedItemId()
     );
   }
 }

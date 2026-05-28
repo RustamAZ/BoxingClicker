@@ -27,8 +27,8 @@ export const firstBossConfig: BossConfig = {
   attack_speed: 1.5,
   initial_attack_delay: 0.55,
   xp_reward: 1,
-  buff_container_reward: 32,
-  lootbox_container_reward: 32,
+  buff_container_reward: 54,
+  lootbox_container_reward: 54,
   emerald_drop_chance: 1.0,
   effect: {},
 };

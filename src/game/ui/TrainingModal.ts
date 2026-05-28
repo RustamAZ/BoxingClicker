@@ -11,6 +11,7 @@ import {
   TrainingController,
   type TrainingItemState,
 } from "../training/TrainingController";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 type TrainingButton = {
   background: GameObjects.Image | GameObjects.Rectangle;
@@ -90,7 +91,7 @@ export class TrainingModal {
   }
 
   private readonly openButton: TrainingButton;
-  private readonly loaderText: GameObjects.Text;
+  private readonly loaderSpinner: LoadingSpinner;
   private overlay?: GameObjects.Rectangle;
   private panel?: GameObjects.Image;
   private logo?: GameObjects.Image;
@@ -110,23 +111,12 @@ export class TrainingModal {
     private readonly trainingController: TrainingController,
   ) {
     this.openButton = this.createOpenButton();
-    this.loaderText = this.scene.add
-      .text(
-        this.scene.scale.width / 2,
-        this.scene.scale.height / 2,
-        languageController.t("training.loading"),
-        {
-          fontFamily: "Hardpixel",
-          fontSize: 32,
-          color: "#ffffff",
-          stroke: "#1f1f1f",
-          strokeThickness: 5,
-        },
-      )
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(TrainingModal.depth + 20)
-      .setVisible(false);
+    this.loaderSpinner = new LoadingSpinner(
+      this.scene,
+      this.scene.scale.width / 2,
+      this.scene.scale.height / 2,
+      TrainingModal.depth + 20,
+    );
 
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
     this.unsubscribeLanguageChange = languageController.onChange(() => {
@@ -135,6 +125,7 @@ export class TrainingModal {
     this.scene.events.once("shutdown", () => {
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
       this.unsubscribeLanguageChange?.();
+      this.loaderSpinner.destroy();
     });
   }
 
@@ -535,7 +526,6 @@ export class TrainingModal {
   }
 
   private refresh() {
-    this.loaderText.setText(languageController.t("training.loading"));
     this.openButton.label.setText(languageController.t("training.button"));
 
     if (!this.panel) {
@@ -649,11 +639,11 @@ export class TrainingModal {
   }
 
   private showLoader() {
-    this.loaderText.setVisible(true);
+    this.loaderSpinner.show();
   }
 
   private hideLoader() {
-    this.loaderText.setVisible(false);
+    this.loaderSpinner.hide();
   }
 
   private handleEsc() {

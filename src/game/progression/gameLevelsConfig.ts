@@ -5,10 +5,10 @@ export const gameLevelStartPlayerLevels = {
   village: 2,
   cave: 11,
   lowDungeon: 21,
-  midDungeon: 31,
-  highDungeon: 41,
-  hell: 51,
-  infinite: 76,
+  midDungeon: 26,
+  highDungeon: 31,
+  hell: 41,
+  infinite: 56,
 } as const;
 
 export const gameLevelBossPlayerLevels = {

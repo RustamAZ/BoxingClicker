@@ -10,9 +10,9 @@ export class Gloves
     private readonly view: GlovesView;
     private equippedGloves: BaseGloves;
 
-    static preload (scene: Scene)
+    static preload (scene: Scene, equippedGlovesId?: string)
     {
-        GlovesCatalog.preload(scene);
+        GlovesCatalog.preload(scene, equippedGlovesId);
     }
 
     constructor (scene: Scene, equippedGlovesId?: string)
@@ -42,6 +42,22 @@ export class Gloves
         this.equip(gloves);
 
         return true;
+    }
+
+    loadAndEquipById(scene: Scene, glovesId: string, onComplete: (isEquipped: boolean) => void)
+    {
+        const gloves = GlovesCatalog.getGlovesById(glovesId);
+
+        if (!gloves)
+        {
+            onComplete(false);
+            return;
+        }
+
+        gloves.loadAssets(scene, () => {
+            this.equip(gloves);
+            onComplete(true);
+        });
     }
 
     getEquippedGloves()

@@ -19,11 +19,13 @@ export class GlovesCatalog
         new SixSevenGloves(),
     ];
 
-    static preload (scene: Scene)
+    static preload (scene: Scene, equippedGlovesId?: string)
     {
-        GlovesCatalog.gloves.forEach((gloves) => {
-            gloves.preload(scene);
-        });
+        const equippedGloves =
+            GlovesCatalog.getGlovesById(equippedGlovesId ?? '') ??
+            GlovesCatalog.getDefaultGloves();
+
+        equippedGloves.preload(scene);
     }
 
     static getDefaultGloves()

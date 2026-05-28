@@ -49,14 +49,61 @@ export abstract class BaseGloves {
   ];
 
   preload(scene: Scene) {
+    this.preloadViewAssets(scene);
+    this.preloadCombatAssets(scene);
+  }
+
+  preloadViewAssets(scene: Scene) {
     scene.load.image(this.leftTextureKey, this.leftTexturePath);
     scene.load.image(this.rightTextureKey, this.rightTexturePath);
+  }
+
+  preloadCombatAssets(scene: Scene) {
     this.hitEffectAssets.forEach((asset) => {
       scene.load.image(asset.key, asset.path);
     });
     this.hitSoundAssets.forEach((asset) => {
       scene.load.audio(asset.key, asset.path);
     });
+  }
+
+  areAssetsLoaded(scene: Scene) {
+    return (
+      scene.textures.exists(this.leftTextureKey) &&
+      scene.textures.exists(this.rightTextureKey) &&
+      this.hitEffectAssets.every((asset) => scene.textures.exists(asset.key)) &&
+      this.hitSoundAssets.every((asset) => scene.cache.audio.exists(asset.key))
+    );
+  }
+
+  loadAssets(scene: Scene, onComplete: () => void) {
+    if (this.areAssetsLoaded(scene)) {
+      onComplete();
+      return;
+    }
+
+    if (!scene.textures.exists(this.leftTextureKey)) {
+      scene.load.image(this.leftTextureKey, this.leftTexturePath);
+    }
+    if (!scene.textures.exists(this.rightTextureKey)) {
+      scene.load.image(this.rightTextureKey, this.rightTexturePath);
+    }
+    this.hitEffectAssets.forEach((asset) => {
+      if (!scene.textures.exists(asset.key)) {
+        scene.load.image(asset.key, asset.path);
+      }
+    });
+    this.hitSoundAssets.forEach((asset) => {
+      if (!scene.cache.audio.exists(asset.key)) {
+        scene.load.audio(asset.key, asset.path);
+      }
+    });
+
+    scene.load.once("complete", onComplete);
+
+    if (!scene.load.isLoading()) {
+      scene.load.start();
+    }
   }
 
   getCombatProfile(): GlovesCombatProfile {
