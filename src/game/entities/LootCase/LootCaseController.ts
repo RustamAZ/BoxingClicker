@@ -45,8 +45,13 @@ export class LootCaseController {
     this.openNow();
   }
 
-  update() {
-    if (!this.hasPendingOpening || this.isOpen || this.pauseController.isPaused) {
+  update(canOpen = true) {
+    if (
+      !this.hasPendingOpening ||
+      this.isOpen ||
+      this.pauseController.isPaused ||
+      !canOpen
+    ) {
       return;
     }
 

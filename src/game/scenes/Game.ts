@@ -290,9 +290,9 @@ export class Game extends Scene {
     }
 
     this.levelUpRewardController.update(
-      !this.enemySpawnPlace.isDeathAnimationPlaying,
+      this.enemySpawnPlace.canOpenRewardModal,
     );
-    this.lootCaseController.update();
+    this.lootCaseController.update(this.enemySpawnPlace.canOpenRewardModal);
 
     if (this.player.isLowStamina()) {
       this.breathSoundPlayer.playIfNotPlaying();

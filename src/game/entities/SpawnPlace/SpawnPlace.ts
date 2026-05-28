@@ -65,6 +65,10 @@ export class SpawnPlace {
     return this.isEnemyDeathAnimationPlaying;
   }
 
+  get canOpenRewardModal() {
+    return !this.isEnemyDeathAnimationPlaying && !this.currentBossId;
+  }
+
   spawnNextEnemy() {
     this.destroyCurrentEnemy();
     this.isEnemyDeathAnimationPlaying = false;
@@ -141,6 +145,7 @@ export class SpawnPlace {
 
     if (
       !enemy ||
+      enemy.isDead() ||
       this.isEnemyDeathAnimationPlaying ||
       !this.glovesEquipmentController.canPunch() ||
       !this.player.hit(this.glovesEquipmentController.getStaminaCostMultiplier())
