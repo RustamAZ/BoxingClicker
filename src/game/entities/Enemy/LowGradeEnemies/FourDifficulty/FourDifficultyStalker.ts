@@ -95,7 +95,7 @@ export class FourDifficultyStalker extends Enemy {
       .setInteractive({ useHandCursor: true });
 
     this.scene.sound.play(FourDifficultyStalker.spawnSound.key, {
-      volume: 2,
+      volume: 3.5,
     });
   }
 
@@ -115,7 +115,7 @@ export class FourDifficultyStalker extends Enemy {
     }
 
     this.scene.sound.play(FourDifficultyStalker.attackSound.key, {
-      volume: 0.85,
+      volume: 1.2,
     });
 
     const baseScaleX = this.body.scaleX;
