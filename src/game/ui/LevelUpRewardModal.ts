@@ -25,7 +25,7 @@ export class LevelUpRewardModal {
   private static readonly cardGap = 286;
   private static readonly cardWidth = 262;
   private static readonly cardHeight = 360;
-  private static readonly descriptionWidth = 230;
+  private static readonly descriptionWidth = 250;
 
   private readonly overlay: GameObjects.Rectangle;
   private readonly panel: GameObjects.Image;
@@ -65,7 +65,7 @@ export class LevelUpRewardModal {
         languageController.t("levelReward.title"),
         {
           fontFamily: "Hardpixel",
-          fontSize: 30,
+          fontSize: 34,
           color: "#ffffff",
           stroke: "#1f1f1f",
           strokeThickness: 5,
@@ -171,7 +171,7 @@ export class LevelUpRewardModal {
         "",
         {
           fontFamily: "Hardpixel",
-          fontSize: 20,
+          fontSize: 26,
           color: "#ffffff",
           stroke: "#1f1f1f",
           strokeThickness: 5,
