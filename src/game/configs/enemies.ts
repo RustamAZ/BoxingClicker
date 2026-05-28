@@ -24,11 +24,11 @@ export const firstEnemyConfig: EnemyConfig = {
   health_range: [55, 85],
   damage_range: [4, 7],
   attack_speed_range: [1.4, 1.8],
-  initial_attack_delay_range: [0.2, 0.35],
+  initial_attack_delay_range: [0.3, 0.55],
   xp_reward: 1,
   buff_container_reward: 8,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.1,
+  emerald_drop_chance: 0.15,
 };
 
 export const secondEnemyConfig: EnemyConfig = {
@@ -37,9 +37,9 @@ export const secondEnemyConfig: EnemyConfig = {
   attack_speed_range: [1.2, 1.5],
   initial_attack_delay_range: [0.25, 0.4],
   xp_reward: 1,
-  buff_container_reward: 8,
+  buff_container_reward: 12,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.1,
+  emerald_drop_chance: 0.15,
 };
 
 export const thirdEnemyConfig: EnemyConfig = {
@@ -50,7 +50,7 @@ export const thirdEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.13,
+  emerald_drop_chance: 0.15,
 };
 
 export const fourthEnemyConfig: EnemyConfig = {

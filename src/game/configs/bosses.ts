@@ -34,7 +34,7 @@ export const firstBossConfig: BossConfig = {
 };
 
 export const secondBossConfig: BossConfig = {
-  health: 900,
+  health: 800,
   damage: 0,
   attack_speed: 0,
   initial_attack_delay: 0,
