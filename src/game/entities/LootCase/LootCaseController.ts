@@ -12,8 +12,11 @@ import { LootRewardFactory } from "./rewards/LootRewardFactory";
 
 export class LootCaseController {
   private static readonly maxRewardsPerCase = 2;
+  private static isAssetsLoaded = false;
+  private static isAssetsLoading = false;
+  private static readonly assetLoadCallbacks: Array<() => void> = [];
 
-  private readonly modal: LootCaseModal;
+  private modal?: LootCaseModal;
   private currentRewards: LootReward[] = [];
   private hasPendingOpening = false;
   private isOpen = false;
@@ -21,6 +24,43 @@ export class LootCaseController {
   static preload(scene: Scene) {
     LootCaseModal.preload(scene);
     LootRewardFactory.preload(scene);
+    LootCaseController.isAssetsLoaded = true;
+  }
+
+  static loadAssets(scene: Scene, onComplete?: () => void) {
+    if (LootCaseController.isAssetsLoaded) {
+      onComplete?.();
+      return;
+    }
+
+    if (onComplete) {
+      LootCaseController.assetLoadCallbacks.push(onComplete);
+    }
+
+    if (LootCaseController.isAssetsLoading) {
+      return;
+    }
+
+    if (scene.load.isLoading()) {
+      scene.load.once("complete", () => {
+        LootCaseController.loadAssets(scene);
+      });
+      return;
+    }
+
+    LootCaseController.isAssetsLoading = true;
+    LootCaseModal.preload(scene);
+    LootRewardFactory.preload(scene);
+    scene.load.once("complete", () => {
+      LootCaseController.isAssetsLoaded = true;
+      LootCaseController.isAssetsLoading = false;
+      const callbacks = LootCaseController.assetLoadCallbacks.splice(0);
+
+      callbacks.forEach((callback) => {
+        callback();
+      });
+    });
+    scene.load.start();
   }
 
   constructor(
@@ -29,7 +69,12 @@ export class LootCaseController {
     private readonly wallet: Wallet,
     private readonly pauseController: PauseController,
   ) {
-    this.modal = new LootCaseModal(this.scene);
+  }
+
+  preloadAssets() {
+    LootCaseController.loadAssets(this.scene, () => {
+      this.ensureModalCreated();
+    });
   }
 
   requestOpen() {
@@ -55,15 +100,28 @@ export class LootCaseController {
       return;
     }
 
+    if (!LootCaseController.isAssetsLoaded) {
+      this.preloadAssets();
+      return;
+    }
+
     this.hasPendingOpening = false;
     this.openNow();
   }
 
   private openNow() {
+    if (!LootCaseController.isAssetsLoaded) {
+      this.hasPendingOpening = true;
+      this.preloadAssets();
+      return;
+    }
+
+    const modal = this.ensureModalCreated();
+
     this.isOpen = true;
     this.currentRewards = [this.rollReward()];
     this.pauseController.pause("loot-case");
-    this.modal.show(this.getModalConfig());
+    modal.show(this.getModalConfig());
   }
 
   private rollExtraReward() {
@@ -72,15 +130,21 @@ export class LootCaseController {
     }
 
     this.currentRewards.push(this.rollReward());
-    this.modal.roll(this.getModalConfig());
+    this.modal?.roll(this.getModalConfig());
   }
 
   private claimRewards() {
     this.applyRewards(this.currentRewards);
     this.currentRewards = [];
     this.isOpen = false;
-    this.modal.hide();
+    this.modal?.hide();
     this.pauseController.resume("loot-case");
+  }
+
+  private ensureModalCreated() {
+    this.modal ??= new LootCaseModal(this.scene);
+
+    return this.modal;
   }
 
   private getModalConfig() {

@@ -6,21 +6,67 @@ import { RewardChoiceController } from "./RewardChoiceController";
 import type { RewardChoice } from "./types";
 
 export class LevelUpRewardController {
-  private readonly modal: LevelUpRewardModal;
+  private static isAssetsLoaded = false;
+  private static isAssetsLoading = false;
+  private static readonly assetLoadCallbacks: Array<() => void> = [];
+
+  private modal?: LevelUpRewardModal;
   private rewardsToChoose = 0;
   private isShowingReward = false;
 
   static preload(scene: Scene) {
     LevelUpRewardModal.preload(scene);
     RewardChoiceController.preload(scene);
+    LevelUpRewardController.isAssetsLoaded = true;
+  }
+
+  static loadAssets(scene: Scene, onComplete?: () => void) {
+    if (LevelUpRewardController.isAssetsLoaded) {
+      onComplete?.();
+      return;
+    }
+
+    if (onComplete) {
+      LevelUpRewardController.assetLoadCallbacks.push(onComplete);
+    }
+
+    if (LevelUpRewardController.isAssetsLoading) {
+      return;
+    }
+
+    if (scene.load.isLoading()) {
+      scene.load.once("complete", () => {
+        LevelUpRewardController.loadAssets(scene);
+      });
+      return;
+    }
+
+    LevelUpRewardController.isAssetsLoading = true;
+    LevelUpRewardModal.preload(scene);
+    RewardChoiceController.preload(scene);
+    scene.load.once("complete", () => {
+      LevelUpRewardController.isAssetsLoaded = true;
+      LevelUpRewardController.isAssetsLoading = false;
+      const callbacks = LevelUpRewardController.assetLoadCallbacks.splice(0);
+
+      callbacks.forEach((callback) => {
+        callback();
+      });
+    });
+    scene.load.start();
   }
 
   constructor(
-    scene: Scene,
+    private readonly scene: Scene,
     private readonly player: Player,
     private readonly pauseController: PauseController,
   ) {
-    this.modal = new LevelUpRewardModal(scene);
+  }
+
+  preloadAssets() {
+    LevelUpRewardController.loadAssets(this.scene, () => {
+      this.ensureModalCreated();
+    });
   }
 
   enqueueRewards(count: number) {
@@ -37,6 +83,11 @@ export class LevelUpRewardController {
     }
 
     if (this.rewardsToChoose > 0) {
+      if (!LevelUpRewardController.isAssetsLoaded) {
+        this.preloadAssets();
+        return;
+      }
+
       this.showNextReward();
     }
   }
@@ -55,16 +106,18 @@ export class LevelUpRewardController {
       return;
     }
 
+    const modal = this.ensureModalCreated();
+
     this.isShowingReward = true;
     this.pauseController.pause("level-up-reward");
-    this.modal.show(choices, (upgrade) => {
+    modal.show(choices, (upgrade) => {
       this.selectUpgrade(upgrade);
     });
   }
 
   private selectUpgrade(choice: RewardChoice) {
     choice.apply(this.player);
-    this.modal.hide();
+    this.modal?.hide();
     this.isShowingReward = false;
     this.rewardsToChoose -= 1;
 
@@ -74,5 +127,11 @@ export class LevelUpRewardController {
     }
 
     this.pauseController.resume("level-up-reward");
+  }
+
+  private ensureModalCreated() {
+    this.modal ??= new LevelUpRewardModal(this.scene);
+
+    return this.modal;
   }
 }

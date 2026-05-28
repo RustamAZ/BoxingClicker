@@ -95,8 +95,6 @@ export class Game extends Scene {
     StatusBar.preload(this);
     PlayerDeathModal.preload(this);
     TrainingModal.preload(this);
-    LootCaseController.preload(this);
-    LevelUpRewardController.preload(this);
     ResourceParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
@@ -237,6 +235,8 @@ export class Game extends Scene {
     this.locationAssetPreloader.prefetchNextGameLevel(
       this.levelController.getCurrentGameLevel(),
     );
+    this.lootCaseController.preloadAssets();
+    this.levelUpRewardController.preloadAssets();
     this.unsubscribeLanguageChange = languageController.onChange(() => {
       this.refreshLocalizedTexts();
     });
