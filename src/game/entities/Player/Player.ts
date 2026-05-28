@@ -36,6 +36,8 @@ type ActivePlayerDamageOverTimeEffect = PlayerDamageOverTimeEffect & {
 export type PlayerActiveDamageOverTimeEffect =
   Readonly<ActivePlayerDamageOverTimeEffect>;
 
+export type PlayerPermanentStatBonuses = Partial<Record<PlayerStat, number>>;
+
 export class Player {
   readonly profile = new PlayerProfile();
 
@@ -64,6 +66,7 @@ export class Player {
   private readonly activeStatEffects: ActivePlayerStatEffect[] = [];
   private readonly activeDamageOverTimeEffects: ActivePlayerDamageOverTimeEffect[] =
     [];
+  private permanentStatBonuses: PlayerPermanentStatBonuses = {};
 
   canHit(staminaCostMultiplier = 1) {
     return (
@@ -217,6 +220,31 @@ export class Player {
     }
 
     this.applyPermanentStatEffect(effect);
+  }
+
+  setPermanentStatBonuses(bonuses: PlayerPermanentStatBonuses) {
+    const stats = new Set<PlayerStat>([
+      ...Object.keys(this.permanentStatBonuses),
+      ...Object.keys(bonuses),
+    ] as PlayerStat[]);
+
+    stats.forEach((stat) => {
+      const previousBonus = this.permanentStatBonuses[stat] ?? 0;
+      const nextBonus = bonuses[stat] ?? 0;
+      const delta = nextBonus - previousBonus;
+
+      if (delta === 0) {
+        return;
+      }
+
+      this.applyPermanentStatEffect({
+        stat,
+        mode: "add",
+        value: delta,
+      });
+    });
+
+    this.permanentStatBonuses = { ...bonuses };
   }
 
   getActiveStatEffects(): PlayerActiveStatEffect[] {

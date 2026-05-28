@@ -28,11 +28,13 @@ import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
+import { TrainingModal } from "../ui/TrainingModal";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
 import { getRewardContainerRequirements } from "../configs/rewardContainers";
 import { languageController } from "../localization/LanguageController";
+import { TrainingController } from "../training/TrainingController";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 50;
@@ -42,6 +44,7 @@ export class Game extends Scene {
 
   private player: Player;
   private wallet: Wallet;
+  private trainingController: TrainingController;
   private levelController: GameLevelController;
   private locationAssetPreloader: LocationAssetPreloader;
   private gameSettings: GameSettings;
@@ -58,6 +61,7 @@ export class Game extends Scene {
   private hud: GameHud;
   private pauseMenu: PauseMenu;
   private shopModal: ShopModal;
+  private trainingModal: TrainingModal;
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private levelUpRewardController: LevelUpRewardController;
@@ -104,6 +108,8 @@ export class Game extends Scene {
   create() {
     this.player = new Player();
     this.wallet = new Wallet(this.player);
+    this.trainingController = new TrainingController(this.player, this.wallet);
+    this.trainingController.applyTrainingBonuses();
     this.levelController = new GameLevelController(this.player);
     this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
@@ -207,8 +213,14 @@ export class Game extends Scene {
       this.wallet,
       this.glovesEquipmentController,
     );
+    this.trainingModal = new TrainingModal(
+      this,
+      this.pauseController,
+      this.trainingController,
+    );
     this.statusBar = new StatusBar(this);
     this.updateShopModalVisibility();
+    this.updateTrainingModalVisibility();
     this.playerDeathModal = new PlayerDeathModal(
       this,
       this.pauseController,
@@ -254,6 +266,7 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateTrainingModalVisibility();
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
@@ -376,6 +389,17 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.pauseController.resume("player-death");
     this.playerDeathModal.hide();
+  }
+
+  private updateTrainingModalVisibility() {
+    const isVisible =
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel;
+
+    this.trainingModal.setButtonVisible(isVisible);
+
+    if (!isVisible) {
+      this.trainingModal.close();
+    }
   }
 
   private updateGameLevelTransitionEffects() {

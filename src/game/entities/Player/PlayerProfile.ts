@@ -1,3 +1,9 @@
+import {
+  trainingItemIds,
+  type TrainingItemId,
+  type TrainingLevels,
+} from "../../configs/training";
+
 export type PlayerProfileSnapshot = {
   id: string;
   emeralds: number;
@@ -6,6 +12,7 @@ export type PlayerProfileSnapshot = {
   equippedItemId: string;
   globalLevel: number;
   deathContinueCount: number;
+  trainingLevels: TrainingLevels;
 };
 
 type StoredPlayerProfile = {
@@ -17,6 +24,9 @@ type StoredPlayerProfile = {
   globalLevel?: number;
   currentLevel?: number;
   deathContinueCount?: number;
+  trainingLevels?: TrainingLevels;
+  current_trainning?: TrainingLevels;
+  currentTraining?: TrainingLevels;
 };
 
 type StoredLegacyWallet = {
@@ -44,6 +54,7 @@ export class PlayerProfile {
   private equippedItemId: string;
   private globalLevel: number;
   private deathContinueCount: number;
+  private trainingLevels: TrainingLevels;
 
   constructor() {
     const profile = this.loadProfile();
@@ -55,6 +66,7 @@ export class PlayerProfile {
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
     this.deathContinueCount = profile.deathContinueCount;
+    this.trainingLevels = profile.trainingLevels;
     this.normalizeProfile();
     this.save();
   }
@@ -182,6 +194,30 @@ export class PlayerProfile {
     return this.deathContinueCount;
   }
 
+  getTrainingLevels(): TrainingLevels {
+    return { ...this.trainingLevels };
+  }
+
+  getTrainingLevel(itemId: TrainingItemId) {
+    return this.trainingLevels[itemId] ?? 0;
+  }
+
+  setTrainingLevel(itemId: TrainingItemId, level: number) {
+    const safeLevel = Math.max(0, Math.floor(level));
+
+    if (safeLevel <= 0) {
+      delete this.trainingLevels[itemId];
+      this.save();
+
+      return 0;
+    }
+
+    this.trainingLevels[itemId] = safeLevel;
+    this.save();
+
+    return safeLevel;
+  }
+
   getSnapshot(): PlayerProfileSnapshot {
     return {
       id: this.id,
@@ -191,6 +227,7 @@ export class PlayerProfile {
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
       deathContinueCount: this.deathContinueCount,
+      trainingLevels: this.getTrainingLevels(),
     };
   }
 
@@ -229,6 +266,11 @@ export class PlayerProfile {
           typeof profile.deathContinueCount === "number"
             ? Math.max(0, Math.floor(profile.deathContinueCount))
             : 0,
+        trainingLevels: this.normalizeTrainingLevels(
+          profile.trainingLevels ??
+            profile.current_trainning ??
+            profile.currentTraining,
+        ),
       };
     } catch {
       return this.getDefaultProfile();
@@ -244,6 +286,7 @@ export class PlayerProfile {
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
       deathContinueCount: 0,
+      trainingLevels: {},
     };
   }
 
@@ -264,6 +307,8 @@ export class PlayerProfile {
     if (!this.hasPurchasedItem(this.equippedItemId)) {
       this.equippedItemId = PlayerProfile.defaultEquippedItemId;
     }
+
+    this.trainingLevels = this.normalizeTrainingLevels(this.trainingLevels);
   }
 
   private normalizeItemId(itemId: string) {
@@ -308,6 +353,24 @@ export class PlayerProfile {
     }
 
     return 1;
+  }
+
+  private normalizeTrainingLevels(trainingLevels?: TrainingLevels) {
+    const normalizedTrainingLevels: TrainingLevels = {};
+
+    if (!trainingLevels || typeof trainingLevels !== "object") {
+      return normalizedTrainingLevels;
+    }
+
+    trainingItemIds.forEach((itemId) => {
+      const level = trainingLevels[itemId];
+
+      if (typeof level === "number" && level > 0) {
+        normalizedTrainingLevels[itemId] = Math.floor(level);
+      }
+    });
+
+    return normalizedTrainingLevels;
   }
 
   private save() {
