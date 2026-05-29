@@ -75,8 +75,8 @@ export const fourthBossConfig: BossConfig = {
 };
 
 export const fifthBossConfig: BossConfig = {
-  health: 3600,
-  damage: 90,
+  health: 5000,
+  damage: 150,
   attack_speed: 1.6,
   initial_attack_delay: 0.75,
   xp_reward: 1,
