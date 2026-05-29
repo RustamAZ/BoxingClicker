@@ -64,9 +64,9 @@ export const thirdBossConfig: BossConfig = {
 };
 
 export const fourthBossConfig: BossConfig = {
-  health: 1750,
-  damage: 36,
-  attack_speed: 0.9,
+  health: 3500,
+  damage: 65,
+  attack_speed: 0.9, 
   initial_attack_delay: 0.5,
   xp_reward: 1,
   buff_container_reward: 56,
