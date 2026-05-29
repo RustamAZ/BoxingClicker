@@ -30,6 +30,8 @@ import { PauseController } from "../state/PauseController";
 import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 import { TrainingModal } from "../ui/TrainingModal";
+import { InfiniteModeModal } from "../ui/InfiniteModeModal";
+import { CampaignVictoryModal } from "../ui/CampaignVictoryModal";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
@@ -66,8 +68,10 @@ export class Game extends Scene {
   private pauseMenu: PauseMenu;
   private shopModal: ShopModal;
   private trainingModal: TrainingModal;
+  private infiniteModeModal: InfiniteModeModal;
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
+  private campaignVictoryModal: CampaignVictoryModal;
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
   private enemyAttackSoundPlayer: EnemyAttackSoundPlayer;
@@ -89,6 +93,16 @@ export class Game extends Scene {
 
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
+    const updateLoadingProgress = (progress: number) => {
+      AppLoadingScreen.setProgress(progress);
+    };
+
+    AppLoadingScreen.setProgress(0);
+    this.load.on("progress", updateLoadingProgress);
+    this.load.once("complete", () => {
+      this.load.off("progress", updateLoadingProgress);
+      AppLoadingScreen.setProgress(1);
+    });
     LocationAssetPreloader.preloadInitial(this);
     GameHud.preload(this);
     LoadingSpinner.preload(this);
@@ -198,6 +212,9 @@ export class Game extends Scene {
       (bossId) => {
         this.handleBossEncountered(bossId);
       },
+      (bossId) => {
+        this.handleBossDefeated(bossId);
+      },
     );
 
     this.hud = new GameHud(
@@ -225,15 +242,31 @@ export class Game extends Scene {
       this.pauseController,
       this.trainingController,
     );
+    this.infiniteModeModal = new InfiniteModeModal(
+      this,
+      this.pauseController,
+      this.player.profile,
+      () => {
+        this.startInfiniteRun();
+      },
+    );
     this.statusBar = new StatusBar(this);
     this.updateShopModalVisibility();
     this.updateTrainingModalVisibility();
+    this.updateInfiniteModeModalVisibility();
     this.playerDeathModal = new PlayerDeathModal(
       this,
       this.pauseController,
       () => {
         this.scene.restart();
       }
+    );
+    this.campaignVictoryModal = new CampaignVictoryModal(
+      this,
+      this.pauseController,
+      () => {
+        this.returnToLobbyAfterCampaignVictory();
+      },
     );
     this.createWeaponUnlockToast();
     this.locationAssetPreloader.prefetchNextGameLevel(
@@ -277,6 +310,7 @@ export class Game extends Scene {
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
     this.updateTrainingModalVisibility();
+    this.updateInfiniteModeModalVisibility();
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
@@ -423,6 +457,37 @@ export class Game extends Scene {
     }
   }
 
+  private updateInfiniteModeModalVisibility() {
+    const isVisible =
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
+      !this.levelController.isInfiniteRun();
+
+    this.infiniteModeModal.setButtonVisible(isVisible);
+
+    if (!isVisible) {
+      this.infiniteModeModal.close();
+    }
+  }
+
+  private startInfiniteRun() {
+    if (!this.player.profile.hasCompletedCampaign()) {
+      return;
+    }
+
+    this.locationAssetPreloader.prefetchInfiniteLevel(() => {
+      this.levelController.startInfiniteRun();
+      this.player.restoreHealth();
+      this.player.restoreStamina();
+      this.background.update();
+      this.updateResourceContainersVisibility();
+      this.updateShopModalVisibility();
+      this.updateTrainingModalVisibility();
+      this.updateInfiniteModeModalVisibility();
+      this.enemySpawnPlace.spawnNextEnemy();
+      this.backgroundMusicController.resume();
+    });
+  }
+
   private updateGameLevelTransitionEffects() {
     const currentGameLevel = this.levelController.getCurrentGameLevel();
 
@@ -453,6 +518,21 @@ export class Game extends Scene {
         return;
       }
 
+      if (this.pauseController.has("training")) {
+        this.trainingModal.close();
+        return;
+      }
+
+      if (this.pauseController.has("infinite-mode")) {
+        this.infiniteModeModal.close();
+        return;
+      }
+
+      if (this.pauseController.has("campaign-victory")) {
+        this.campaignVictoryModal.close();
+        return;
+      }
+
       this.pauseMenu.toggle();
       return;
     }
@@ -480,6 +560,10 @@ export class Game extends Scene {
   };
 
   private handleBossEncountered(bossId: string) {
+    if (bossId === "five-difficulty-boss") {
+      this.campaignVictoryModal.preloadAssets();
+    }
+
     const unlockedItem = ShopCatalog.getItemByUnlockBossId(bossId);
 
     if (!unlockedItem) {
@@ -489,6 +573,32 @@ export class Game extends Scene {
     if (this.player.profile.discoverItem(unlockedItem.id)) {
       this.showWeaponUnlockToast();
     }
+  }
+
+  private handleBossDefeated(bossId: string) {
+    if (bossId === "five-difficulty-boss") {
+      this.player.profile.setCampaignCompleted(true);
+      this.campaignVictoryModal.show();
+      return true;
+    }
+
+    return false;
+  }
+
+  private returnToLobbyAfterCampaignVictory() {
+    this.levelController.returnToCampaign();
+    this.player.resetSessionProgress();
+    this.previousGameLevel = this.levelController.getCurrentGameLevel();
+    this.deathContinuesUsedInRun = 0;
+    this.background.update();
+    this.updateResourceContainersVisibility();
+    this.updateShopModalVisibility();
+    this.updateTrainingModalVisibility();
+    this.updateInfiniteModeModalVisibility();
+    this.enemySpawnPlace.spawnNextEnemy();
+    this.backgroundMusicController.resume();
+    this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
+    this.updatePlayerStatsDebugText();
   }
 
   private createWeaponUnlockToast() {

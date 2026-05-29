@@ -1,11 +1,14 @@
 import type { Scene } from "phaser";
 import type { RewardContainerLocationId } from "../configs/rewardContainers";
 import type { Player } from "../entities/Player/Player";
-import { gameLevelsConfig } from "./gameLevelsConfig";
+import { gameLevelsConfig, infiniteLevelConfig } from "./gameLevelsConfig";
 import type { GameLevelConfig } from "./types";
+
+export type GameRunMode = "campaign" | "infinite";
 
 export class GameLevelController {
   private readonly defeatedBossIds = new Set<string>();
+  private runMode: GameRunMode = "campaign";
   private activeBossId?: string;
 
   static preloadBackgrounds(scene: Scene) {
@@ -15,6 +18,20 @@ export class GameLevelController {
   }
 
   constructor(private readonly player: Player) {}
+
+  startInfiniteRun() {
+    this.runMode = "infinite";
+    this.activeBossId = undefined;
+  }
+
+  returnToCampaign() {
+    this.runMode = "campaign";
+    this.activeBossId = undefined;
+  }
+
+  isInfiniteRun() {
+    return this.runMode === "infinite";
+  }
 
   getCurrentGameLevel() {
     return this.getCurrentLevelConfig().level;
@@ -83,6 +100,10 @@ export class GameLevelController {
   }
 
   private getCurrentLevelConfig() {
+    if (this.runMode === "infinite") {
+      return infiniteLevelConfig;
+    }
+
     let currentLevel = gameLevelsConfig[0];
 
     for (const nextLevel of gameLevelsConfig.slice(1)) {

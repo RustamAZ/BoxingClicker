@@ -1,7 +1,7 @@
 import type { Scene } from "phaser";
 import { GameBackground } from "../entities/Background/GameBackground";
 import { EnemyRegistry } from "../entities/Enemy/EnemyRegistry";
-import { gameLevelsConfig } from "./gameLevelsConfig";
+import { gameLevelsConfig, infiniteLevelConfig } from "./gameLevelsConfig";
 import type { EnemySpawnKind, GameLevelConfig } from "./types";
 
 export class LocationAssetPreloader {
@@ -39,15 +39,27 @@ export class LocationAssetPreloader {
     this.prefetchGameLevel(nextGameLevel);
   }
 
+  prefetchInfiniteLevel(onComplete?: () => void) {
+    this.prefetchGameLevel(infiniteLevelConfig, onComplete);
+  }
+
   isGameLevelLoaded(gameLevel: number) {
     return this.loadedGameLevels.has(gameLevel);
   }
 
-  private prefetchGameLevel(gameLevel: GameLevelConfig) {
+  private prefetchGameLevel(gameLevel: GameLevelConfig, onComplete?: () => void) {
     if (
-      this.loadedGameLevels.has(gameLevel.level) ||
-      this.loadingGameLevels.has(gameLevel.level)
+      this.loadedGameLevels.has(gameLevel.level)
     ) {
+      onComplete?.();
+      return;
+    }
+
+    if (this.loadingGameLevels.has(gameLevel.level)) {
+      if (onComplete) {
+        this.scene.load.once("complete", onComplete);
+      }
+
       return;
     }
 
@@ -63,6 +75,7 @@ export class LocationAssetPreloader {
 
     if (!hasFilesToLoad) {
       this.markGameLevelLoaded(gameLevel);
+      onComplete?.();
       return;
     }
 
@@ -82,6 +95,7 @@ export class LocationAssetPreloader {
       spawnKindsToLoad.forEach((spawnKind) => {
         this.loadedEnemySpawnKinds.add(spawnKind);
       });
+      onComplete?.();
     });
 
     if (!this.scene.load.isLoading()) {

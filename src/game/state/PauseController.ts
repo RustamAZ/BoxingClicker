@@ -6,7 +6,9 @@ export type PauseReason =
   | "player-death"
   | "loot-case"
   | "shop"
-  | "training";
+  | "training"
+  | "infinite-mode"
+  | "campaign-victory";
 type PauseChangeCallback = (isPaused: boolean) => void;
 
 export class PauseController {

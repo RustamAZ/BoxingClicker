@@ -22,6 +22,7 @@ type EnemyDefeatedCallback = (
 ) => void;
 
 type BossEncounteredCallback = (bossId: string) => void;
+type BossDefeatedCallback = (bossId: string) => boolean | void;
 
 export class SpawnPlace {
   private static readonly hitEffectAreaSize = {
@@ -48,6 +49,7 @@ export class SpawnPlace {
     private readonly enemyDeathSoundPlayer: EnemyDeathSoundPlayer,
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
     private readonly onBossEncountered?: BossEncounteredCallback,
+    private readonly onBossDefeated?: BossDefeatedCallback,
   ) {
     this.touchHitArea = this.createTouchHitArea();
     this.spawnNextEnemy();
@@ -189,12 +191,23 @@ export class SpawnPlace {
       }
       this.isEnemyDeathAnimationPlaying = true;
       enemy.playDeathAnimation(() => {
+        let shouldStopAutoSpawn = false;
+
         if (defeatedBossId) {
           this.levelController.markBossDefeated(defeatedBossId);
+          shouldStopAutoSpawn =
+            this.onBossDefeated?.(defeatedBossId) === true;
         }
 
         if (this.currentEnemyValue === enemy) {
           this.currentEnemyValue = undefined;
+        }
+
+        if (shouldStopAutoSpawn) {
+          this.currentEnemySpawnKind = undefined;
+          this.currentBossId = undefined;
+          this.isEnemyDeathAnimationPlaying = false;
+          return;
         }
 
         this.spawnNextEnemy();
@@ -220,14 +233,22 @@ export class SpawnPlace {
     }
 
     const defeatedBossId = this.currentBossId;
+    let shouldStopAutoSpawn = false;
 
     if (defeatedBossId) {
       this.levelController.markBossDefeated(defeatedBossId);
+      shouldStopAutoSpawn = this.onBossDefeated?.(defeatedBossId) === true;
     }
 
     this.currentEnemyValue = undefined;
     this.currentEnemySpawnKind = undefined;
     this.currentBossId = undefined;
+
+    if (shouldStopAutoSpawn) {
+      this.isEnemyDeathAnimationPlaying = false;
+      return;
+    }
+
     this.spawnNextEnemy();
   }
 

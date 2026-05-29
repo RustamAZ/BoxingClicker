@@ -128,16 +128,17 @@ export const gameLevelsConfig: readonly GameLevelConfig[] = [
       enemySpawnKind: "five-difficulty-boss",
     },
   },
-  {
-    level: 8,
-    locationId: "hell",
-    startPlayerLevel: gameLevelStartPlayerLevels.infinite,
-    background: {
-      key: "infinite-background",
-      path: "assets/images/backgrounds/infinite.png",
-    },
-    enemyDifficulty: "six",
-    enemySpawnKind: "five-difficulty-enemy",
-    music: "action",
-  },
 ];
+
+export const infiniteLevelConfig: GameLevelConfig = {
+  level: 8,
+  locationId: "hell",
+  startPlayerLevel: gameLevelStartPlayerLevels.infinite,
+  background: {
+    key: "infinite-background",
+    path: "assets/images/backgrounds/infinite.png",
+  },
+  enemyDifficulty: "six",
+  enemySpawnKind: "five-difficulty-enemy",
+  music: "action",
+};

@@ -296,6 +296,16 @@ export class Player {
     this.activeDamageOverTimeEffects.length = 0;
   }
 
+  resetSessionProgress() {
+    this.sessionLevel = 1;
+    this.xp = 0;
+    this.xpToNextLevel = getXpToNextLevel(this.sessionLevel);
+    this.activeStatEffects.length = 0;
+    this.activeDamageOverTimeEffects.length = 0;
+    this.restoreHealth();
+    this.restoreStamina();
+  }
+
   isLowHealth() {
     return this.health / this.maxHealth <= this.lowHealthPercent;
   }

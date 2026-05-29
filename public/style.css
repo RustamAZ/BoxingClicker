@@ -18,10 +18,18 @@ body {
     inset: 0;
     z-index: 9999;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background-color: #0f0f0f;
-    background-image: url("assets/images/ui/background-all.png");
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.1) 58%,
+            rgba(0, 0, 0, 0.72) 100%
+        ),
+        url("assets/images/ui/loading/loading-background.png");
     background-size: cover;
     background-position: center;
     opacity: 1;
@@ -38,19 +46,60 @@ body {
 }
 
 .app-loading-screen__spinner {
+    position: absolute;
+    left: 50%;
+    bottom: 86px;
+    transform: translateX(-50%);
     width: 72px;
     height: 72px;
     image-rendering: pixelated;
     animation: app-loading-screen-spin 900ms linear infinite;
 }
 
+.app-loading-screen__text {
+    position: absolute;
+    left: 50%;
+    bottom: 36px;
+    transform: translateX(-50%);
+    margin: 0;
+    font-family: "Hardpixel", monospace;
+    font-size: 28px;
+    line-height: 1;
+    color: #ffffff;
+    text-align: center;
+    text-shadow:
+        3px 0 #1f1f1f,
+        -3px 0 #1f1f1f,
+        0 3px #1f1f1f,
+        0 -3px #1f1f1f;
+    white-space: nowrap;
+}
+
+.app-loading-screen__progress {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    width: min(420px, calc(100vw - 48px));
+    height: 8px;
+    overflow: hidden;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.62);
+    border: 2px solid rgba(255, 255, 255, 0.76);
+}
+
+.app-loading-screen__progress-fill {
+    width: calc(var(--app-loading-progress, 0) * 100%);
+    height: 100%;
+    background: #7dff76;
+}
+
 @keyframes app-loading-screen-spin {
     from {
-        transform: rotate(0deg);
+        transform: translateX(-50%) rotate(0deg);
     }
 
     to {
-        transform: rotate(360deg);
+        transform: translateX(-50%) rotate(360deg);
     }
 }
 

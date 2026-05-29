@@ -11,6 +11,7 @@ export type PlayerProfileSnapshot = {
   discoveredItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
+  campaignCompleted: boolean;
   trainingLevels: TrainingLevels;
 };
 
@@ -22,6 +23,7 @@ type StoredPlayerProfile = {
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
+  campaignCompleted?: boolean;
   trainingLevels?: TrainingLevels;
 };
 
@@ -63,6 +65,7 @@ export class PlayerProfile {
   //   ],
   //   equippedItemId: "six-seven-gloves",
   //   globalLevel: 50,
+  //   campaignCompleted: true,
   //   trainingLevels: {
   //     "punch-power": 8,
   //     "strong-jaw": 7,
@@ -79,6 +82,7 @@ export class PlayerProfile {
   private discoveredItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
+  private campaignCompleted: boolean;
   private trainingLevels: TrainingLevels;
 
   static getStoredEquippedItemId() {
@@ -111,6 +115,7 @@ export class PlayerProfile {
     this.discoveredItemIds = profile.discoveredItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
+    this.campaignCompleted = profile.campaignCompleted;
     this.trainingLevels = profile.trainingLevels;
     this.normalizeProfile();
     this.save();
@@ -228,6 +233,21 @@ export class PlayerProfile {
     return this.globalLevel;
   }
 
+  hasCompletedCampaign() {
+    return this.campaignCompleted;
+  }
+
+  setCampaignCompleted(isCompleted: boolean) {
+    if (this.campaignCompleted === isCompleted) {
+      return this.campaignCompleted;
+    }
+
+    this.campaignCompleted = isCompleted;
+    this.save();
+
+    return this.campaignCompleted;
+  }
+
   getTrainingLevels(): TrainingLevels {
     return { ...this.trainingLevels };
   }
@@ -260,6 +280,7 @@ export class PlayerProfile {
       discoveredItemIds: this.getDiscoveredItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
+      campaignCompleted: this.campaignCompleted,
       trainingLevels: this.getTrainingLevels(),
     };
   }
@@ -298,6 +319,7 @@ export class PlayerProfile {
             ? PlayerProfile.normalizeItemId(profile.equippedItemId)
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
+        campaignCompleted: profile.campaignCompleted === true,
         trainingLevels: this.normalizeTrainingLevels(profile.trainingLevels),
       };
     } catch {
@@ -313,6 +335,7 @@ export class PlayerProfile {
       discoveredItemIds: [...PlayerProfile.defaultDiscoveredItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
+      campaignCompleted: false,
       trainingLevels: {},
     };
   }
