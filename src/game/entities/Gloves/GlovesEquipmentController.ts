@@ -1,16 +1,19 @@
 import type { PlayerProfile } from '../Player/PlayerProfile';
+import type { Player, PlayerStatEffect } from '../Player/Player';
 import type { BaseGloves } from './BaseGloves';
 import type { Scene } from 'phaser';
 import type { Gloves } from './Gloves';
 import { GlovesCatalog } from './GlovesCatalog';
 import type { GlovesCombatProfile } from './types';
 import { ShopCatalog } from '../../shop/ShopCatalog';
+import { getGlovesShopConfigByGlovesId } from '../../configs/glovesConfig';
 
 export class GlovesEquipmentController
 {
     constructor (
         private readonly profile: PlayerProfile,
-        private readonly gloves: Gloves
+        private readonly gloves: Gloves,
+        private readonly player: Player
     )
     {
         this.syncFromProfile();
@@ -24,6 +27,7 @@ export class GlovesEquipmentController
 
         if (equippedItem && this.gloves.equipById(equippedItem.glovesId))
         {
+            this.applyCurrentGlovesBonuses();
             return true;
         }
 
@@ -31,6 +35,7 @@ export class GlovesEquipmentController
 
         this.gloves.equip(defaultGloves);
         this.profile.equipItem(defaultGloves.id);
+        this.applyCurrentGlovesBonuses();
 
         return false;
     }
@@ -44,7 +49,14 @@ export class GlovesEquipmentController
             return false;
         }
 
-        return this.gloves.equipById(item.glovesId);
+        const isEquipped = this.gloves.equipById(item.glovesId);
+
+        if (isEquipped)
+        {
+            this.applyCurrentGlovesBonuses();
+        }
+
+        return isEquipped;
     }
 
     loadAndEquipShopItem (
@@ -61,7 +73,14 @@ export class GlovesEquipmentController
             return;
         }
 
-        this.gloves.loadAndEquipById(scene, item.glovesId, onComplete);
+        this.gloves.loadAndEquipById(scene, item.glovesId, (isEquipped) => {
+            if (isEquipped)
+            {
+                this.applyCurrentGlovesBonuses();
+            }
+
+            onComplete(isEquipped);
+        });
     }
 
     getCurrentGloves (): BaseGloves
@@ -97,5 +116,33 @@ export class GlovesEquipmentController
     punch (durationMs: number)
     {
         return this.gloves.punch(durationMs);
+    }
+
+    private applyCurrentGlovesBonuses()
+    {
+        const glovesConfig = getGlovesShopConfigByGlovesId(
+            this.gloves.getEquippedGloves().id
+        );
+        const effects: PlayerStatEffect[] = [];
+
+        if (glovesConfig?.attack_bonus)
+        {
+            effects.push({
+                stat: 'damage',
+                mode: 'add',
+                value: glovesConfig.attack_bonus,
+            });
+        }
+
+        if (glovesConfig?.attack_speed_bonus)
+        {
+            effects.push({
+                stat: 'punch-speed',
+                mode: 'multiply',
+                value: 1 + glovesConfig.attack_speed_bonus,
+            });
+        }
+
+        this.player.setPermanentStatEffects('gloves', effects);
     }
 }

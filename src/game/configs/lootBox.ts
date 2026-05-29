@@ -46,9 +46,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.healthPotion.description",
       type: "instant_restore_health",
       values: {
-        common: 35,
-        rare: 70,
-        epic: 120,
+        common: 25,
+        rare: 50,
+        epic: 100,
       },
     },
     stamina_potion: {
@@ -56,9 +56,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.staminaPotion.description",
       type: "instant_restore_stamina",
       values: {
-        common: 80,
-        rare: 150,
-        epic: 240,
+        common: 25,
+        rare: 50,
+        epic: 100,
       },
     },
     attack_speed_potion: {
@@ -86,9 +86,9 @@ export const lootBoxConfig: LootBoxConfig = {
       descriptionKey: "loot.emerald.description",
       type: "currency",
       values: {
-        common: 3,
-        rare: 7,
-        epic: 15,
+        common: 10,
+        rare: 20,
+        epic: 50,
       },
     },
   },

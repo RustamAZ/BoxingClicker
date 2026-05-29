@@ -28,7 +28,7 @@ export const firstEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 8,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.15,
+  emerald_drop_chance: 0.20,
 };
 
 export const secondEnemyConfig: EnemyConfig = {
@@ -39,7 +39,7 @@ export const secondEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.15,
+  emerald_drop_chance: 0.25,
 };
 
 export const thirdEnemyConfig: EnemyConfig = {
@@ -50,7 +50,7 @@ export const thirdEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 8,
-  emerald_drop_chance: 0.15,
+  emerald_drop_chance: 0.30,
 };
 
 export const fourthEnemyConfig: EnemyConfig = {
@@ -61,7 +61,7 @@ export const fourthEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 12,
   lootbox_container_reward: 12,
-  emerald_drop_chance: 0.16,
+  emerald_drop_chance: 0.35,
 };
 
 export const fifthEnemyConfig: EnemyConfig = {
@@ -72,5 +72,5 @@ export const fifthEnemyConfig: EnemyConfig = {
   xp_reward: 1,
   buff_container_reward: 16,
   lootbox_container_reward: 12,
-  emerald_drop_chance: 0.2,
+  emerald_drop_chance: 0.40,
 };

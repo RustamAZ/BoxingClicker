@@ -34,7 +34,7 @@ export const firstBossConfig: BossConfig = {
 };
 
 export const secondBossConfig: BossConfig = {
-  health: 800,
+  health: 700,
   damage: 0,
   attack_speed: 0,
   initial_attack_delay: 0,
@@ -44,18 +44,18 @@ export const secondBossConfig: BossConfig = {
   emerald_drop_chance: 1.0,
   effect: {
     type: "explosion",
-    explosion_damage: 170,
+    explosion_damage: 120,
   },
 };
 
 export const thirdBossConfig: BossConfig = {
-  health: 1350,
-  damage: 24,
+  health: 1650,
+  damage: 30,
   attack_speed: 1.1,
   initial_attack_delay: 0.55,
   xp_reward: 1,
-  buff_container_reward: 48,
-  lootbox_container_reward: 48,
+  buff_container_reward: 64,
+  lootbox_container_reward: 64,
   emerald_drop_chance: 1.0,
   effect: {
     type: "attack_speed_slow",

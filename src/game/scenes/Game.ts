@@ -76,6 +76,7 @@ export class Game extends Scene {
   private screenFilterController: ScreenFilterController;
   private weaponUnlockToastBackground: GameObjects.Rectangle;
   private weaponUnlockToastText: GameObjects.Text;
+  private playerStatsDebugText: GameObjects.Text;
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
   private unsubscribeLanguageChange?: () => void;
   private previousGameLevel: number;
@@ -166,6 +167,7 @@ export class Game extends Scene {
     this.glovesEquipmentController = new GlovesEquipmentController(
       this.player.profile,
       this.gloves,
+      this.player,
     );
     this.hitSoundPlayer = new HitSoundPlayer(this);
     this.enemyAttackSoundPlayer = new EnemyAttackSoundPlayer(this);
@@ -202,6 +204,7 @@ export class Game extends Scene {
       this.player,
       this.enemySpawnPlace.currentEnemy,
     );
+    this.createPlayerStatsDebugText();
     this.levelUpRewardController = new LevelUpRewardController(
       this,
       this.player,
@@ -299,6 +302,7 @@ export class Game extends Scene {
     }
 
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
+    this.updatePlayerStatsDebugText();
   }
 
   private handleEnemyRewards(enemy: Enemy, position: { x: number; y: number }) {
@@ -541,6 +545,32 @@ export class Game extends Scene {
     );
   }
 
+  private createPlayerStatsDebugText() {
+    this.playerStatsDebugText = this.add
+      .text(18, 208, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 14,
+        color: "#ffffff",
+        stroke: "#151515",
+        strokeThickness: 3,
+        lineSpacing: 2,
+      })
+      .setResolution(2)
+      .setDepth(1600);
+
+    this.updatePlayerStatsDebugText();
+  }
+
+  private updatePlayerStatsDebugText() {
+    this.playerStatsDebugText.setText([
+      `D: cила атаки - ${Game.formatDebugNumber(this.player.getDamagePerHit())}`,
+      `S: скорость атаки в ударах в секунду - ${Game.formatDebugNumber(1000 / this.player.getPunchAnimationDurationMs())}`,
+      `H: Количество здоровья максимальное - ${Game.formatDebugNumber(this.player.maxHealth)}`,
+      `A: Количество выносливости максимальное - ${Game.formatDebugNumber(this.player.maxStamina)}`,
+      `C: текущая цена за удар - ${Game.formatDebugNumber(this.player.getStaminaCostPerHit())}`,
+    ]);
+  }
+
   private static getStoredEquippedGlovesId() {
     return (
       ShopCatalog.getItemById(PlayerProfile.getStoredEquippedItemId())
@@ -553,5 +583,9 @@ export class Game extends Scene {
       ShopCatalog.getItemById(profile.getEquippedItemId())?.glovesId ??
       profile.getEquippedItemId()
     );
+  }
+
+  private static formatDebugNumber(value: number) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
   }
 }

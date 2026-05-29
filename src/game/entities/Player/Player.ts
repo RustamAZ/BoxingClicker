@@ -67,6 +67,10 @@ export class Player {
   private readonly activeDamageOverTimeEffects: ActivePlayerDamageOverTimeEffect[] =
     [];
   private permanentStatBonuses: PlayerPermanentStatBonuses = {};
+  private readonly permanentStatEffectSources = new Map<
+    string,
+    PlayerStatEffect[]
+  >();
 
   canHit(staminaCostMultiplier = 1) {
     return (
@@ -222,29 +226,35 @@ export class Player {
     this.applyPermanentStatEffect(effect);
   }
 
-  setPermanentStatBonuses(bonuses: PlayerPermanentStatBonuses) {
-    const stats = new Set<PlayerStat>([
-      ...Object.keys(this.permanentStatBonuses),
-      ...Object.keys(bonuses),
-    ] as PlayerStat[]);
-
-    stats.forEach((stat) => {
-      const previousBonus = this.permanentStatBonuses[stat] ?? 0;
-      const nextBonus = bonuses[stat] ?? 0;
-      const delta = nextBonus - previousBonus;
-
-      if (delta === 0) {
-        return;
-      }
-
-      this.applyPermanentStatEffect({
-        stat,
-        mode: "add",
-        value: delta,
-      });
-    });
-
+  setPermanentStatBonuses(
+    bonuses: PlayerPermanentStatBonuses,
+    sourceId = "default",
+  ) {
     this.permanentStatBonuses = { ...bonuses };
+    this.setPermanentStatEffects(
+      sourceId,
+      Object.entries(bonuses).map(([stat, value]) => ({
+        stat: stat as PlayerStat,
+        mode: "add",
+        value: value ?? 0,
+      })),
+    );
+  }
+
+  setPermanentStatEffects(sourceId: string, effects: PlayerStatEffect[]) {
+    const safeEffects = effects.map((effect) => ({
+      stat: effect.stat,
+      mode: effect.mode,
+      value: effect.value,
+    }));
+
+    if (safeEffects.length === 0) {
+      this.permanentStatEffectSources.delete(sourceId);
+    } else {
+      this.permanentStatEffectSources.set(sourceId, safeEffects);
+    }
+
+    this.recalculatePermanentStats();
   }
 
   getActiveStatEffects(): PlayerActiveStatEffect[] {
@@ -469,5 +479,65 @@ export class Player {
     }
 
     return value + effect.value;
+  }
+
+  private recalculatePermanentStats() {
+    const healthMissing = Math.max(0, this.maxHealth - this.health);
+    const staminaMissing = Math.max(0, this.maxStamina - this.stamina);
+    const effects = Array.from(this.permanentStatEffectSources.values()).flat();
+
+    this.damagePerHit = this.applyPermanentStatEffects(
+      "damage",
+      playerConfig.player_start.attack,
+      effects,
+    );
+    this.punchSpeed = this.applyPermanentStatEffects(
+      "punch-speed",
+      playerConfig.player_start.attack_speed,
+      effects,
+    );
+    this.maxStamina = Math.max(
+      1,
+      this.applyPermanentStatEffects(
+        "max-stamina",
+        playerConfig.player_start.stamina,
+        effects,
+      ),
+    );
+    this.maxHealth = Math.max(
+      1,
+      this.applyPermanentStatEffects(
+        "max-health",
+        playerConfig.player_start.health,
+        effects,
+      ),
+    );
+    this.staminaCostPerHit = Math.max(
+      playerConfig.player_limits.minimum_stamina_cost_per_hit,
+      this.applyPermanentStatEffects(
+        "stamina-cost",
+        playerConfig.player_start.stamina_cost_per_hit,
+        effects,
+      ),
+    );
+    this.health = Math.max(0, Math.min(this.maxHealth, this.maxHealth - healthMissing));
+    this.stamina = Math.max(
+      0,
+      Math.min(this.maxStamina, this.maxStamina - staminaMissing),
+    );
+  }
+
+  private applyPermanentStatEffects(
+    stat: PlayerStat,
+    value: number,
+    effects: PlayerStatEffect[],
+  ) {
+    return effects.reduce((result, effect) => {
+      if (effect.stat !== stat) {
+        return result;
+      }
+
+      return this.applyStatEffectValue(result, effect);
+    }, value);
   }
 }

@@ -148,16 +148,13 @@ export class SpawnPlace {
       enemy.isDead() ||
       this.isEnemyDeathAnimationPlaying ||
       !this.glovesEquipmentController.canPunch() ||
-      !this.player.hit(this.glovesEquipmentController.getStaminaCostMultiplier())
+      !this.player.hit()
     ) {
       return false;
     }
 
     const currentWeapon = this.glovesEquipmentController.getCurrentWeapon();
-    const enemySurvived = enemy.takeDamage(
-      this.player.getDamagePerHit(currentWeapon.damageMultiplier) +
-        currentWeapon.attackBonus,
-    );
+    const enemySurvived = enemy.takeDamage(this.player.getDamagePerHit());
 
     this.hitSoundPlayer.playRandom(
       currentWeapon.hitSoundKeys,
@@ -165,9 +162,7 @@ export class SpawnPlace {
     );
     this.playHitEffect(currentWeapon);
     this.glovesEquipmentController.punch(
-      this.player.getPunchAnimationDurationMs(
-        currentWeapon.attackSpeedMultiplier,
-      ),
+      this.player.getPunchAnimationDurationMs(),
     );
 
     if (!enemySurvived) {

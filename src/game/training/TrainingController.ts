@@ -109,7 +109,7 @@ export class TrainingController {
   }
 
   applyTrainingBonuses() {
-    this.player.setPermanentStatBonuses(this.getTrainingBonuses());
+    this.player.setPermanentStatBonuses(this.getTrainingBonuses(), "training");
   }
 
   getTrainingBonuses(): PlayerPermanentStatBonuses {
