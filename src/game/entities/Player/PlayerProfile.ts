@@ -11,7 +11,6 @@ export type PlayerProfileSnapshot = {
   discoveredItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
-  deathContinueCount: number;
   trainingLevels: TrainingLevels;
 };
 
@@ -23,10 +22,7 @@ type StoredPlayerProfile = {
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
-  deathContinueCount?: number;
   trainingLevels?: TrainingLevels;
-  current_trainning?: TrainingLevels;
-  currentTraining?: TrainingLevels;
 };
 
 type StoredLegacyWallet = {
@@ -46,6 +42,36 @@ export class PlayerProfile {
   private static readonly legacyItemIdAliases: Record<string, string> = {
     "heavy-gloves": "mechanic-gloves",
   };
+  // private static readonly mockProfile: StoredPlayerProfile | undefined = {
+  //   id: "mock-player",
+  //   emeralds: 9999,
+  //   purchasedItemIds: [
+  //     "basic-gloves",
+  //     "amogus-gloves",
+  //     "pepe-gloves",
+  //     "mechanic-gloves",
+  //     "infinity-gloves",
+  //     "six-seven-gloves",
+  //   ],
+  //   discoveredItemIds: [
+  //     "basic-gloves",
+  //     "amogus-gloves",
+  //     "pepe-gloves",
+  //     "mechanic-gloves",
+  //     "infinity-gloves",
+  //     "six-seven-gloves",
+  //   ],
+  //   equippedItemId: "six-seven-gloves",
+  //   globalLevel: 50,
+  //   trainingLevels: {
+  //     "punch-power": 8,
+  //     "strong-jaw": 7,
+  //     endurance: 7,
+  //     "light-gloves": 7,
+  //     "fast-hands": 7,
+  //   },
+  // };
+  private static readonly mockProfile: StoredPlayerProfile | undefined = undefined;
 
   private id: string;
   private emeralds: number;
@@ -53,18 +79,20 @@ export class PlayerProfile {
   private discoveredItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
-  private deathContinueCount: number;
   private trainingLevels: TrainingLevels;
 
   static getStoredEquippedItemId() {
     try {
       const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
+      const profile =
+        PlayerProfile.mockProfile ??
+        (rawProfile
+          ? (JSON.parse(rawProfile) as StoredPlayerProfile)
+          : undefined);
 
-      if (!rawProfile) {
+      if (!profile) {
         return PlayerProfile.defaultEquippedItemId;
       }
-
-      const profile = JSON.parse(rawProfile) as StoredPlayerProfile;
 
       return typeof profile.equippedItemId === "string"
         ? PlayerProfile.normalizeItemId(profile.equippedItemId)
@@ -83,7 +111,6 @@ export class PlayerProfile {
     this.discoveredItemIds = profile.discoveredItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
-    this.deathContinueCount = profile.deathContinueCount;
     this.trainingLevels = profile.trainingLevels;
     this.normalizeProfile();
     this.save();
@@ -201,17 +228,6 @@ export class PlayerProfile {
     return this.globalLevel;
   }
 
-  getDeathContinueCount() {
-    return this.deathContinueCount;
-  }
-
-  incrementDeathContinueCount() {
-    this.deathContinueCount += 1;
-    this.save();
-
-    return this.deathContinueCount;
-  }
-
   getTrainingLevels(): TrainingLevels {
     return { ...this.trainingLevels };
   }
@@ -244,7 +260,6 @@ export class PlayerProfile {
       discoveredItemIds: this.getDiscoveredItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
-      deathContinueCount: this.deathContinueCount,
       trainingLevels: this.getTrainingLevels(),
     };
   }
@@ -252,12 +267,15 @@ export class PlayerProfile {
   private loadProfile(): PlayerProfileSnapshot {
     try {
       const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
+      const profile =
+        PlayerProfile.mockProfile ??
+        (rawProfile
+          ? (JSON.parse(rawProfile) as StoredPlayerProfile)
+          : undefined);
 
-      if (!rawProfile) {
+      if (!profile) {
         return this.getDefaultProfile();
       }
-
-      const profile = JSON.parse(rawProfile) as StoredPlayerProfile;
 
       return {
         id: typeof profile.id === "string" ? profile.id : this.createId(),
@@ -280,15 +298,7 @@ export class PlayerProfile {
             ? PlayerProfile.normalizeItemId(profile.equippedItemId)
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
-        deathContinueCount:
-          typeof profile.deathContinueCount === "number"
-            ? Math.max(0, Math.floor(profile.deathContinueCount))
-            : 0,
-        trainingLevels: this.normalizeTrainingLevels(
-          profile.trainingLevels ??
-            profile.current_trainning ??
-            profile.currentTraining,
-        ),
+        trainingLevels: this.normalizeTrainingLevels(profile.trainingLevels),
       };
     } catch {
       return this.getDefaultProfile();
@@ -303,7 +313,6 @@ export class PlayerProfile {
       discoveredItemIds: [...PlayerProfile.defaultDiscoveredItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
-      deathContinueCount: 0,
       trainingLevels: {},
     };
   }

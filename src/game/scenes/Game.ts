@@ -40,7 +40,8 @@ import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 
 export class Game extends Scene {
-  private static readonly deathContinueEmeraldCost = 50;
+  private static readonly deathContinueEmeraldCost = 100;
+  private static readonly maxDeathContinuesPerRun = 2;
   private static readonly weaponUnlockToastDurationMs = 1800;
   private static readonly lobbyGameLevel = 1;
   private static readonly villageGameLevel = 2;
@@ -80,7 +81,7 @@ export class Game extends Scene {
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
   private unsubscribeLanguageChange?: () => void;
   private previousGameLevel: number;
-  private isDeathAdContinueUsed = false;
+  private deathContinuesUsedInRun = 0;
 
   constructor() {
     super("Game");
@@ -363,15 +364,25 @@ export class Game extends Scene {
   }
 
   private getPlayerDeathContinueOption() {
-    if (!this.isDeathAdContinueUsed) {
+    if (this.deathContinuesUsedInRun <= 0) {
       return {
         label: languageController.t("death.continue"),
         isEnabled: true,
         onContinue: () => {
-          this.isDeathAdContinueUsed = true;
-          this.player.profile.incrementDeathContinueCount();
+          this.deathContinuesUsedInRun += 1;
           this.restorePlayerAfterDeath();
         },
+      };
+    }
+
+    if (this.deathContinuesUsedInRun >= Game.maxDeathContinuesPerRun) {
+      return {
+        label: languageController.t("death.continueForEmerald", {
+          amount: Game.deathContinueEmeraldCost,
+        }),
+        isEnabled: false,
+        showEmeraldPrice: true,
+        onContinue: () => {},
       };
     }
 
@@ -388,7 +399,7 @@ export class Game extends Scene {
           return;
         }
 
-        this.player.profile.incrementDeathContinueCount();
+        this.deathContinuesUsedInRun += 1;
         this.restorePlayerAfterDeath();
       },
     };
