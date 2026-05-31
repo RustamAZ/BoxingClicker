@@ -81,6 +81,14 @@ export class LootCaseController {
     this.hasPendingOpening = true;
   }
 
+  reset() {
+    this.hasPendingOpening = false;
+    this.currentRewards = [];
+    this.isOpen = false;
+    this.modal?.hide();
+    this.pauseController.resume("loot-case");
+  }
+
   open() {
     if (this.isOpen || this.pauseController.isPaused) {
       this.hasPendingOpening = true;

@@ -73,6 +73,13 @@ export class LevelUpRewardController {
     this.rewardsToChoose += Math.max(0, Math.floor(count));
   }
 
+  reset() {
+    this.rewardsToChoose = 0;
+    this.isShowingReward = false;
+    this.modal?.hide();
+    this.pauseController.resume("level-up-reward");
+  }
+
   update(canShowReward: boolean) {
     if (
       this.isShowingReward ||

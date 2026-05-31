@@ -124,6 +124,14 @@ export abstract class ResourceContainer {
     this.view.setVisible(visible);
   }
 
+  reset() {
+    this.scene.tweens.killTweensOf(this.view);
+    this.value = 0;
+    this.openingsCount = 0;
+    this.resetViewPosition();
+    this.updateVisualState();
+  }
+
   protected abstract issueCompletion(completedCount: number): number;
 
   protected resetAfterFill(nextValue = this.value % this.getCurrentMaxValue()) {

@@ -86,6 +86,7 @@ export class Game extends Scene {
   private unsubscribeLanguageChange?: () => void;
   private previousGameLevel: number;
   private deathContinuesUsedInRun = 0;
+  private isCampaignVictoryFlowActive = false;
 
   constructor() {
     super("Game");
@@ -167,6 +168,10 @@ export class Game extends Scene {
         this.time.delayedCall(
           ResourceContainer.filledAnimationDelayMs,
           () => {
+            if (this.isCampaignVictoryFlowActive) {
+              return;
+            }
+
             this.lootCaseController.requestOpen();
           },
         );
@@ -341,6 +346,10 @@ export class Game extends Scene {
   }
 
   private handleEnemyRewards(enemy: Enemy, position: { x: number; y: number }) {
+    if (this.isCampaignVictoryFlowActive) {
+      return;
+    }
+
     const emeraldsReward = enemy.rollEmeraldReward();
 
     if (
@@ -360,6 +369,10 @@ export class Game extends Scene {
       coinsCount: enemy.coinsReward,
       emeraldsCount: emeraldsReward,
       onComplete: () => {
+        if (this.isCampaignVictoryFlowActive) {
+          return;
+        }
+
         const rewardChoices = this.diamondContainer.add(enemy.diamondsReward);
 
         this.coinContainer.add(enemy.coinsReward);
@@ -372,6 +385,10 @@ export class Game extends Scene {
           this.time.delayedCall(
             ResourceContainer.filledAnimationDelayMs,
             () => {
+              if (this.isCampaignVictoryFlowActive) {
+                return;
+              }
+
               this.levelUpRewardController.enqueueRewards(rewardChoices);
             },
           );
@@ -577,7 +594,9 @@ export class Game extends Scene {
 
   private handleBossDefeated(bossId: string) {
     if (bossId === "five-difficulty-boss") {
+      this.isCampaignVictoryFlowActive = true;
       this.player.profile.setCampaignCompleted(true);
+      this.resetPendingRunRewards();
       this.campaignVictoryModal.show();
       return true;
     }
@@ -588,6 +607,8 @@ export class Game extends Scene {
   private returnToLobbyAfterCampaignVictory() {
     this.levelController.returnToCampaign();
     this.player.resetSessionProgress();
+    this.resetPendingRunRewards();
+    this.isCampaignVictoryFlowActive = false;
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.deathContinuesUsedInRun = 0;
     this.background.update();
@@ -599,6 +620,13 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
     this.updatePlayerStatsDebugText();
+  }
+
+  private resetPendingRunRewards() {
+    this.lootCaseController.reset();
+    this.levelUpRewardController.reset();
+    this.diamondContainer.reset();
+    this.coinContainer.reset();
   }
 
   private createWeaponUnlockToast() {
