@@ -40,6 +40,7 @@ import { getRewardContainerRequirements } from "../configs/rewardContainers";
 import { languageController } from "../localization/LanguageController";
 import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
+import { FullscreenController } from "../utils/FullscreenController";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 100;
@@ -84,6 +85,7 @@ export class Game extends Scene {
   private playerStatsDebugText: GameObjects.Text;
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
   private unsubscribeLanguageChange?: () => void;
+  private fullscreenController?: FullscreenController;
   private previousGameLevel: number;
   private deathContinuesUsedInRun = 0;
   private isCampaignVictoryFlowActive = false;
@@ -128,6 +130,7 @@ export class Game extends Scene {
 
   create() {
     this.player = new Player();
+    this.fullscreenController = new FullscreenController(this);
     this.wallet = new Wallet(this.player);
     this.trainingController = new TrainingController(this.player, this.wallet);
     this.trainingController.applyTrainingBonuses();
@@ -299,6 +302,7 @@ export class Game extends Scene {
       );
       window.removeEventListener("keydown", this.handleGlobalKeyDown);
       this.unsubscribeLanguageChange?.();
+      this.fullscreenController?.destroy();
     });
   }
 
