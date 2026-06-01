@@ -20,25 +20,20 @@ type ShopCloseButton = {
 };
 
 type ShopItemCard = {
+  background: GameObjects.Image;
   itemIcon: GameObjects.Image;
-  lockOverlay: GameObjects.Image;
+  attackText: GameObjects.Text;
+  speedText: GameObjects.Text;
   buttonHitArea: GameObjects.Rectangle;
   buttonImage: GameObjects.Image;
   priceIcon: GameObjects.Image;
   buttonLabel: GameObjects.Text;
-  shouldShowPriceIcon: boolean;
   item?: ShopItemView;
 };
 
 type ShopItemSlot = {
   x: number;
-  iconY: number;
-  buttonY: number;
-};
-
-type ShopButtonTextureConfig = {
-  textureKey: string;
-  texturePath: string;
+  y: number;
 };
 
 type ShopAssetConfig = {
@@ -52,67 +47,54 @@ export class ShopModal {
   private static readonly shopIconPath = "assets/images/ui/icons/shop.png";
   private static readonly panelTextureKey = "shop-container";
   private static readonly panelPath = "assets/images/ui/shop/shop-container.png";
-  private static readonly lockedItemTextureKey = "shop-item-locked";
-  private static readonly lockedItemPath =
-    "assets/images/ui/shop/items/shop-item-locked.png";
-  private static readonly unknownItemTextureKey = "shop-item-unknown";
-  private static readonly unknownItemPath =
-    "assets/images/ui/shop/items/unknown-item-icon.png";
+  private static readonly cardTextureKey = "shop-glove-card";
+  private static readonly cardPath =
+    "assets/images/ui/shop/cards/glove-card.png";
+  private static readonly lockedCardTextureKey = "shop-glove-card-locked";
+  private static readonly lockedCardPath =
+    "assets/images/ui/shop/cards/glove-card-locked.png";
+  private static readonly titlePlateTextureKey = "shop-title-plate";
+  private static readonly titlePlatePath =
+    "assets/images/ui/shop/shop-title-plate.png";
+  private static readonly currencyPlateTextureKey = "shop-currency-plate";
+  private static readonly currencyPlatePath =
+    "assets/images/ui/shop/shop-currency-plate.png";
+  private static readonly equippedButtonTextureKey = "shop-button-equipped";
+  private static readonly equippedButtonPath =
+    "assets/images/ui/shop/buttons/shop-button-equipped.png";
+  private static readonly buyButtonTextureKey = "shop-button-buy";
+  private static readonly buyButtonPath =
+    "assets/images/ui/shop/buttons/shop-button-buy.png";
+  private static readonly lockedButtonTextureKey = "shop-button-locked";
+  private static readonly lockedButtonPath =
+    "assets/images/ui/shop/buttons/shop-button-locked.png";
   private static readonly priceIconTextureKey = "shop-price-emerald-icon";
   private static readonly priceIconPath = "assets/images/ui/icons/emerald.png";
-  private static readonly buttonTextures: ShopButtonTextureConfig[] = [
-    {
-      textureKey: "base-shop-button",
-      texturePath: "assets/images/ui/shop/base-shop-button.png",
-    },
-    {
-      textureKey: "wooden-shop-button",
-      texturePath: "assets/images/ui/shop/wooden-shop-button.png",
-    },
-    {
-      textureKey: "golden-shop-button",
-      texturePath: "assets/images/ui/shop/golden-shop-button.png",
-    },
-    {
-      textureKey: "emerald-shop-button",
-      texturePath: "assets/images/ui/shop/emerald-shop-button.png",
-    },
-    {
-      textureKey: "diamond-shop-button",
-      texturePath: "assets/images/ui/shop/diamond-shop-button.png",
-    },
-    {
-      textureKey: "absidian-shop-button",
-      texturePath: "assets/images/ui/shop/absidian-shop-button.png",
-    },
-  ];
-  private static readonly panelWidth = 768;
-  private static readonly panelHeight = 640;
+  private static readonly panelWidth = 900;
+  private static readonly panelHeight = 680;
   private static readonly buttonSize = 128;
   private static readonly iconSize = 128;
   private static readonly iconHoverSize = 138;
   private static readonly actionLockDurationMs = 300;
-  private static readonly itemIconMaxSize = 112;
-  private static readonly lockedOverlaySize = 128;
-  private static readonly lockedOverlayAlpha = 0.62;
-  private static readonly priceIconWidth = 22;
-  private static readonly priceIconHeight = 28;
-  private static readonly priceIconOffsetX = -32;
-  private static readonly priceTextOffsetX = 12;
-  private static readonly buttonWidth = 208;
-  private static readonly buttonHeight = 72;
-  private static readonly balanceOffsetX = -330;
-  private static readonly balanceOffsetY = -286;
-  private static readonly closeButtonOffsetX = 348;
-  private static readonly closeButtonOffsetY = -286;
+  private static readonly normalCardWidth = 260;
+  private static readonly normalCardHeight = 306;
+  private static readonly lockedCardWidth = 275;
+  private static readonly lockedCardHeight = 321;
+  private static readonly itemIconMaxSize = 146;
+  private static readonly cardButtonWidth = 232;
+  private static readonly cardButtonHeight = 67;
+  private static readonly cardButtonHoverScale = 1.06;
+  private static readonly priceIconSize = 25;
+  private static readonly closeButtonOffsetX = 410;
+  private static readonly closeButtonOffsetY = -300;
   private static readonly closeButtonSize = 46;
   private static readonly itemSlots: ShopItemSlot[] = [
-    { x: -256, iconY: -192, buttonY: -76 },
-    { x: 0, iconY: -192, buttonY: -76 },
-    { x: 256, iconY: -192, buttonY: -76 },
-    { x: -256, iconY: 56, buttonY: 180 },
-    { x: 0, iconY: 56, buttonY: 180 },
-    { x: 256, iconY: 56, buttonY: 180 },
+    { x: -260, y: -115 },
+    { x: 0, y: -115 },
+    { x: 260, y: -115 },
+    { x: -260, y: 185 },
+    { x: 0, y: 185 },
+    { x: 260, y: 185 },
   ];
 
   private readonly shopButton: ShopIconButton;
@@ -120,6 +102,9 @@ export class ShopModal {
   private overlay?: GameObjects.Rectangle;
   private panel?: GameObjects.Image;
   private panelBlocker?: GameObjects.Rectangle;
+  private titlePlate?: GameObjects.Image;
+  private titleText?: GameObjects.Text;
+  private currencyPlate?: GameObjects.Image;
   private balanceText?: GameObjects.Text;
   private closeButton?: ShopCloseButton;
   private cards: ShopItemCard[] = [];
@@ -153,6 +138,7 @@ export class ShopModal {
     this.scene.events.once("shutdown", () => {
       this.unsubscribeLanguageChange();
       this.loaderSpinner.destroy();
+      this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
     });
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
   }
@@ -235,6 +221,7 @@ export class ShopModal {
       .setVisible(false);
     this.panel = this.scene.add
       .image(centerX, centerY, ShopModal.panelTextureKey)
+      .setDisplaySize(ShopModal.panelWidth, ShopModal.panelHeight)
       .setDepth(ShopModal.depth + 1)
       .setVisible(false);
     this.panelBlocker = this.scene.add
@@ -249,34 +236,46 @@ export class ShopModal {
       .setDepth(ShopModal.depth + 2)
       .setInteractive()
       .setVisible(false);
+    this.titlePlate = this.scene.add
+      .image(centerX, centerY - 300, ShopModal.titlePlateTextureKey)
+      .setDisplaySize(512, 128)
+      .setDepth(ShopModal.depth + 3)
+      .setVisible(false);
+    this.titleText = this.scene.add
+      .text(centerX, centerY - 302, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 29,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(ShopModal.depth + 4)
+      .setVisible(false);
+    this.currencyPlate = this.scene.add
+      .image(centerX - 365, centerY - 300, ShopModal.currencyPlateTextureKey)
+      .setDisplaySize(184, 96)
+      .setDepth(ShopModal.depth + 3)
+      .setVisible(false);
     this.balanceText = this.scene.add
-      .text(
-        centerX + ShopModal.balanceOffsetX,
-        centerY + ShopModal.balanceOffsetY,
-        "",
-        {
-          fontFamily: "Hardpixel",
-          fontSize: 24,
-          color: "#7dff76",
-          stroke: "#123b12",
-          strokeThickness: 4,
-        },
-      )
+      .text(centerX - 366, centerY - 300, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 24,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 4,
+      })
       .setOrigin(0, 0.5)
       .setResolution(2)
-      .setDepth(ShopModal.depth + 3)
+      .setDepth(ShopModal.depth + 4)
       .setVisible(false);
     this.closeButton = this.createCloseButton(
       centerX + ShopModal.closeButtonOffsetX,
       centerY + ShopModal.closeButtonOffsetY,
     );
-    this.cards = ShopModal.itemSlots.map((slot, index) =>
-      this.createItemCard(
-        centerX + slot.x,
-        centerY + slot.iconY,
-        centerY + slot.buttonY,
-        index,
-      ),
+    this.cards = ShopModal.itemSlots.map((slot) =>
+      this.createItemCard(centerX + slot.x, centerY + slot.y),
     );
 
     this.overlay.on("pointerdown", () => {
@@ -304,6 +303,7 @@ export class ShopModal {
     const profile = this.wallet.getPlayer().profile;
     const itemViews = ShopCatalog.getItemViews(profile);
 
+    this.titleText?.setText(languageController.t("shop.title"));
     this.balanceText.setText(String(this.wallet.getBalance()));
 
     this.cards.forEach((card, index) => {
@@ -312,12 +312,9 @@ export class ShopModal {
       card.item = item;
 
       if (item) {
-        this.setCardText(card, item);
-        this.setCardIcon(card, item);
+        this.setCardState(card, item);
       } else {
-        card.buttonLabel.setText("");
-        this.hideCardPriceIcon(card);
-        this.setEmptyCardIcon(card);
+        this.setEmptyCard(card);
       }
 
       this.setCardVisible(card, this.panel?.visible === true);
@@ -342,9 +339,9 @@ export class ShopModal {
     }
 
     if (!this.wallet.withdraw(item.price)) {
-      this.hideCardPriceIcon(card);
       card.buttonLabel.setText(languageController.t("shop.noMoney"));
       card.buttonLabel.setColor("#ff5a5a");
+      card.priceIcon.setVisible(false);
       return;
     }
 
@@ -372,36 +369,71 @@ export class ShopModal {
     );
   }
 
-  private setCardText(card: ShopItemCard, item: ShopItemView) {
-    this.hideCardPriceIcon(card);
+  private setCardState(card: ShopItemCard, item: ShopItemView) {
+    const isLocked = item.status === "locked";
 
-    if (item.status === "locked") {
-      card.buttonLabel.setText(languageController.t("shop.find"));
-      card.buttonLabel.setColor("#d4d4d4");
+    card.background.setTexture(
+      isLocked ? ShopModal.lockedCardTextureKey : ShopModal.cardTextureKey,
+    );
+    this.setCardBackgroundSize(card.background, isLocked);
+    card.itemIcon.setTexture(item.iconTextureKey);
+    this.fitItemIcon(card.itemIcon);
+    card.itemIcon.setVisible(!isLocked && card.background.visible);
+    card.attackText.setText(ShopModal.formatAttackBonus(item.attackBonus));
+    card.speedText.setText(ShopModal.formatSpeedBonus(item.attackSpeedBonus));
+    card.buttonLabel.setColor("#ffffff");
+    card.buttonLabel.setFontSize(21);
+
+    if (isLocked) {
+      this.setCardButtonTexture(card, ShopModal.lockedButtonTextureKey);
+      card.attackText.setText("");
+      card.speedText.setText("");
+      card.buttonLabel.setText(languageController.t("shop.reachBoss"));
+      card.buttonLabel.setFontSize(18);
+      card.priceIcon.setVisible(false);
+      card.buttonLabel.setX(card.buttonImage.x);
       return;
     }
 
     if (item.isEquipped) {
+      this.setCardButtonTexture(card, ShopModal.equippedButtonTextureKey);
       card.buttonLabel.setText(languageController.t("shop.equipped"));
-      card.buttonLabel.setColor("#7dff76");
+      card.priceIcon.setVisible(false);
+      card.buttonLabel.setX(card.buttonImage.x);
       return;
     }
 
+    this.setCardButtonTexture(card, ShopModal.buyButtonTextureKey);
+
     if (item.status === "purchased") {
       card.buttonLabel.setText(languageController.t("shop.equip"));
-      card.buttonLabel.setColor("#ffffff");
+      card.priceIcon.setVisible(false);
+      card.buttonLabel.setX(card.buttonImage.x);
       return;
     }
 
     if (item.price > 0) {
-      this.showCardPriceIcon(card);
       card.buttonLabel.setText(String(item.price));
-      card.buttonLabel.setColor("#ffffff");
+      card.priceIcon.setVisible(card.buttonImage.visible);
+      card.buttonLabel.setX(card.buttonImage.x + 18);
       return;
     }
 
     card.buttonLabel.setText(languageController.t("common.free"));
-    card.buttonLabel.setColor("#ffffff");
+    card.priceIcon.setVisible(false);
+    card.buttonLabel.setX(card.buttonImage.x);
+  }
+
+  private setEmptyCard(card: ShopItemCard) {
+    card.background.setTexture(ShopModal.lockedCardTextureKey);
+    this.setCardBackgroundSize(card.background, true);
+    card.itemIcon.setVisible(false);
+    card.attackText.setText("");
+    card.speedText.setText("");
+    this.setCardButtonTexture(card, ShopModal.lockedButtonTextureKey);
+    card.buttonLabel.setText("");
+    card.buttonLabel.setFontSize(21);
+    card.priceIcon.setVisible(false);
   }
 
   private createShopButton(x: number, y: number): ShopIconButton {
@@ -460,10 +492,12 @@ export class ShopModal {
       this.close();
     });
     hitArea.on("pointerover", () => {
-      background.setFillStyle(0x4b2020, 0.96);
+      background.setScale(1.06);
+      icon.setScale(1.06);
     });
     hitArea.on("pointerout", () => {
-      background.setFillStyle(0x2d1717, 0.92);
+      background.setScale(1);
+      icon.setScale(1);
     });
 
     return {
@@ -473,45 +507,35 @@ export class ShopModal {
     };
   }
 
-  private createItemCard(
-    x: number,
-    iconY: number,
-    buttonY: number,
-    itemIndex: number,
-  ): ShopItemCard {
+  private createItemCard(x: number, y: number): ShopItemCard {
+    const buttonY = y + 110;
     const card = {} as ShopItemCard;
 
+    card.background = this.scene.add
+      .image(x, y, ShopModal.cardTextureKey)
+      .setDisplaySize(ShopModal.normalCardWidth, ShopModal.normalCardHeight)
+      .setDepth(ShopModal.depth + 3)
+      .setVisible(false);
     card.itemIcon = this.scene.add
-      .image(x, iconY, ShopModal.lockedItemTextureKey)
-      .setDepth(ShopModal.depth + 3)
-      .setVisible(false);
-    this.fitItemIcon(card.itemIcon);
-
-    card.lockOverlay = this.scene.add
-      .image(x, iconY, ShopModal.lockedItemTextureKey)
-      .setDisplaySize(ShopModal.lockedOverlaySize, ShopModal.lockedOverlaySize)
-      .setAlpha(ShopModal.lockedOverlayAlpha)
+      .image(x, y - 70, ShopModal.cardTextureKey)
       .setDepth(ShopModal.depth + 4)
       .setVisible(false);
-
+    card.attackText = this.createBonusText(x - 52, y + 33);
+    card.speedText = this.createBonusText(x - 52, y + 63);
     card.buttonImage = this.scene.add
-      .image(x, buttonY, ShopModal.getButtonTextureKey(itemIndex))
-      .setDepth(ShopModal.depth + 3)
-      .setVisible(false);
-    card.buttonHitArea = this.scene.add
-      .rectangle(x, buttonY, ShopModal.buttonWidth, ShopModal.buttonHeight, 0x000000, 0)
+      .image(x, buttonY, ShopModal.buyButtonTextureKey)
+      .setDisplaySize(ShopModal.cardButtonWidth, ShopModal.cardButtonHeight)
       .setDepth(ShopModal.depth + 4)
-      .setInteractive({ useHandCursor: true })
       .setVisible(false);
     card.priceIcon = this.scene.add
-      .image(x + ShopModal.priceIconOffsetX, buttonY, ShopModal.priceIconTextureKey)
-      .setDisplaySize(ShopModal.priceIconWidth, ShopModal.priceIconHeight)
+      .image(x - 20, buttonY, ShopModal.priceIconTextureKey)
+      .setDisplaySize(ShopModal.priceIconSize, ShopModal.priceIconSize)
       .setDepth(ShopModal.depth + 5)
       .setVisible(false);
     card.buttonLabel = this.scene.add
       .text(x, buttonY, "", {
         fontFamily: "Hardpixel",
-        fontSize: 22,
+        fontSize: 21,
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 4,
@@ -521,7 +545,18 @@ export class ShopModal {
       .setResolution(2)
       .setDepth(ShopModal.depth + 5)
       .setVisible(false);
-    card.shouldShowPriceIcon = false;
+    card.buttonHitArea = this.scene.add
+      .rectangle(
+        x,
+        buttonY,
+        ShopModal.cardButtonWidth,
+        ShopModal.cardButtonHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(ShopModal.depth + 6)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
 
     card.buttonHitArea.on(
       "pointerdown",
@@ -541,27 +576,73 @@ export class ShopModal {
         return;
       }
 
-      card.buttonImage.setTint(0xb8b8b8);
-
-      if (!card.item?.isEquipped) {
-        card.buttonLabel.setColor("#f3ff9a");
-      }
+      this.setCardButtonSize(card, ShopModal.cardButtonHoverScale);
+      card.buttonLabel.setScale(1.06);
+      card.priceIcon.setDisplaySize(
+        ShopModal.priceIconSize * ShopModal.cardButtonHoverScale,
+        ShopModal.priceIconSize * ShopModal.cardButtonHoverScale,
+      );
     });
     card.buttonHitArea.on("pointerout", () => {
-      card.buttonImage.clearTint();
-
-      if (card.item) {
-        this.setCardText(card, card.item);
-      }
+      this.setCardButtonSize(card);
+      card.buttonLabel.setScale(1);
+      card.priceIcon.setDisplaySize(
+        ShopModal.priceIconSize,
+        ShopModal.priceIconSize,
+      );
     });
 
     return card;
+  }
+
+  private createBonusText(x: number, y: number) {
+    return this.scene.add
+      .text(x, y, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 18,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 4,
+      })
+      .setOrigin(0, 0.5)
+      .setResolution(2)
+      .setDepth(ShopModal.depth + 5)
+      .setVisible(false);
+  }
+
+  private setCardBackgroundSize(
+    background: GameObjects.Image,
+    isLocked: boolean,
+  ) {
+    background.setDisplaySize(
+      isLocked ? ShopModal.lockedCardWidth : ShopModal.normalCardWidth,
+      isLocked ? ShopModal.lockedCardHeight : ShopModal.normalCardHeight,
+    );
+  }
+
+  private setCardButtonTexture(card: ShopItemCard, textureKey: string) {
+    card.buttonImage.setTexture(textureKey);
+    this.setCardButtonSize(card);
+  }
+
+  private setCardButtonSize(card: ShopItemCard, scale = 1) {
+    card.buttonImage.setDisplaySize(
+      ShopModal.cardButtonWidth * scale,
+      ShopModal.cardButtonHeight * scale,
+    );
+    card.buttonHitArea.setSize(
+      ShopModal.cardButtonWidth * scale,
+      ShopModal.cardButtonHeight * scale,
+    );
   }
 
   private setVisible(visible: boolean) {
     this.overlay?.setVisible(visible);
     this.panel?.setVisible(visible);
     this.panelBlocker?.setVisible(visible);
+    this.titlePlate?.setVisible(visible);
+    this.titleText?.setVisible(visible);
+    this.currencyPlate?.setVisible(visible);
     this.balanceText?.setVisible(visible);
     this.setCloseButtonVisible(visible);
 
@@ -595,20 +676,29 @@ export class ShopModal {
   }
 
   private setCardVisible(card: ShopItemCard, visible: boolean) {
-    card.itemIcon.setVisible(visible && Boolean(card.item));
-    card.lockOverlay.setVisible(
-      visible &&
-        (card.item?.status === "locked" ||
-          card.item?.status === "not-purchased"),
-    );
-    card.buttonImage.setVisible(visible);
-    card.buttonHitArea.setVisible(visible);
-    card.priceIcon.setVisible(visible && card.shouldShowPriceIcon);
+    const isLocked = card.item?.status === "locked";
+
+    card.background.setVisible(visible && Boolean(card.item));
+    card.itemIcon.setVisible(visible && Boolean(card.item) && !isLocked);
+    card.attackText.setVisible(visible && Boolean(card.item) && !isLocked);
+    card.speedText.setVisible(visible && Boolean(card.item) && !isLocked);
+    card.buttonImage.setVisible(visible && Boolean(card.item) && !isLocked);
+    card.buttonHitArea.setVisible(visible && Boolean(card.item) && !isLocked);
     card.buttonLabel.setVisible(visible && Boolean(card.item));
+    card.priceIcon.setVisible(
+      visible &&
+        Boolean(card.item) &&
+        card.item?.status === "not-purchased" &&
+        card.item.price > 0,
+    );
 
     if (!visible) {
-      card.buttonImage.clearTint();
-      card.priceIcon.setVisible(false);
+      this.setCardButtonSize(card);
+      card.buttonLabel.setScale(1);
+      card.priceIcon.setDisplaySize(
+        ShopModal.priceIconSize,
+        ShopModal.priceIconSize,
+      );
     }
 
     this.setCardInteractive(card, visible && !this.isActionLocked);
@@ -618,18 +708,6 @@ export class ShopModal {
     this.cards.forEach((card) => {
       this.setCardInteractive(card, isInteractive);
     });
-  }
-
-  private showCardPriceIcon(card: ShopItemCard) {
-    card.shouldShowPriceIcon = true;
-    card.priceIcon.setVisible(card.buttonLabel.visible);
-    card.buttonLabel.setX(card.buttonImage.x + ShopModal.priceTextOffsetX);
-  }
-
-  private hideCardPriceIcon(card: ShopItemCard) {
-    card.shouldShowPriceIcon = false;
-    card.priceIcon.setVisible(false);
-    card.buttonLabel.setX(card.buttonImage.x);
   }
 
   private setCardInteractive(card: ShopItemCard, isInteractive: boolean) {
@@ -653,24 +731,6 @@ export class ShopModal {
     this.loaderSpinner.hide();
   }
 
-  private setCardIcon(card: ShopItemCard, item: ShopItemView) {
-    card.itemIcon.setTexture(
-      item.status === "locked"
-        ? ShopModal.unknownItemTextureKey
-        : item.iconTextureKey,
-    );
-    this.fitItemIcon(card.itemIcon);
-    card.lockOverlay.setTexture(ShopModal.lockedItemTextureKey);
-    this.fitLockedOverlay(card.lockOverlay);
-  }
-
-  private setEmptyCardIcon(card: ShopItemCard) {
-    card.itemIcon.setTexture(ShopModal.lockedItemTextureKey);
-    this.fitItemIcon(card.itemIcon);
-    card.lockOverlay.setTexture(ShopModal.lockedItemTextureKey);
-    this.fitLockedOverlay(card.lockOverlay);
-  }
-
   private fitItemIcon(icon: GameObjects.Image) {
     const source = icon.texture.getSourceImage() as HTMLImageElement;
     const scale = Math.min(
@@ -679,12 +739,6 @@ export class ShopModal {
     );
 
     icon.setScale(scale);
-  }
-
-  private fitLockedOverlay(icon: GameObjects.Image) {
-    icon
-      .setDisplaySize(ShopModal.lockedOverlaySize, ShopModal.lockedOverlaySize)
-      .setAlpha(ShopModal.lockedOverlayAlpha);
   }
 
   private handleEsc() {
@@ -703,18 +757,37 @@ export class ShopModal {
         texturePath: ShopModal.panelPath,
       },
       {
-        textureKey: ShopModal.lockedItemTextureKey,
-        texturePath: ShopModal.lockedItemPath,
+        textureKey: ShopModal.cardTextureKey,
+        texturePath: ShopModal.cardPath,
       },
       {
-        textureKey: ShopModal.unknownItemTextureKey,
-        texturePath: ShopModal.unknownItemPath,
+        textureKey: ShopModal.lockedCardTextureKey,
+        texturePath: ShopModal.lockedCardPath,
+      },
+      {
+        textureKey: ShopModal.titlePlateTextureKey,
+        texturePath: ShopModal.titlePlatePath,
+      },
+      {
+        textureKey: ShopModal.currencyPlateTextureKey,
+        texturePath: ShopModal.currencyPlatePath,
+      },
+      {
+        textureKey: ShopModal.equippedButtonTextureKey,
+        texturePath: ShopModal.equippedButtonPath,
+      },
+      {
+        textureKey: ShopModal.buyButtonTextureKey,
+        texturePath: ShopModal.buyButtonPath,
+      },
+      {
+        textureKey: ShopModal.lockedButtonTextureKey,
+        texturePath: ShopModal.lockedButtonPath,
       },
       {
         textureKey: ShopModal.priceIconTextureKey,
         texturePath: ShopModal.priceIconPath,
       },
-      ...ShopModal.buttonTextures,
       ...ShopCatalog.getItems().map((item) => ({
         textureKey: item.iconTextureKey,
         texturePath: item.iconTexturePath,
@@ -742,10 +815,15 @@ export class ShopModal {
     }
   }
 
-  private static getButtonTextureKey(itemIndex: number) {
-    return (
-      ShopModal.buttonTextures[itemIndex]?.textureKey ??
-      ShopModal.buttonTextures[0].textureKey
-    );
+  private static formatAttackBonus(value: number) {
+    return `+${ShopModal.formatNumber(value)}`;
+  }
+
+  private static formatSpeedBonus(value: number) {
+    return `+${Math.round(value * 100)}%`;
+  }
+
+  private static formatNumber(value: number) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
 }

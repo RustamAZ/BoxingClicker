@@ -4,6 +4,11 @@ import {
   type TrainingLevels,
 } from "../../configs/training";
 
+export type InfinityTowerProfile = {
+  isAvailable: boolean;
+  currentLevel: number;
+};
+
 export type PlayerProfileSnapshot = {
   id: string;
   emeralds: number;
@@ -11,7 +16,7 @@ export type PlayerProfileSnapshot = {
   discoveredItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
-  campaignCompleted: boolean;
+  InfinityTower: InfinityTowerProfile;
   trainingLevels: TrainingLevels;
 };
 
@@ -23,7 +28,7 @@ type StoredPlayerProfile = {
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
-  campaignCompleted?: boolean;
+  InfinityTower?: Partial<InfinityTowerProfile>;
   trainingLevels?: TrainingLevels;
 };
 
@@ -65,7 +70,10 @@ export class PlayerProfile {
   //   ],
   //   equippedItemId: "six-seven-gloves",
   //   globalLevel: 50,
-  //   campaignCompleted: true,
+  //   InfinityTower: {
+  //     isAvailable: true,
+  //     currentLevel: 12,
+  //   },
   //   trainingLevels: {
   //     "punch-power": 8,
   //     "strong-jaw": 7,
@@ -82,7 +90,7 @@ export class PlayerProfile {
   private discoveredItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
-  private campaignCompleted: boolean;
+  private InfinityTower: InfinityTowerProfile;
   private trainingLevels: TrainingLevels;
 
   static getStoredEquippedItemId() {
@@ -115,7 +123,7 @@ export class PlayerProfile {
     this.discoveredItemIds = profile.discoveredItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
-    this.campaignCompleted = profile.campaignCompleted;
+    this.InfinityTower = profile.InfinityTower;
     this.trainingLevels = profile.trainingLevels;
     this.normalizeProfile();
     this.save();
@@ -233,19 +241,46 @@ export class PlayerProfile {
     return this.globalLevel;
   }
 
-  hasCompletedCampaign() {
-    return this.campaignCompleted;
+  getInfinityTower() {
+    return { ...this.InfinityTower };
   }
 
-  setCampaignCompleted(isCompleted: boolean) {
-    if (this.campaignCompleted === isCompleted) {
-      return this.campaignCompleted;
+  isInfinityTowerAvailable() {
+    return this.InfinityTower.isAvailable;
+  }
+
+  setInfinityTowerAvailable(isAvailable: boolean) {
+    if (this.InfinityTower.isAvailable === isAvailable) {
+      return this.InfinityTower.isAvailable;
     }
 
-    this.campaignCompleted = isCompleted;
+    this.InfinityTower = {
+      ...this.InfinityTower,
+      isAvailable,
+    };
     this.save();
 
-    return this.campaignCompleted;
+    return this.InfinityTower.isAvailable;
+  }
+
+  getInfinityTowerCurrentLevel() {
+    return this.InfinityTower.currentLevel;
+  }
+
+  setInfinityTowerCurrentLevel(level: number) {
+    const safeLevel = Math.max(0, Math.floor(level));
+
+    if (this.InfinityTower.currentLevel === safeLevel) {
+      return this.InfinityTower.currentLevel;
+    }
+
+    this.InfinityTower = {
+      ...this.InfinityTower,
+      currentLevel: safeLevel,
+    };
+    this.save();
+
+    return this.InfinityTower.currentLevel;
   }
 
   getTrainingLevels(): TrainingLevels {
@@ -280,7 +315,7 @@ export class PlayerProfile {
       discoveredItemIds: this.getDiscoveredItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
-      campaignCompleted: this.campaignCompleted,
+      InfinityTower: this.getInfinityTower(),
       trainingLevels: this.getTrainingLevels(),
     };
   }
@@ -319,7 +354,7 @@ export class PlayerProfile {
             ? PlayerProfile.normalizeItemId(profile.equippedItemId)
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
-        campaignCompleted: profile.campaignCompleted === true,
+        InfinityTower: this.normalizeInfinityTower(profile.InfinityTower),
         trainingLevels: this.normalizeTrainingLevels(profile.trainingLevels),
       };
     } catch {
@@ -335,7 +370,7 @@ export class PlayerProfile {
       discoveredItemIds: [...PlayerProfile.defaultDiscoveredItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
-      campaignCompleted: false,
+      InfinityTower: PlayerProfile.getDefaultInfinityTower(),
       trainingLevels: {},
     };
   }
@@ -359,6 +394,7 @@ export class PlayerProfile {
     }
 
     this.trainingLevels = this.normalizeTrainingLevels(this.trainingLevels);
+    this.InfinityTower = this.normalizeInfinityTower(this.InfinityTower);
   }
 
   private static normalizeItemId(itemId: string) {
@@ -421,6 +457,28 @@ export class PlayerProfile {
     });
 
     return normalizedTrainingLevels;
+  }
+
+  private normalizeInfinityTower(
+    tower?: Partial<InfinityTowerProfile>,
+  ): InfinityTowerProfile {
+    return {
+      isAvailable:
+        typeof tower?.isAvailable === "boolean"
+          ? tower.isAvailable
+          : false,
+      currentLevel:
+        typeof tower?.currentLevel === "number"
+          ? Math.max(0, Math.floor(tower.currentLevel))
+          : 0,
+    };
+  }
+
+  private static getDefaultInfinityTower(): InfinityTowerProfile {
+    return {
+      isAvailable: false,
+      currentLevel: 0,
+    };
   }
 
   private save() {

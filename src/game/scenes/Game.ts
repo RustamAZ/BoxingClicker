@@ -112,6 +112,7 @@ export class Game extends Scene {
     StatusBar.preload(this);
     PlayerDeathModal.preload(this);
     TrainingModal.preload(this);
+    InfiniteModeModal.preload(this);
     ResourceParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
@@ -487,7 +488,7 @@ export class Game extends Scene {
   }
 
   private startInfiniteRun() {
-    if (!this.player.profile.hasCompletedCampaign()) {
+    if (!this.player.profile.isInfinityTowerAvailable()) {
       return;
     }
 
@@ -595,7 +596,7 @@ export class Game extends Scene {
   private handleBossDefeated(bossId: string) {
     if (bossId === "five-difficulty-boss") {
       this.isCampaignVictoryFlowActive = true;
-      this.player.profile.setCampaignCompleted(true);
+      this.player.profile.setInfinityTowerAvailable(true);
       this.resetPendingRunRewards();
       this.campaignVictoryModal.show();
       return true;

@@ -5,6 +5,8 @@ export type ShopItemConfig = {
   glovesId: string;
   title: string;
   price: number;
+  attackBonus: number;
+  attackSpeedBonus: number;
   iconTextureKey: string;
   iconTexturePath: string;
   unlockBossId?: string;
