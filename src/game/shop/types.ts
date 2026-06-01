@@ -9,7 +9,10 @@ export type ShopItemConfig = {
   attackSpeedBonus: number;
   iconTextureKey: string;
   iconTexturePath: string;
+  lockedCardTextureKey?: string;
+  lockedCardTexturePath?: string;
   unlockBossId?: string;
+  unlockSource?: "boss" | "infinityTower";
 };
 
 export type ShopItemView = ShopItemConfig & {

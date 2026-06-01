@@ -7,6 +7,7 @@ import {
 export type InfinityTowerProfile = {
   isAvailable: boolean;
   currentLevel: number;
+  claimedRewardIds: string[];
 };
 
 export type PlayerProfileSnapshot = {
@@ -283,6 +284,24 @@ export class PlayerProfile {
     return this.InfinityTower.currentLevel;
   }
 
+  hasClaimedInfinityTowerReward(rewardId: string) {
+    return this.InfinityTower.claimedRewardIds.includes(rewardId);
+  }
+
+  claimInfinityTowerReward(rewardId: string) {
+    if (this.hasClaimedInfinityTowerReward(rewardId)) {
+      return false;
+    }
+
+    this.InfinityTower = {
+      ...this.InfinityTower,
+      claimedRewardIds: [...this.InfinityTower.claimedRewardIds, rewardId],
+    };
+    this.save();
+
+    return true;
+  }
+
   getTrainingLevels(): TrainingLevels {
     return { ...this.trainingLevels };
   }
@@ -462,6 +481,12 @@ export class PlayerProfile {
   private normalizeInfinityTower(
     tower?: Partial<InfinityTowerProfile>,
   ): InfinityTowerProfile {
+    const claimedRewardIds = Array.isArray(tower?.claimedRewardIds)
+      ? tower.claimedRewardIds.filter(
+          (rewardId): rewardId is string => typeof rewardId === "string",
+        )
+      : [];
+
     return {
       isAvailable:
         typeof tower?.isAvailable === "boolean"
@@ -471,6 +496,7 @@ export class PlayerProfile {
         typeof tower?.currentLevel === "number"
           ? Math.max(0, Math.floor(tower.currentLevel))
           : 0,
+      claimedRewardIds: [...new Set(claimedRewardIds)],
     };
   }
 
@@ -478,6 +504,7 @@ export class PlayerProfile {
     return {
       isAvailable: false,
       currentLevel: 0,
+      claimedRewardIds: [],
     };
   }
 

@@ -16,6 +16,7 @@ type RewardSlotView = {
   amountText: GameObjects.Text;
   button: GameObjects.Image;
   buttonLabel: GameObjects.Text;
+  hitArea: GameObjects.Rectangle;
 };
 
 type StartRewardSlotView = {
@@ -23,6 +24,7 @@ type StartRewardSlotView = {
   item: GameObjects.Text;
   button: GameObjects.Image;
   buttonLabel: GameObjects.Text;
+  hitArea: GameObjects.Rectangle;
 };
 
 export class InfiniteModeModal {
@@ -45,6 +47,14 @@ export class InfiniteModeModal {
     "infinite-tower-reward-button-locked";
   private static readonly rewardButtonLockedPath =
     "assets/images/ui/infinity-tower/reward-button-locked.png";
+  private static readonly rewardButtonClaimedTextureKey =
+    "infinite-tower-reward-button-claimed";
+  private static readonly rewardButtonClaimedPath =
+    "assets/images/ui/infinity-tower/reward-button-claimed.png";
+  private static readonly bottomButtonTextureKey =
+    "infinite-tower-bottom-button";
+  private static readonly bottomButtonPath =
+    "assets/images/ui/infinity-tower/fight-button.png";
   private static readonly emeraldIconTextureKey = "infinite-tower-emerald-icon";
   private static readonly emeraldIconPath =
     "assets/images/ui/icons/emerald.png";
@@ -61,10 +71,15 @@ export class InfiniteModeModal {
   private static readonly rewardIconSize = 36;
   private static readonly rewardButtonDisplayWidth = 290;
   private static readonly rewardButtonDisplayHeight = 110;
+  private static readonly rewardButtonClaimedDisplayWidth = 170;
+  private static readonly rewardButtonClaimedDisplayHeight = 80;
   private static readonly startRewardButtonDisplayWidth = 250;
   private static readonly startRewardButtonDisplayHeight = 90;
+  private static readonly startRewardButtonClaimedDisplayWidth = 190;
+  private static readonly startRewardButtonClaimedDisplayHeight = 95;
   private static readonly rewardIconOffsetX = -52;
-  private static readonly rewardAmountOffsetX = -10;
+  private static readonly rewardAmountOffsetX = -30;
+  private static readonly rewardTitleWrapWidth = 130;
   private static readonly rewardButtonOffsetY = 31;
   private static readonly rewardButtonOffsetX = -3;
   private static readonly startRewardButtonOffsetY = 34;
@@ -76,9 +91,12 @@ export class InfiniteModeModal {
   private static readonly closeHitAreaSize = 76;
   private static readonly bottomCloseOffsetX = 0;
   private static readonly bottomCloseOffsetY = 314;
-  private static readonly bottomCloseHitWidth = 220;
-  private static readonly bottomCloseHitHeight = 56;
+  private static readonly bottomButtonDisplayWidth = 300;
+  private static readonly bottomButtonDisplayHeight = 90;
+  private static readonly bottomCloseHitWidth = 260;
+  private static readonly bottomCloseHitHeight = 82;
   private static readonly startRewardSlotIndex = 11;
+  private static readonly startRewardItemId = "golden-tower-gloves";
   private static readonly baseRewardSlotIndexes = [10, 11];
   private static readonly rewardSlots = [
     { x: -185, y: -216 },
@@ -104,6 +122,7 @@ export class InfiniteModeModal {
   private panelBlocker?: GameObjects.Rectangle;
   private title?: GameObjects.Text;
   private subtitle?: GameObjects.Text;
+  private bottomButton?: GameObjects.Image;
   private closeLabel?: GameObjects.Text;
   private closeHitArea?: GameObjects.Rectangle;
   private topCloseHitArea?: GameObjects.Rectangle;
@@ -130,6 +149,7 @@ export class InfiniteModeModal {
     private readonly pauseController: PauseController,
     private readonly profile: PlayerProfile,
     private readonly onStart: () => void,
+    private readonly onClaimGlovesReward: (itemId: string) => void,
   ) {
     this.openButtonIcon = this.scene.add
       .image(
@@ -303,6 +323,18 @@ export class InfiniteModeModal {
       .setResolution(2)
       .setDepth(InfiniteModeModal.depth + 3)
       .setVisible(false);
+    this.bottomButton = this.scene.add
+      .image(
+        centerX + InfiniteModeModal.bottomCloseOffsetX,
+        centerY + InfiniteModeModal.bottomCloseOffsetY,
+        InfiniteModeModal.bottomButtonTextureKey,
+      )
+      .setDisplaySize(
+        InfiniteModeModal.bottomButtonDisplayWidth,
+        InfiniteModeModal.bottomButtonDisplayHeight,
+      )
+      .setDepth(InfiniteModeModal.depth + 3)
+      .setVisible(false);
     this.closeLabel = this.scene.add
       .text(
         centerX + InfiniteModeModal.bottomCloseOffsetX,
@@ -377,7 +409,7 @@ export class InfiniteModeModal {
         _localX: number,
         _localY: number,
         event: Phaser.Types.Input.EventData,
-      ) => this.handleCloseClick(event),
+      ) => this.handleBottomButtonClick(event),
     );
     this.topCloseHitArea.on(
       "pointerdown",
@@ -388,6 +420,32 @@ export class InfiniteModeModal {
         event: Phaser.Types.Input.EventData,
       ) => this.handleCloseClick(event),
     );
+    this.startReward.hitArea.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+        this.handleStartRewardClick();
+      },
+    );
+    this.rewardSlots.forEach((slot, index) => {
+      slot.hitArea.on(
+        "pointerdown",
+        (
+          _pointer: Phaser.Input.Pointer,
+          _localX: number,
+          _localY: number,
+          event: Phaser.Types.Input.EventData,
+        ) => {
+          event.stopPropagation();
+          this.handleRewardSlotClick(index);
+        },
+      );
+    });
   }
 
   private createRewardSlot(
@@ -414,6 +472,10 @@ export class InfiniteModeModal {
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 4,
+        wordWrap: {
+          width: InfiniteModeModal.rewardTitleWrapWidth,
+          useAdvancedWrap: true,
+        },
       })
       .setOrigin(0, 0.5)
       .setResolution(2)
@@ -434,7 +496,7 @@ export class InfiniteModeModal {
     const buttonLabel = this.scene.add
       .text(x, y + InfiniteModeModal.rewardButtonOffsetY, "", {
         fontFamily: "Hardpixel",
-        fontSize: 13,
+        fontSize: 15,
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 3,
@@ -443,15 +505,30 @@ export class InfiniteModeModal {
       .setResolution(2)
       .setDepth(InfiniteModeModal.depth + 4)
       .setVisible(false);
+    const hitArea = this.scene.add
+      .rectangle(
+        x + InfiniteModeModal.rewardButtonOffsetX,
+        y + InfiniteModeModal.rewardButtonOffsetY,
+        InfiniteModeModal.rewardButtonDisplayWidth,
+        InfiniteModeModal.rewardButtonDisplayHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(InfiniteModeModal.depth + 5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
 
     const reward = infinityTowerRewardsConfig[index];
-    amountText.setText(`x${reward?.amount ?? 0}`);
+    amountText.setText(
+      reward?.type === "emerald" ? `x${reward.amount}` : "",
+    );
 
     return {
       icon,
       amountText,
       button,
       buttonLabel,
+      hitArea,
     };
   }
 
@@ -503,7 +580,7 @@ export class InfiniteModeModal {
         "",
         {
           fontFamily: "Hardpixel",
-          fontSize: 14,
+          fontSize: 15,
           color: "#ffffff",
           stroke: "#1f1f1f",
           strokeThickness: 3,
@@ -513,12 +590,25 @@ export class InfiniteModeModal {
       .setResolution(2)
       .setDepth(InfiniteModeModal.depth + 4)
       .setVisible(false);
+    const hitArea = this.scene.add
+      .rectangle(
+        contentX,
+        y + InfiniteModeModal.startRewardButtonOffsetY,
+        InfiniteModeModal.startRewardButtonDisplayWidth,
+        InfiniteModeModal.startRewardButtonDisplayHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(InfiniteModeModal.depth + 5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
 
     return {
       title,
       item,
       button,
       buttonLabel,
+      hitArea,
     };
   }
 
@@ -620,7 +710,13 @@ export class InfiniteModeModal {
   private refresh() {
     this.title?.setText(languageController.t("infinite.unlockedTitle"));
     this.subtitle?.setText(languageController.t("infinite.subtitle"));
-    this.closeLabel?.setText(languageController.t("infinite.close"));
+    this.closeLabel?.setText(
+      languageController.t(
+        this.profile.isInfinityTowerAvailable()
+          ? "infinite.fight"
+          : "infinite.close",
+      ),
+    );
     this.lockedTitle?.setText(languageController.t("infinite.sealedTitle"));
     this.lockedDescription?.setText(
       languageController.t("infinite.sealedDescription"),
@@ -631,9 +727,6 @@ export class InfiniteModeModal {
     );
     this.startReward?.item.setText(
       languageController.t("infinite.startRewardItem"),
-    );
-    this.startReward?.buttonLabel.setText(
-      languageController.t("infinite.rewardClaim"),
     );
     this.refreshRewards();
   }
@@ -648,19 +741,102 @@ export class InfiniteModeModal {
 
       const reward = infinityTowerRewardsConfig[index];
       const isOpen = Boolean(reward && towerLevel >= reward.level);
+      const isClaimed =
+        reward?.type === "gloves"
+          ? this.profile.hasPurchasedItem(reward.itemId)
+          : Boolean(
+              reward && this.profile.hasClaimedInfinityTowerReward(reward.id),
+            );
+      const canClaim = Boolean(reward && isOpen && !isClaimed);
+
+      if (reward?.type === "gloves") {
+        slot.icon
+          .setTexture(reward.iconTextureKey)
+          .setDisplaySize(
+            InfiniteModeModal.rewardIconSize + 16,
+            InfiniteModeModal.rewardIconSize + 16,
+          );
+        slot.amountText
+          .setText(languageController.t(reward.titleKey))
+          .setFontSize(15)
+          .setColor("#ffe85a")
+          .setWordWrapWidth(InfiniteModeModal.rewardTitleWrapWidth, true)
+          .setAlign("center");
+      } else {
+        slot.icon
+          .setTexture(InfiniteModeModal.emeraldIconTextureKey)
+          .setDisplaySize(
+            InfiniteModeModal.rewardIconSize,
+            InfiniteModeModal.rewardIconSize,
+          );
+        slot.amountText
+          .setText(reward?.type === "emerald" ? `x${reward.amount}` : "")
+          .setFontSize(22)
+          .setColor("#ffffff")
+          .setWordWrapWidth(InfiniteModeModal.rewardTitleWrapWidth, true)
+          .setAlign("left");
+      }
 
       slot.button.setTexture(
-        isOpen
-          ? InfiniteModeModal.rewardButtonOpenTextureKey
-          : InfiniteModeModal.rewardButtonLockedTextureKey,
+        isClaimed
+          ? InfiniteModeModal.rewardButtonClaimedTextureKey
+          : isOpen
+            ? InfiniteModeModal.rewardButtonOpenTextureKey
+            : InfiniteModeModal.rewardButtonLockedTextureKey,
       );
-      InfiniteModeModal.applyRewardButtonDisplaySize(slot.button);
+      InfiniteModeModal.applyRewardButtonDisplaySize(slot.button, isClaimed);
       slot.buttonLabel.setText(
         languageController.t(
-          isOpen ? "infinite.rewardOpen" : "infinite.rewardLocked",
+          isClaimed
+            ? "infinite.rewardClaimed"
+            : isOpen
+              ? "infinite.rewardClaim"
+              : "infinite.rewardLocked",
         ),
       );
+
+      if (canClaim && slot.hitArea.visible) {
+        slot.hitArea.setInteractive({ useHandCursor: true });
+      } else {
+        slot.hitArea.disableInteractive();
+      }
     });
+    this.refreshStartReward();
+  }
+
+  private refreshStartReward() {
+    if (!this.startReward) {
+      return;
+    }
+
+    const isClaimed = this.profile.hasPurchasedItem(
+      InfiniteModeModal.startRewardItemId,
+    );
+
+    this.startReward.buttonLabel.setText(
+      languageController.t(
+        isClaimed ? "infinite.rewardClaimed" : "infinite.rewardClaim",
+      ),
+    );
+    this.startReward.button.setTexture(
+      isClaimed
+        ? InfiniteModeModal.rewardButtonClaimedTextureKey
+        : InfiniteModeModal.rewardButtonOpenTextureKey,
+    );
+    this.startReward.button.setDisplaySize(
+      isClaimed
+        ? InfiniteModeModal.startRewardButtonClaimedDisplayWidth
+        : InfiniteModeModal.startRewardButtonDisplayWidth,
+      isClaimed
+        ? InfiniteModeModal.startRewardButtonClaimedDisplayHeight
+        : InfiniteModeModal.startRewardButtonDisplayHeight,
+    );
+
+    if (isClaimed) {
+      this.startReward.hitArea.disableInteractive();
+    } else if (this.startReward.hitArea.visible) {
+      this.startReward.hitArea.setInteractive({ useHandCursor: true });
+    }
   }
 
   private setVisible(visible: boolean) {
@@ -671,6 +847,7 @@ export class InfiniteModeModal {
     this.panelBlocker?.setVisible(visible);
     this.title?.setVisible(visible);
     this.subtitle?.setVisible(visible);
+    this.bottomButton?.setVisible(visible);
     this.closeLabel?.setVisible(visible);
     this.closeHitArea?.setVisible(visible);
     this.topCloseHitArea?.setVisible(visible);
@@ -681,11 +858,13 @@ export class InfiniteModeModal {
       slot.amountText.setVisible(slotVisible);
       slot.button.setVisible(slotVisible);
       slot.buttonLabel.setVisible(slotVisible);
+      slot.hitArea.setVisible(slotVisible);
     });
     this.startReward?.title.setVisible(visible);
     this.startReward?.item.setVisible(visible);
     this.startReward?.button.setVisible(visible);
     this.startReward?.buttonLabel.setVisible(visible);
+    this.startReward?.hitArea.setVisible(visible);
     this.setLockedPanelVisible(visible && !isTowerAvailable);
 
     if (visible) {
@@ -693,11 +872,20 @@ export class InfiniteModeModal {
       this.panelBlocker?.setInteractive();
       this.closeHitArea?.setInteractive({ useHandCursor: true });
       this.topCloseHitArea?.setInteractive({ useHandCursor: true });
+      this.refreshStartReward();
     } else {
       this.overlay?.disableInteractive();
       this.panelBlocker?.disableInteractive();
       this.closeHitArea?.disableInteractive();
       this.topCloseHitArea?.disableInteractive();
+      this.startReward?.hitArea.disableInteractive();
+      this.rewardSlots.forEach((slot) => {
+        slot.hitArea.disableInteractive();
+      });
+    }
+
+    if (visible) {
+      this.refreshRewards();
     }
   }
 
@@ -724,6 +912,54 @@ export class InfiniteModeModal {
     this.close();
   }
 
+  private handleBottomButtonClick(event?: Phaser.Types.Input.EventData) {
+    event?.stopPropagation();
+    UiSoundPlayer.playClick(this.scene);
+
+    if (!this.profile.isInfinityTowerAvailable()) {
+      this.close();
+      return;
+    }
+
+    this.close();
+    this.onStart();
+  }
+
+  private handleStartRewardClick() {
+    if (this.profile.hasPurchasedItem(InfiniteModeModal.startRewardItemId)) {
+      return;
+    }
+
+    UiSoundPlayer.playClick(this.scene);
+    this.onClaimGlovesReward(InfiniteModeModal.startRewardItemId);
+    this.refresh();
+  }
+
+  private handleRewardSlotClick(index: number) {
+    const reward = infinityTowerRewardsConfig[index];
+
+    if (
+      !reward ||
+      this.profile.getInfinityTowerCurrentLevel() < reward.level ||
+      (reward.type === "gloves"
+        ? this.profile.hasPurchasedItem(reward.itemId)
+        : this.profile.hasClaimedInfinityTowerReward(reward.id))
+    ) {
+      return;
+    }
+
+    UiSoundPlayer.playClick(this.scene);
+
+    if (reward.type === "gloves") {
+      this.onClaimGlovesReward(reward.itemId);
+    } else {
+      this.profile.addEmeralds(reward.amount);
+      this.profile.claimInfinityTowerReward(reward.id);
+    }
+
+    this.refresh();
+  }
+
   private setOpenButtonSize(size: number) {
     this.openButtonHitArea.setDisplaySize(size, size);
   }
@@ -738,6 +974,13 @@ export class InfiniteModeModal {
   }
 
   private static getAssets(): InfinityTowerAssetConfig[] {
+    const rewardIconAssets = infinityTowerRewardsConfig
+      .filter((reward) => reward.type === "gloves")
+      .map((reward) => ({
+        textureKey: reward.iconTextureKey,
+        texturePath: reward.iconTexturePath,
+      }));
+
     return [
       {
         textureKey: InfiniteModeModal.panelTextureKey,
@@ -756,9 +999,18 @@ export class InfiniteModeModal {
         texturePath: InfiniteModeModal.rewardButtonLockedPath,
       },
       {
+        textureKey: InfiniteModeModal.rewardButtonClaimedTextureKey,
+        texturePath: InfiniteModeModal.rewardButtonClaimedPath,
+      },
+      {
+        textureKey: InfiniteModeModal.bottomButtonTextureKey,
+        texturePath: InfiniteModeModal.bottomButtonPath,
+      },
+      {
         textureKey: InfiniteModeModal.emeraldIconTextureKey,
         texturePath: InfiniteModeModal.emeraldIconPath,
       },
+      ...rewardIconAssets,
     ];
   }
 
@@ -766,10 +1018,17 @@ export class InfiniteModeModal {
     return InfiniteModeModal.baseRewardSlotIndexes.includes(index);
   }
 
-  private static applyRewardButtonDisplaySize(button: GameObjects.Image) {
+  private static applyRewardButtonDisplaySize(
+    button: GameObjects.Image,
+    isClaimed = false,
+  ) {
     button.setDisplaySize(
-      InfiniteModeModal.rewardButtonDisplayWidth,
-      InfiniteModeModal.rewardButtonDisplayHeight,
+      isClaimed
+        ? InfiniteModeModal.rewardButtonClaimedDisplayWidth
+        : InfiniteModeModal.rewardButtonDisplayWidth,
+      isClaimed
+        ? InfiniteModeModal.rewardButtonClaimedDisplayHeight
+        : InfiniteModeModal.rewardButtonDisplayHeight,
     );
   }
 

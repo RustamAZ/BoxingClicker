@@ -24,6 +24,7 @@ import { ResourceParticleFlow } from "../entities/ResourceContainers/ResourcePar
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
 import { Wallet } from "../entities/Wallet/Wallet";
 import { GameLevelController } from "../progression/GameLevelController";
+import { InfinityTowerController } from "../progression/InfinityTowerController";
 import { LocationAssetPreloader } from "../progression/LocationAssetPreloader";
 import { GameSettings } from "../state/GameSettings";
 import { PauseController } from "../state/PauseController";
@@ -53,6 +54,7 @@ export class Game extends Scene {
   private wallet: Wallet;
   private trainingController: TrainingController;
   private levelController: GameLevelController;
+  private infinityTowerController: InfinityTowerController;
   private locationAssetPreloader: LocationAssetPreloader;
   private gameSettings: GameSettings;
   private pauseController: PauseController;
@@ -83,6 +85,7 @@ export class Game extends Scene {
   private weaponUnlockToastBackground: GameObjects.Rectangle;
   private weaponUnlockToastText: GameObjects.Text;
   private playerStatsDebugText: GameObjects.Text;
+  private infinityTowerDebugText: GameObjects.Text;
   private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
   private unsubscribeLanguageChange?: () => void;
   private fullscreenController?: FullscreenController;
@@ -135,6 +138,9 @@ export class Game extends Scene {
     this.trainingController = new TrainingController(this.player, this.wallet);
     this.trainingController.applyTrainingBonuses();
     this.levelController = new GameLevelController(this.player);
+    this.infinityTowerController = new InfinityTowerController(
+      this.player.profile,
+    );
     this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
@@ -224,6 +230,7 @@ export class Game extends Scene {
       (bossId) => {
         this.handleBossDefeated(bossId);
       },
+      this.infinityTowerController,
     );
 
     this.hud = new GameHud(
@@ -232,6 +239,7 @@ export class Game extends Scene {
       this.enemySpawnPlace.currentEnemy,
     );
     this.createPlayerStatsDebugText();
+    this.createInfinityTowerDebugText();
     this.levelUpRewardController = new LevelUpRewardController(
       this,
       this.player,
@@ -257,6 +265,9 @@ export class Game extends Scene {
       this.player.profile,
       () => {
         this.startInfiniteRun();
+      },
+      (itemId) => {
+        this.claimInfinityTowerGlovesReward(itemId);
       },
     );
     this.statusBar = new StatusBar(this);
@@ -348,6 +359,7 @@ export class Game extends Scene {
 
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
     this.updatePlayerStatsDebugText();
+    this.updateInfinityTowerDebugText();
   }
 
   private handleEnemyRewards(enemy: Enemy, position: { x: number; y: number }) {
@@ -496,7 +508,8 @@ export class Game extends Scene {
       return;
     }
 
-    this.locationAssetPreloader.prefetchInfiniteLevel(() => {
+      this.locationAssetPreloader.prefetchInfiniteLevel(() => {
+      this.infinityTowerController.startRun();
       this.levelController.startInfiniteRun();
       this.player.restoreHealth();
       this.player.restoreStamina();
@@ -507,6 +520,16 @@ export class Game extends Scene {
       this.updateInfiniteModeModalVisibility();
       this.enemySpawnPlace.spawnNextEnemy();
       this.backgroundMusicController.resume();
+    });
+  }
+
+  private claimInfinityTowerGlovesReward(itemId: string) {
+    const profile = this.player.profile;
+
+    profile.discoverItem(itemId);
+    profile.purchaseItem(itemId);
+    this.glovesEquipmentController.loadAndEquipShopItem(this, itemId, () => {
+      this.updatePlayerStatsDebugText();
     });
   }
 
@@ -610,6 +633,7 @@ export class Game extends Scene {
   }
 
   private returnToLobbyAfterCampaignVictory() {
+    this.infinityTowerController.stopRun();
     this.levelController.returnToCampaign();
     this.player.resetSessionProgress();
     this.resetPendingRunRewards();
@@ -625,6 +649,7 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
     this.updatePlayerStatsDebugText();
+    this.updateInfinityTowerDebugText();
   }
 
   private resetPendingRunRewards() {
@@ -715,6 +740,24 @@ export class Game extends Scene {
     this.updatePlayerStatsDebugText();
   }
 
+  private createInfinityTowerDebugText() {
+    this.infinityTowerDebugText = this.add
+      .text(this.scale.width / 2, 98, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 24,
+        color: "#ffe85a",
+        stroke: "#151515",
+        strokeThickness: 5,
+        align: "center",
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(1600)
+      .setVisible(false);
+
+    this.updateInfinityTowerDebugText();
+  }
+
   private updatePlayerStatsDebugText() {
     this.playerStatsDebugText.setText([
       `D: cила атаки - ${Game.formatDebugNumber(this.player.getDamagePerHit())}`,
@@ -723,6 +766,25 @@ export class Game extends Scene {
       `A: Количество выносливости максимальное - ${Game.formatDebugNumber(this.player.maxStamina)}`,
       `C: текущая цена за удар - ${Game.formatDebugNumber(this.player.getStaminaCostPerHit())}`,
     ]);
+  }
+
+  private updateInfinityTowerDebugText() {
+    if (!this.infinityTowerController.isRunActive()) {
+      this.infinityTowerDebugText.setVisible(false);
+      return;
+    }
+
+    const kills = this.infinityTowerController.getKillsOnFloor();
+    const required =
+      this.infinityTowerController.getEnemiesRequiredForCurrentFloor();
+
+    this.infinityTowerDebugText
+      .setText(
+        `Этаж: ${this.infinityTowerController.getCurrentFloor()}\nУбить: ${
+          required - kills
+        }`,
+      )
+      .setVisible(true);
   }
 
   private static getStoredEquippedGlovesId() {

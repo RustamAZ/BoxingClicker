@@ -15,9 +15,12 @@ import { FourDifficultyEnemy } from "./LowGradeEnemies/FourDifficulty/FourDiffic
 import { FourDifficultyStalker } from "./LowGradeEnemies/FourDifficulty/FourDifficultyStalker";
 import { FiveDifficultyBoss } from "./LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { FiveDifficultyEnemy } from "./LowGradeEnemies/FiveDifficulty/FiveDifficultyEnemy";
+import { InfinityTowerEnemy } from "./InfinityTower/InfinityTowerEnemy";
+import type { InfinityTowerEnemyStats } from "../../configs/infinityTower";
 
 export type EnemySpawnContext = {
   fourDifficultyStalkerState?: FourDifficultyStalkerState;
+  infinityTowerEnemyStats?: InfinityTowerEnemyStats;
 };
 
 type EnemyRegistryItem = {
@@ -90,6 +93,20 @@ const enemyRegistry: Record<EnemySpawnKind, EnemyRegistryItem> = {
     preload: FiveDifficultyBoss.preload,
     create: (scene, slot) => new FiveDifficultyBoss(scene, slot),
     isBoss: true,
+  },
+  "infinity-tower-enemy": {
+    preload: InfinityTowerEnemy.preload,
+    create: (scene, slot, context) => {
+      if (!context?.infinityTowerEnemyStats) {
+        throw new Error("Infinity tower enemy stats are required");
+      }
+
+      return new InfinityTowerEnemy(
+        scene,
+        slot,
+        context.infinityTowerEnemyStats,
+      );
+    },
   },
 };
 

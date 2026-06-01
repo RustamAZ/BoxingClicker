@@ -69,6 +69,35 @@ export class ShopCatalog {
       iconTexturePath: "assets/images/ui/shop/items/six-seven-weapon-icon.png",
       unlockBossId: "five-difficulty-boss",
     },
+    {
+      id: "golden-tower-gloves",
+      glovesId: "golden-tower-gloves",
+      title: "Golden tower gloves",
+      price: 0,
+      attackBonus: 0,
+      attackSpeedBonus: 0,
+      iconTextureKey: "shop-item-golden-tower-gloves",
+      iconTexturePath: "assets/images/ui/shop/items/golden-tower-weapon-icon.png",
+      lockedCardTextureKey: "shop-glove-card-locked-gold",
+      lockedCardTexturePath:
+        "assets/images/ui/shop/cards/glove-card-locked-gold.png",
+      unlockSource: "infinityTower",
+    },
+    {
+      id: "diamond-tower-gloves",
+      glovesId: "diamond-tower-gloves",
+      title: "Diamond tower gloves",
+      price: 0,
+      attackBonus: 0,
+      attackSpeedBonus: 0,
+      iconTextureKey: "shop-item-diamond-tower-gloves",
+      iconTexturePath:
+        "assets/images/ui/shop/items/diamond-tower-weapon-icon.png",
+      lockedCardTextureKey: "shop-glove-card-locked-diamond",
+      lockedCardTexturePath:
+        "assets/images/ui/shop/cards/glove-card-locked-diamond.png",
+      unlockSource: "infinityTower",
+    },
   ];
 
   static getItems() {

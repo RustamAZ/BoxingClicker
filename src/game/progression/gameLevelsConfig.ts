@@ -139,6 +139,6 @@ export const infiniteLevelConfig: GameLevelConfig = {
     path: "assets/images/backgrounds/infinite.png",
   },
   enemyDifficulty: "six",
-  enemySpawnKind: "five-difficulty-enemy",
+  enemySpawnKind: "infinity-tower-enemy",
   music: "action",
 };

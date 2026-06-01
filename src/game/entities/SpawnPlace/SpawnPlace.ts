@@ -4,6 +4,7 @@ import type { EnemyAttackSoundPlayer } from "../../audio/EnemyAttackSoundPlayer"
 import type { EnemyDeathSoundPlayer } from "../../audio/EnemyDeathSoundPlayer";
 import type { HitSoundPlayer } from "../../audio/HitSoundPlayer";
 import type { GameLevelController } from "../../progression/GameLevelController";
+import type { InfinityTowerController } from "../../progression/InfinityTowerController";
 import type { EnemySpawnKind } from "../../progression/types";
 import type { GlovesCombatProfile } from "../Gloves/types";
 import type { GlovesEquipmentController } from "../Gloves/GlovesEquipmentController";
@@ -50,6 +51,7 @@ export class SpawnPlace {
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
     private readonly onBossEncountered?: BossEncounteredCallback,
     private readonly onBossDefeated?: BossDefeatedCallback,
+    private readonly infinityTowerController?: InfinityTowerController,
   ) {
     this.touchHitArea = this.createTouchHitArea();
     this.spawnNextEnemy();
@@ -88,7 +90,7 @@ export class SpawnPlace {
 
     this.currentEnemyValue = this.createEnemyBySpawnKind(
       this.currentEnemySpawnKind,
-      resolvedEnemySpawn.context,
+      this.getSpawnContext(this.currentEnemySpawnKind, resolvedEnemySpawn.context),
     );
     this.currentEnemyValue.onHit(() => this.handleEnemyHit());
     const enemy = this.currentEnemyValue;
@@ -184,6 +186,9 @@ export class SpawnPlace {
         }
 
         this.player.gainXp(enemy.xpReward);
+        if (defeatedEnemySpawnKind === "infinity-tower-enemy") {
+          this.infinityTowerController?.registerEnemyDefeated();
+        }
         this.onEnemyDefeated?.(enemy, {
           x: this.slot.x,
           y: this.slot.y,
@@ -257,6 +262,21 @@ export class SpawnPlace {
     context?: EnemySpawnContext,
   ) {
     return EnemyRegistry.create(enemySpawnKind, this.scene, this.slot, context);
+  }
+
+  private getSpawnContext(
+    enemySpawnKind: EnemySpawnKind,
+    context?: EnemySpawnContext,
+  ): EnemySpawnContext | undefined {
+    if (enemySpawnKind !== "infinity-tower-enemy") {
+      return context;
+    }
+
+    return {
+      ...context,
+      infinityTowerEnemyStats:
+        this.infinityTowerController?.getCurrentEnemyStats(),
+    };
   }
 
   private getBossIdForSpawnKind(enemySpawnKind: EnemySpawnKind) {

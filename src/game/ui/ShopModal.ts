@@ -20,6 +20,8 @@ type ShopCloseButton = {
 };
 
 type ShopItemCard = {
+  baseX: number;
+  baseY: number;
   background: GameObjects.Image;
   itemIcon: GameObjects.Image;
   attackText: GameObjects.Text;
@@ -76,25 +78,33 @@ export class ShopModal {
   private static readonly iconSize = 128;
   private static readonly iconHoverSize = 138;
   private static readonly actionLockDurationMs = 300;
-  private static readonly normalCardWidth = 260;
-  private static readonly normalCardHeight = 306;
-  private static readonly lockedCardWidth = 275;
-  private static readonly lockedCardHeight = 321;
+  private static readonly normalCardWidth = 240;
+  private static readonly normalCardHeight = 290;
+  private static readonly lockedCardWidth = 245;
+  private static readonly lockedCardHeight = 302;
   private static readonly itemIconMaxSize = 146;
-  private static readonly cardButtonWidth = 232;
-  private static readonly cardButtonHeight = 67;
+  private static readonly cardButtonWidth = 225;
+  private static readonly cardButtonHeight = 62;
   private static readonly cardButtonHoverScale = 1.06;
   private static readonly priceIconSize = 25;
   private static readonly closeButtonOffsetX = 410;
   private static readonly closeButtonOffsetY = -300;
   private static readonly closeButtonSize = 46;
+  private static readonly scrollStep = 60;
+  private static readonly maxScrollOffsetY = 300;
+  private static readonly cardsViewportLeftOffsetX = -420;
+  private static readonly cardsViewportRightOffsetX = 420;
+  private static readonly cardsViewportTopOffsetY = -260;
+  private static readonly cardsViewportBottomOffsetY = 320;
   private static readonly itemSlots: ShopItemSlot[] = [
-    { x: -260, y: -115 },
-    { x: 0, y: -115 },
-    { x: 260, y: -115 },
-    { x: -260, y: 185 },
-    { x: 0, y: 185 },
-    { x: 260, y: 185 },
+    { x: -260, y: -125 },
+    { x: 0, y: -125 },
+    { x: 260, y: -125 },
+    { x: -260, y: 150 },
+    { x: 0, y: 150 },
+    { x: 260, y: 150 },
+    { x: -130, y: 430 },
+    { x: 130, y: 430 },
   ];
 
   private readonly shopButton: ShopIconButton;
@@ -112,6 +122,10 @@ export class ShopModal {
   private isActionLocked = false;
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
+  private scrollOffsetY = 0;
+  private isDraggingScroll = false;
+  private dragStartY = 0;
+  private dragStartScrollOffsetY = 0;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   static preload(scene: Scene) {
@@ -139,8 +153,10 @@ export class ShopModal {
       this.unsubscribeLanguageChange();
       this.loaderSpinner.destroy();
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
+      this.scene.input.off("wheel", this.handleWheel, this);
     });
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
+    this.scene.input.on("wheel", this.handleWheel, this);
   }
 
   open() {
@@ -195,6 +211,7 @@ export class ShopModal {
     this.clearUnlockActionTimer();
     this.refresh();
     this.setVisible(true);
+    this.applyScrollOffset();
     this.setCardsInteractive(false);
     this.unlockActionTimer = this.scene.time.delayedCall(
       ShopModal.actionLockDurationMs,
@@ -293,6 +310,10 @@ export class ShopModal {
         event.stopPropagation();
       },
     );
+    this.panelBlocker.on("pointerdown", this.handleScrollPointerDown, this);
+    this.panelBlocker.on("pointermove", this.handleScrollPointerMove, this);
+    this.panelBlocker.on("pointerup", this.handleScrollPointerUp, this);
+    this.panelBlocker.on("pointerout", this.handleScrollPointerUp, this);
   }
 
   private refresh() {
@@ -373,7 +394,9 @@ export class ShopModal {
     const isLocked = item.status === "locked";
 
     card.background.setTexture(
-      isLocked ? ShopModal.lockedCardTextureKey : ShopModal.cardTextureKey,
+      isLocked
+        ? item.lockedCardTextureKey ?? ShopModal.lockedCardTextureKey
+        : ShopModal.cardTextureKey,
     );
     this.setCardBackgroundSize(card.background, isLocked);
     card.itemIcon.setTexture(item.iconTextureKey);
@@ -385,11 +408,18 @@ export class ShopModal {
     card.buttonLabel.setFontSize(21);
 
     if (isLocked) {
+      const isInfinityTowerItem = item.unlockSource === "infinityTower";
+
       this.setCardButtonTexture(card, ShopModal.lockedButtonTextureKey);
       card.attackText.setText("");
       card.speedText.setText("");
-      card.buttonLabel.setText(languageController.t("shop.reachBoss"));
-      card.buttonLabel.setFontSize(18);
+      card.buttonLabel.setText(
+        languageController.t(
+          isInfinityTowerItem ? "shop.openInInfiniteTower" : "shop.reachBoss",
+        ),
+      );
+      card.buttonLabel.setFontSize(isInfinityTowerItem ? 15 : 18);
+      card.buttonLabel.setColor(isInfinityTowerItem ? "#ffe85a" : "#ffffff");
       card.priceIcon.setVisible(false);
       card.buttonLabel.setX(card.buttonImage.x);
       return;
@@ -403,14 +433,20 @@ export class ShopModal {
       return;
     }
 
-    this.setCardButtonTexture(card, ShopModal.buyButtonTextureKey);
-
     if (item.status === "purchased") {
+      this.setCardButtonTexture(card, ShopModal.buyButtonTextureKey);
       card.buttonLabel.setText(languageController.t("shop.equip"));
       card.priceIcon.setVisible(false);
       card.buttonLabel.setX(card.buttonImage.x);
       return;
     }
+
+    this.setCardButtonTexture(
+      card,
+      this.wallet.canWithdraw(item.price)
+        ? ShopModal.buyButtonTextureKey
+        : ShopModal.lockedButtonTextureKey,
+    );
 
     if (item.price > 0) {
       card.buttonLabel.setText(String(item.price));
@@ -509,7 +545,10 @@ export class ShopModal {
 
   private createItemCard(x: number, y: number): ShopItemCard {
     const buttonY = y + 110;
-    const card = {} as ShopItemCard;
+    const card = {
+      baseX: x,
+      baseY: y,
+    } as ShopItemCard;
 
     card.background = this.scene.add
       .image(x, y, ShopModal.cardTextureKey)
@@ -517,7 +556,7 @@ export class ShopModal {
       .setDepth(ShopModal.depth + 3)
       .setVisible(false);
     card.itemIcon = this.scene.add
-      .image(x, y - 70, ShopModal.cardTextureKey)
+      .image(x, y - 50, ShopModal.cardTextureKey)
       .setDepth(ShopModal.depth + 4)
       .setVisible(false);
     card.attackText = this.createBonusText(x - 52, y + 33);
@@ -591,6 +630,8 @@ export class ShopModal {
         ShopModal.priceIconSize,
       );
     });
+
+    this.applyCardPosition(card);
 
     return card;
   }
@@ -677,16 +718,17 @@ export class ShopModal {
 
   private setCardVisible(card: ShopItemCard, visible: boolean) {
     const isLocked = card.item?.status === "locked";
+    const canShowCard = visible && this.isCardOverlappingViewport(card);
 
-    card.background.setVisible(visible && Boolean(card.item));
-    card.itemIcon.setVisible(visible && Boolean(card.item) && !isLocked);
-    card.attackText.setVisible(visible && Boolean(card.item) && !isLocked);
-    card.speedText.setVisible(visible && Boolean(card.item) && !isLocked);
-    card.buttonImage.setVisible(visible && Boolean(card.item) && !isLocked);
-    card.buttonHitArea.setVisible(visible && Boolean(card.item) && !isLocked);
-    card.buttonLabel.setVisible(visible && Boolean(card.item));
+    card.background.setVisible(canShowCard && Boolean(card.item));
+    card.itemIcon.setVisible(canShowCard && Boolean(card.item) && !isLocked);
+    card.attackText.setVisible(canShowCard && Boolean(card.item) && !isLocked);
+    card.speedText.setVisible(canShowCard && Boolean(card.item) && !isLocked);
+    card.buttonImage.setVisible(canShowCard && Boolean(card.item) && !isLocked);
+    card.buttonHitArea.setVisible(canShowCard && Boolean(card.item) && !isLocked);
+    card.buttonLabel.setVisible(canShowCard && Boolean(card.item));
     card.priceIcon.setVisible(
-      visible &&
+      canShowCard &&
         Boolean(card.item) &&
         card.item?.status === "not-purchased" &&
         card.item.price > 0,
@@ -701,7 +743,8 @@ export class ShopModal {
       );
     }
 
-    this.setCardInteractive(card, visible && !this.isActionLocked);
+    this.applyViewportClip(card);
+    this.setCardInteractive(card, canShowCard && !this.isActionLocked);
   }
 
   private setCardsInteractive(isInteractive: boolean) {
@@ -711,7 +754,14 @@ export class ShopModal {
   }
 
   private setCardInteractive(card: ShopItemCard, isInteractive: boolean) {
-    if (isInteractive && card.item?.status !== "locked") {
+    if (
+      isInteractive &&
+      card.item?.status !== "locked" &&
+      (card.item.status !== "not-purchased" ||
+        card.item.price <= 0 ||
+        this.wallet.canWithdraw(card.item.price)) &&
+      this.isPointInsideCardsViewport(card.buttonHitArea.x, card.buttonHitArea.y)
+    ) {
       card.buttonHitArea.setInteractive({ useHandCursor: true });
     } else {
       card.buttonHitArea.disableInteractive();
@@ -729,6 +779,173 @@ export class ShopModal {
 
   private hideLoader() {
     this.loaderSpinner.hide();
+  }
+
+  private handleWheel(
+    _pointer: Phaser.Input.Pointer,
+    _gameObjects: GameObjects.GameObject[],
+    _deltaX: number,
+    deltaY: number,
+  ) {
+    if (!this.pauseController.has("shop") || !this.panel?.visible) {
+      return;
+    }
+
+    this.setScrollOffset(
+      this.scrollOffsetY + Math.sign(deltaY) * ShopModal.scrollStep,
+    );
+  }
+
+  private handleScrollPointerDown(pointer: Phaser.Input.Pointer) {
+    if (!this.panel?.visible) {
+      return;
+    }
+
+    this.isDraggingScroll = true;
+    this.dragStartY = pointer.y;
+    this.dragStartScrollOffsetY = this.scrollOffsetY;
+  }
+
+  private handleScrollPointerMove(pointer: Phaser.Input.Pointer) {
+    if (!this.isDraggingScroll) {
+      return;
+    }
+
+    this.setScrollOffset(this.dragStartScrollOffsetY + this.dragStartY - pointer.y);
+  }
+
+  private handleScrollPointerUp() {
+    this.isDraggingScroll = false;
+  }
+
+  private setScrollOffset(offsetY: number) {
+    const nextOffset = Phaser.Math.Clamp(
+      offsetY,
+      0,
+      ShopModal.maxScrollOffsetY,
+    );
+
+    if (nextOffset === this.scrollOffsetY) {
+      return;
+    }
+
+    this.scrollOffsetY = nextOffset;
+    this.applyScrollOffset();
+  }
+
+  private applyScrollOffset() {
+    this.cards.forEach((card) => {
+      this.applyCardPosition(card);
+      this.setCardVisible(card, this.panel?.visible === true);
+    });
+  }
+
+  private applyCardPosition(card: ShopItemCard) {
+    const x = card.baseX;
+    const y = card.baseY - this.scrollOffsetY;
+    const buttonY = y + 105;
+
+    card.background.setPosition(x, y);
+    card.itemIcon.setPosition(x, y - 55);
+    card.attackText.setPosition(x - 52, y + 33);
+    card.speedText.setPosition(x - 52, y + 63);
+    card.buttonImage.setPosition(x, buttonY);
+    card.priceIcon.setPosition(x - 20, buttonY);
+    card.buttonLabel.setPosition(
+      card.item?.status === "not-purchased" && card.item.price > 0
+        ? x + 18
+        : x,
+      buttonY,
+    );
+    card.buttonHitArea.setPosition(x, buttonY);
+  }
+
+  private isCardOverlappingViewport(card: ShopItemCard) {
+    const centerY = this.scene.scale.height / 2;
+    const cardY = card.baseY - this.scrollOffsetY;
+    const halfHeight = Math.max(
+      ShopModal.normalCardHeight,
+      ShopModal.lockedCardHeight,
+    ) / 2;
+
+    return (
+      cardY + halfHeight >= centerY + ShopModal.cardsViewportTopOffsetY &&
+      cardY - halfHeight <= centerY + ShopModal.cardsViewportBottomOffsetY
+    );
+  }
+
+  private applyViewportClip(card: ShopItemCard) {
+    this.cropImageToCardsViewport(card.background);
+    this.cropImageToCardsViewport(card.itemIcon);
+    this.cropImageToCardsViewport(card.buttonImage);
+    this.cropImageToCardsViewport(card.priceIcon);
+    this.setTextVisibleInCardsViewport(card.attackText);
+    this.setTextVisibleInCardsViewport(card.speedText);
+    this.setTextVisibleInCardsViewport(card.buttonLabel);
+  }
+
+  private cropImageToCardsViewport(image: GameObjects.Image) {
+    if (!image.visible) {
+      return;
+    }
+
+    const viewport = this.getCardsViewport();
+    const displayWidth = image.displayWidth;
+    const displayHeight = image.displayHeight;
+    const left = image.x - displayWidth * image.originX;
+    const top = image.y - displayHeight * image.originY;
+    const right = left + displayWidth;
+    const bottom = top + displayHeight;
+    const visibleLeft = Phaser.Math.Clamp(left, viewport.left, viewport.right);
+    const visibleTop = Phaser.Math.Clamp(top, viewport.top, viewport.bottom);
+    const visibleRight = Phaser.Math.Clamp(right, viewport.left, viewport.right);
+    const visibleBottom = Phaser.Math.Clamp(bottom, viewport.top, viewport.bottom);
+    const visibleWidth = visibleRight - visibleLeft;
+    const visibleHeight = visibleBottom - visibleTop;
+
+    if (visibleWidth <= 0 || visibleHeight <= 0) {
+      image.setVisible(false);
+      return;
+    }
+
+    const source = image.texture.getSourceImage() as HTMLImageElement;
+    const cropX = ((visibleLeft - left) / displayWidth) * source.width;
+    const cropY = ((visibleTop - top) / displayHeight) * source.height;
+    const cropWidth = (visibleWidth / displayWidth) * source.width;
+    const cropHeight = (visibleHeight / displayHeight) * source.height;
+
+    image.setCrop(cropX, cropY, cropWidth, cropHeight);
+  }
+
+  private setTextVisibleInCardsViewport(text: GameObjects.Text) {
+    if (!text.visible) {
+      return;
+    }
+
+    text.setVisible(this.isPointInsideCardsViewport(text.x, text.y));
+  }
+
+  private isPointInsideCardsViewport(x: number, y: number) {
+    const viewport = this.getCardsViewport();
+
+    return (
+      x >= viewport.left &&
+      x <= viewport.right &&
+      y >= viewport.top &&
+      y <= viewport.bottom
+    );
+  }
+
+  private getCardsViewport() {
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+
+    return {
+      left: centerX + ShopModal.cardsViewportLeftOffsetX,
+      right: centerX + ShopModal.cardsViewportRightOffsetX,
+      top: centerY + ShopModal.cardsViewportTopOffsetY,
+      bottom: centerY + ShopModal.cardsViewportBottomOffsetY,
+    };
   }
 
   private fitItemIcon(icon: GameObjects.Image) {
@@ -792,6 +1009,12 @@ export class ShopModal {
         textureKey: item.iconTextureKey,
         texturePath: item.iconTexturePath,
       })),
+      ...ShopCatalog.getItems()
+        .filter((item) => item.lockedCardTextureKey && item.lockedCardTexturePath)
+        .map((item) => ({
+          textureKey: item.lockedCardTextureKey as string,
+          texturePath: item.lockedCardTexturePath as string,
+        })),
     ];
   }
 

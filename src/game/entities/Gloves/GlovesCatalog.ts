@@ -2,6 +2,8 @@ import type { Scene } from 'phaser';
 import type { BaseGloves } from './BaseGloves';
 import { AmogusGloves } from './variants/AmogusGloves';
 import { BasicGloves } from './variants/BasicGloves';
+import { DiamondTowerGloves } from './variants/DiamondTowerGloves';
+import { GoldenTowerGloves } from './variants/GoldenTowerGloves';
 import { InfinityGloves } from './variants/InfinityGloves';
 import { MechanicGloves } from './variants/MechanicGloves';
 import { PepeGloves } from './variants/PepeGloves';
@@ -17,6 +19,8 @@ export class GlovesCatalog
         new MechanicGloves(),
         new InfinityGloves(),
         new SixSevenGloves(),
+        new GoldenTowerGloves(),
+        new DiamondTowerGloves(),
     ];
 
     static preload (scene: Scene, equippedGlovesId?: string)

@@ -14,7 +14,8 @@ export type EnemySpawnKind =
   | "four-difficulty-stalker"
   | "four-difficulty-boss"
   | "five-difficulty-enemy"
-  | "five-difficulty-boss";
+  | "five-difficulty-boss"
+  | "infinity-tower-enemy";
 
 export type BackgroundMusicId =
   | "menu-and-lobby"

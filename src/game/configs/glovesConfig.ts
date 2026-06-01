@@ -4,7 +4,9 @@ export type GlovesShopConfigId =
   | "demolition_gloves"
   | "spider_hunter_gloves"
   | "ender_hunter_gloves"
-  | "warden_gloves";
+  | "warden_gloves"
+  | "golden_tower_gloves"
+  | "diamond_tower_gloves";
 
 export type GlovesUnlockCondition =
   | "start"
@@ -76,6 +78,20 @@ export const glovesConfig: GlovesConfig = {
       attack_bonus: 30,
       attack_speed_bonus: 0.45,
     },
+    golden_tower_gloves: {
+      name: "Золотые перчатки 67",
+      unlock_condition: "start",
+      price_emerald: 0,
+      attack_bonus: 36,
+      attack_speed_bonus: 0.5,
+    },
+    diamond_tower_gloves: {
+      name: "Алмазные перчатки 67",
+      unlock_condition: "start",
+      price_emerald: 0,
+      attack_bonus: 48,
+      attack_speed_bonus: 0.65,
+    },
   },
 };
 
@@ -86,6 +102,8 @@ export const glovesIdToConfigId: Record<string, GlovesShopConfigId> = {
   "mechanic-gloves": "spider_hunter_gloves",
   "infinity-gloves": "ender_hunter_gloves",
   "six-seven-gloves": "warden_gloves",
+  "golden-tower-gloves": "golden_tower_gloves",
+  "diamond-tower-gloves": "diamond_tower_gloves",
 };
 
 export function getGlovesShopConfigByGlovesId(glovesId: string) {
