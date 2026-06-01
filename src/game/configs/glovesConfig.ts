@@ -41,7 +41,7 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "meet_boss_1",
       unlock_boss_id: "first-difficulty-boss",
       price_emerald: 20,
-      attack_bonus: 4,
+      attack_bonus: 10,
       attack_speed_bonus: 0.15,
     },
     demolition_gloves: {
@@ -49,7 +49,7 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "meet_boss_2",
       unlock_boss_id: "second-difficulty-boss",
       price_emerald: 80,
-      attack_bonus: 3,
+      attack_bonus: 15,
       attack_speed_bonus: 0.35,
     },
     spider_hunter_gloves: {
@@ -57,7 +57,7 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "meet_boss_3",
       unlock_boss_id: "third-difficulty-boss",
       price_emerald: 150,
-      attack_bonus: 6,
+      attack_bonus: 20,
       attack_speed_bonus: 0.55,
     },
     ender_hunter_gloves: {
@@ -65,7 +65,7 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "meet_boss_4",
       unlock_boss_id: "four-difficulty-boss",
       price_emerald: 300,
-      attack_bonus: 12,
+      attack_bonus: 25,
       attack_speed_bonus: 0.35,
     },
     warden_gloves: {
@@ -73,7 +73,7 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "meet_boss_5",
       unlock_boss_id: "five-difficulty-boss",
       price_emerald: 450,
-      attack_bonus: 18,
+      attack_bonus: 30,
       attack_speed_bonus: 0.45,
     },
   },
