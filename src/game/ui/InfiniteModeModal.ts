@@ -279,7 +279,7 @@ export class InfiniteModeModal {
       .setInteractive()
       .setVisible(false);
     this.title = this.scene.add
-      .text(centerX, centerY - 320, "", {
+      .text(centerX, centerY - 310, "", {
         fontFamily: "Hardpixel",
         fontSize: 30,
         color: "#ffffff",
@@ -294,7 +294,7 @@ export class InfiniteModeModal {
       .text(centerX, centerY - 270, "", {
         fontFamily: "Hardpixel",
         fontSize: 18,
-        color: "#ffffff",
+        color: "#ffe85a",
         stroke: "#1f1f1f",
         strokeThickness: 4,
         align: "center",
@@ -456,10 +456,12 @@ export class InfiniteModeModal {
   }
 
   private createStartRewardSlot(x: number, y: number): StartRewardSlotView {
+    const contentX = x + InfiniteModeModal.startRewardButtonOffsetX;
+
     const title = this.scene.add
-      .text(x, y - 22, "", {
+      .text(contentX, y - 22, "", {
         fontFamily: "Hardpixel",
-        fontSize: 18,
+        fontSize: 16,
         color: "#ffe85a",
         stroke: "#1f1f1f",
         strokeThickness: 4,
@@ -470,9 +472,9 @@ export class InfiniteModeModal {
       .setDepth(InfiniteModeModal.depth + 4)
       .setVisible(false);
     const item = this.scene.add
-      .text(x, y + 2, "", {
+      .text(contentX, y + 2, "", {
         fontFamily: "Hardpixel",
-        fontSize: 16,
+        fontSize: 14,
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 4,
@@ -484,7 +486,7 @@ export class InfiniteModeModal {
       .setVisible(false);
     const button = this.scene.add
       .image(
-        x + InfiniteModeModal.startRewardButtonOffsetX,
+        contentX,
         y + InfiniteModeModal.startRewardButtonOffsetY,
         InfiniteModeModal.rewardButtonOpenTextureKey,
       )
@@ -496,8 +498,8 @@ export class InfiniteModeModal {
       .setVisible(false);
     const buttonLabel = this.scene.add
       .text(
-        x + InfiniteModeModal.rewardButtonOffsetX,
-        y + InfiniteModeModal.rewardButtonOffsetY,
+        contentX,
+        y + InfiniteModeModal.startRewardButtonOffsetY,
         "",
         {
           fontFamily: "Hardpixel",
