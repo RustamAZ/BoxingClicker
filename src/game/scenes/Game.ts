@@ -34,6 +34,7 @@ import { TrainingModal } from "../ui/TrainingModal";
 import { InfiniteModeModal } from "../ui/InfiniteModeModal";
 import { CampaignVictoryModal } from "../ui/CampaignVictoryModal";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { NotificationController } from "../ui/NotificationController";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
@@ -46,9 +47,21 @@ import { FullscreenController } from "../utils/FullscreenController";
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 100;
   private static readonly maxDeathContinuesPerRun = 2;
-  private static readonly weaponUnlockToastDurationMs = 1800;
   private static readonly lobbyGameLevel = 1;
   private static readonly villageGameLevel = 2;
+  private static readonly infinityTowerFloorCounterTextureKey =
+    "infinity-tower-floor-counter";
+  private static readonly infinityTowerFloorCounterPath =
+    "assets/images/ui/infinity-tower/floor-counter.png";
+  private static readonly infinityTowerEnemiesCounterTextureKey =
+    "infinity-tower-enemies-counter";
+  private static readonly infinityTowerEnemiesCounterPath =
+    "assets/images/ui/infinity-tower/enemies-counter.png";
+  private static readonly infinityTowerCounterX = 960;
+  private static readonly infinityTowerFloorCounterY = 188;
+  private static readonly infinityTowerEnemiesCounterY = 252;
+  private static readonly infinityTowerCounterDepth = 950;
+  private static readonly infinityTowerCounterTextOffsetX = 0;
 
   private player: Player;
   private wallet: Wallet;
@@ -75,6 +88,7 @@ export class Game extends Scene {
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private campaignVictoryModal: CampaignVictoryModal;
+  private notificationController: NotificationController;
   private levelUpRewardController: LevelUpRewardController;
   private hitSoundPlayer: HitSoundPlayer;
   private enemyAttackSoundPlayer: EnemyAttackSoundPlayer;
@@ -82,16 +96,20 @@ export class Game extends Scene {
   private breathSoundPlayer: BreathSoundPlayer;
   private backgroundMusicController: BackgroundMusicController;
   private screenFilterController: ScreenFilterController;
-  private weaponUnlockToastBackground: GameObjects.Rectangle;
-  private weaponUnlockToastText: GameObjects.Text;
   private playerStatsDebugText: GameObjects.Text;
-  private infinityTowerDebugText: GameObjects.Text;
-  private weaponUnlockToastTimer?: Phaser.Time.TimerEvent;
+  private infinityTowerFloorCounter: GameObjects.Image;
+  private infinityTowerEnemiesCounter: GameObjects.Image;
+  private infinityTowerFloorCounterText: GameObjects.Text;
+  private infinityTowerEnemiesCounterText: GameObjects.Text;
+  private infinityTowerRunLoaderOverlay: GameObjects.Rectangle;
+  private infinityTowerRunLoader: LoadingSpinner;
   private unsubscribeLanguageChange?: () => void;
+  private unsubscribeInfinityTowerRewardUnlocked?: () => void;
   private fullscreenController?: FullscreenController;
   private previousGameLevel: number;
   private deathContinuesUsedInRun = 0;
   private isCampaignVictoryFlowActive = false;
+  private isInfinityTowerRunLoading = false;
 
   constructor() {
     super("Game");
@@ -109,12 +127,21 @@ export class Game extends Scene {
       this.load.off("progress", updateLoadingProgress);
       AppLoadingScreen.setProgress(1);
     });
+    this.load.image(
+      Game.infinityTowerFloorCounterTextureKey,
+      Game.infinityTowerFloorCounterPath,
+    );
+    this.load.image(
+      Game.infinityTowerEnemiesCounterTextureKey,
+      Game.infinityTowerEnemiesCounterPath,
+    );
     LocationAssetPreloader.preloadInitial(this);
     GameHud.preload(this);
     LoadingSpinner.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
     StatusBar.preload(this);
+    NotificationController.preload(this);
     PlayerDeathModal.preload(this);
     TrainingModal.preload(this);
     InfiniteModeModal.preload(this);
@@ -141,6 +168,10 @@ export class Game extends Scene {
     this.infinityTowerController = new InfinityTowerController(
       this.player.profile,
     );
+    this.unsubscribeInfinityTowerRewardUnlocked =
+      this.infinityTowerController.onRewardUnlocked(() => {
+        this.notificationController.show("notification.newReward");
+      });
     this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
@@ -239,7 +270,8 @@ export class Game extends Scene {
       this.enemySpawnPlace.currentEnemy,
     );
     this.createPlayerStatsDebugText();
-    this.createInfinityTowerDebugText();
+    this.createInfinityTowerCounters();
+    this.createInfinityTowerRunLoader();
     this.levelUpRewardController = new LevelUpRewardController(
       this,
       this.player,
@@ -271,6 +303,7 @@ export class Game extends Scene {
       },
     );
     this.statusBar = new StatusBar(this);
+    this.notificationController = new NotificationController(this);
     this.updateShopModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
@@ -288,7 +321,6 @@ export class Game extends Scene {
         this.returnToLobbyAfterCampaignVictory();
       },
     );
-    this.createWeaponUnlockToast();
     this.locationAssetPreloader.prefetchNextGameLevel(
       this.levelController.getCurrentGameLevel(),
     );
@@ -313,6 +345,8 @@ export class Game extends Scene {
       );
       window.removeEventListener("keydown", this.handleGlobalKeyDown);
       this.unsubscribeLanguageChange?.();
+      this.unsubscribeInfinityTowerRewardUnlocked?.();
+      this.notificationController.destroy();
       this.fullscreenController?.destroy();
     });
   }
@@ -321,6 +355,10 @@ export class Game extends Scene {
     this.backgroundMusicController.update();
 
     if (this.pauseMenu.isPaused) {
+      return;
+    }
+
+    if (this.isInfinityTowerRunLoading) {
       return;
     }
 
@@ -359,7 +397,7 @@ export class Game extends Scene {
 
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
     this.updatePlayerStatsDebugText();
-    this.updateInfinityTowerDebugText();
+    this.updateInfinityTowerCounters();
   }
 
   private handleEnemyRewards(enemy: Enemy, position: { x: number; y: number }) {
@@ -504,12 +542,34 @@ export class Game extends Scene {
   }
 
   private startInfiniteRun() {
-    if (!this.player.profile.isInfinityTowerAvailable()) {
+    if (
+      !this.player.profile.isInfinityTowerAvailable() ||
+      this.isInfinityTowerRunLoading
+    ) {
       return;
     }
 
-      this.locationAssetPreloader.prefetchInfiniteLevel(() => {
-      this.infinityTowerController.startRun();
+    this.isInfinityTowerRunLoading = true;
+    this.setInfinityTowerRunLoaderVisible(true);
+    this.infinityTowerController.startRun();
+
+    this.locationAssetPreloader.prefetchInfiniteLevelBackground(() => {
+      this.locationAssetPreloader.prefetchInfinityTowerEnemyPacks(
+        [this.infinityTowerController.getCurrentEnemyPack()],
+        () => {
+          this.isInfinityTowerRunLoading = false;
+          this.setInfinityTowerRunLoaderVisible(false);
+          this.resetDeathContinuesForNewRun();
+          this.startPreparedInfiniteRun();
+          this.locationAssetPreloader.prefetchInfinityTowerEnemyPacks(
+            this.infinityTowerController.getRemainingEnemyPacks(),
+          );
+        },
+      );
+    });
+  }
+
+  private startPreparedInfiniteRun() {
       this.levelController.startInfiniteRun();
       this.player.restoreHealth();
       this.player.restoreStamina();
@@ -520,7 +580,6 @@ export class Game extends Scene {
       this.updateInfiniteModeModalVisibility();
       this.enemySpawnPlace.spawnNextEnemy();
       this.backgroundMusicController.resume();
-    });
   }
 
   private claimInfinityTowerGlovesReward(itemId: string) {
@@ -540,6 +599,7 @@ export class Game extends Scene {
       this.previousGameLevel === Game.lobbyGameLevel &&
       currentGameLevel === Game.villageGameLevel
     ) {
+      this.resetDeathContinuesForNewRun();
       this.player.restoreStamina();
     }
 
@@ -548,6 +608,10 @@ export class Game extends Scene {
     }
 
     this.previousGameLevel = currentGameLevel;
+  }
+
+  private resetDeathContinuesForNewRun() {
+    this.deathContinuesUsedInRun = 0;
   }
 
   private handleFiveDifficultyBossAttack() {
@@ -616,7 +680,7 @@ export class Game extends Scene {
     }
 
     if (this.player.profile.discoverItem(unlockedItem.id)) {
-      this.showWeaponUnlockToast();
+      this.notificationController.show("notification.weaponUnlocked");
     }
   }
 
@@ -649,7 +713,7 @@ export class Game extends Scene {
     this.backgroundMusicController.resume();
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
     this.updatePlayerStatsDebugText();
-    this.updateInfinityTowerDebugText();
+    this.updateInfinityTowerCounters();
   }
 
   private resetPendingRunRewards() {
@@ -659,69 +723,12 @@ export class Game extends Scene {
     this.coinContainer.reset();
   }
 
-  private createWeaponUnlockToast() {
-    const centerX = this.scale.width / 2;
-    const y = this.scale.height - 72;
-
-    this.weaponUnlockToastBackground = this.add
-      .rectangle(centerX, y, 360, 54, 0x4f4f4f, 0.88)
-      .setDepth(1500)
-      .setVisible(false);
-    this.weaponUnlockToastText = this.add
-      .text(centerX, y, languageController.t("toast.weaponUnlocked"), {
-        fontFamily: "Hardpixel",
-        fontSize: 22,
-        color: "#ffffff",
-        stroke: "#222222",
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(1501)
-      .setVisible(false);
-  }
-
   private refreshLocalizedTexts() {
-    this.weaponUnlockToastText.setText(
-      languageController.t("toast.weaponUnlocked"),
-    );
+    this.notificationController.refresh();
 
     if (this.playerDeathModal.isShown) {
       this.playerDeathModal.show(this.getPlayerDeathContinueOption());
     }
-  }
-
-  private showWeaponUnlockToast() {
-    this.weaponUnlockToastTimer?.remove();
-    this.weaponUnlockToastBackground.setVisible(true).setAlpha(0);
-    this.weaponUnlockToastText.setVisible(true).setAlpha(0);
-
-    this.tweens.add({
-      targets: [this.weaponUnlockToastBackground, this.weaponUnlockToastText],
-      alpha: 1,
-      duration: 120,
-      ease: "Quad.easeOut",
-    });
-
-    this.weaponUnlockToastTimer = this.time.delayedCall(
-      Game.weaponUnlockToastDurationMs,
-      () => {
-        this.tweens.add({
-          targets: [
-            this.weaponUnlockToastBackground,
-            this.weaponUnlockToastText,
-          ],
-          alpha: 0,
-          duration: 180,
-          ease: "Quad.easeIn",
-          onComplete: () => {
-            this.weaponUnlockToastBackground.setVisible(false);
-            this.weaponUnlockToastText.setVisible(false);
-            this.weaponUnlockToastTimer = undefined;
-          },
-        });
-      },
-    );
   }
 
   private createPlayerStatsDebugText() {
@@ -740,22 +747,90 @@ export class Game extends Scene {
     this.updatePlayerStatsDebugText();
   }
 
-  private createInfinityTowerDebugText() {
-    this.infinityTowerDebugText = this.add
-      .text(this.scale.width / 2, 98, "", {
-        fontFamily: "Hardpixel",
-        fontSize: 24,
-        color: "#ffe85a",
-        stroke: "#151515",
-        strokeThickness: 5,
-        align: "center",
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(1600)
+  private createInfinityTowerCounters() {
+    this.infinityTowerFloorCounter = this.add
+      .image(
+        Game.infinityTowerCounterX,
+        Game.infinityTowerFloorCounterY,
+        Game.infinityTowerFloorCounterTextureKey,
+      )
+      .setDepth(Game.infinityTowerCounterDepth)
+      .setVisible(false);
+    this.infinityTowerEnemiesCounter = this.add
+      .image(
+        Game.infinityTowerCounterX,
+        Game.infinityTowerEnemiesCounterY,
+        Game.infinityTowerEnemiesCounterTextureKey,
+      )
+      .setDepth(Game.infinityTowerCounterDepth)
       .setVisible(false);
 
-    this.updateInfinityTowerDebugText();
+    this.infinityTowerFloorCounterText = this.add
+      .text(
+        Game.infinityTowerCounterX + Game.infinityTowerCounterTextOffsetX,
+        Game.infinityTowerFloorCounterY,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 26,
+          color: "#ffffff",
+          stroke: "#151515",
+          strokeThickness: 4,
+          align: "center",
+        },
+      )
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(Game.infinityTowerCounterDepth + 1)
+      .setVisible(false);
+    this.infinityTowerEnemiesCounterText = this.add
+      .text(
+        Game.infinityTowerCounterX + Game.infinityTowerCounterTextOffsetX,
+        Game.infinityTowerEnemiesCounterY,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 26,
+          color: "#ffffff",
+          stroke: "#151515",
+          strokeThickness: 4,
+          align: "center",
+        },
+      )
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(Game.infinityTowerCounterDepth + 1)
+      .setVisible(false);
+    this.updateInfinityTowerCounters();
+  }
+
+  private createInfinityTowerRunLoader() {
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+
+    this.infinityTowerRunLoaderOverlay = this.add
+      .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.58)
+      .setDepth(2200)
+      .setInteractive()
+      .setVisible(false);
+    this.infinityTowerRunLoader = new LoadingSpinner(
+      this,
+      centerX,
+      centerY,
+      2201,
+    );
+  }
+
+  private setInfinityTowerRunLoaderVisible(visible: boolean) {
+    this.infinityTowerRunLoaderOverlay.setVisible(visible);
+
+    if (visible) {
+      this.infinityTowerRunLoaderOverlay.setInteractive();
+      this.infinityTowerRunLoader.show();
+    } else {
+      this.infinityTowerRunLoaderOverlay.disableInteractive();
+      this.infinityTowerRunLoader.hide();
+    }
   }
 
   private updatePlayerStatsDebugText() {
@@ -768,9 +843,9 @@ export class Game extends Scene {
     ]);
   }
 
-  private updateInfinityTowerDebugText() {
+  private updateInfinityTowerCounters() {
     if (!this.infinityTowerController.isRunActive()) {
-      this.infinityTowerDebugText.setVisible(false);
+      this.setInfinityTowerCountersVisible(false);
       return;
     }
 
@@ -778,13 +853,18 @@ export class Game extends Scene {
     const required =
       this.infinityTowerController.getEnemiesRequiredForCurrentFloor();
 
-    this.infinityTowerDebugText
-      .setText(
-        `Этаж: ${this.infinityTowerController.getCurrentFloor()}\nУбить: ${
-          required - kills
-        }`,
-      )
-      .setVisible(true);
+    this.infinityTowerFloorCounterText.setText(
+      String(this.infinityTowerController.getCurrentFloor()),
+    );
+    this.infinityTowerEnemiesCounterText.setText(`${kills}/${required}`);
+    this.setInfinityTowerCountersVisible(true);
+  }
+
+  private setInfinityTowerCountersVisible(visible: boolean) {
+    this.infinityTowerFloorCounter.setVisible(visible);
+    this.infinityTowerEnemiesCounter.setVisible(visible);
+    this.infinityTowerFloorCounterText.setVisible(visible);
+    this.infinityTowerEnemiesCounterText.setVisible(visible);
   }
 
   private static getStoredEquippedGlovesId() {

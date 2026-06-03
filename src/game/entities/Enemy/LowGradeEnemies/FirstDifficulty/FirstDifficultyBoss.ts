@@ -23,11 +23,11 @@ export class FirstDifficultyBoss extends Enemy {
   private static readonly deathAnimationMoveOffsetY = 140;
   private static readonly aliveSprite: BossSpriteConfig = {
     key: "first-difficulty-boss",
-    path: "assets/images/enemies/first-difficulty/human-v2.png",
+    path: "assets/images/enemies/first-difficulty/human-boss.png",
   };
   private static readonly deadSprite: BossSpriteConfig = {
     key: "first-difficulty-boss-dead",
-    path: "assets/images/enemies/first-difficulty/human-v2-die.png",
+    path: "assets/images/enemies/first-difficulty/human-boss-die.png",
   };
 
   readonly body: GameObjects.Image;

@@ -42,10 +42,10 @@ export class TrainingModal {
   private static readonly depth = 1130;
   private static readonly buttonDepth = 1002;
   private static readonly actionLockDurationMs = 220;
-  private static readonly openButtonX = 82;
-  private static readonly openButtonY = 382;
-  private static readonly openButtonSize = 128;
-  private static readonly openButtonHoverSize = 138;
+  private static readonly openButtonX = 600;
+  private static readonly openButtonY = 68;
+  private static readonly openButtonSize = 100;
+  private static readonly openButtonHoverSize = 118;
   private static readonly panelWidth = 760;
   private static readonly panelHeight = 560;
   private static readonly rowWidth = 650;

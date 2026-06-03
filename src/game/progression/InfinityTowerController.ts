@@ -1,14 +1,28 @@
 import {
   infinityTowerDifficultyConfig,
   infinityTowerFloorRequirementsConfig,
+  infinityTowerRewardsConfig,
   type InfinityTowerEnemyStats,
 } from "../configs/infinityTower";
+import {
+  getInfinityTowerEnemyPackById,
+  initialInfinityTowerEnemyPackId,
+  infinityTowerEnemyPacks,
+  type InfinityTowerEnemyPackConfig,
+  type InfinityTowerEnemyVariantConfig,
+} from "../configs/infinityTowerEnemies";
 import type { PlayerProfile } from "../entities/Player/PlayerProfile";
+import { randomItem } from "../utils/randomItem";
+
+type RewardUnlockedCallback = (floor: number) => void;
 
 export class InfinityTowerController {
   private isActive = false;
   private currentFloor = 1;
   private killsOnFloor = 0;
+  private currentEnemyPack: InfinityTowerEnemyPackConfig =
+    infinityTowerEnemyPacks[0];
+  private readonly rewardUnlockedCallbacks: RewardUnlockedCallback[] = [];
 
   constructor(private readonly profile: PlayerProfile) {}
 
@@ -16,6 +30,9 @@ export class InfinityTowerController {
     this.isActive = true;
     this.currentFloor = 1;
     this.killsOnFloor = 0;
+    this.currentEnemyPack =
+      getInfinityTowerEnemyPackById(initialInfinityTowerEnemyPackId) ??
+      infinityTowerEnemyPacks[0];
     this.saveMaxFloor();
   }
 
@@ -56,17 +73,63 @@ export class InfinityTowerController {
 
     this.currentFloor += 1;
     this.killsOnFloor = 0;
+    this.currentEnemyPack = this.rollEnemyPack();
     this.saveMaxFloor();
+    this.emitRewardUnlockedIfNeeded();
   }
 
   getCurrentEnemyStats(): InfinityTowerEnemyStats {
     return InfinityTowerController.getEnemyStatsForFloor(this.currentFloor);
   }
 
+  getCurrentEnemyVariant(): InfinityTowerEnemyVariantConfig {
+    return randomItem(this.currentEnemyPack.variants);
+  }
+
+  getCurrentEnemyPack() {
+    return this.currentEnemyPack;
+  }
+
+  getRemainingEnemyPacks() {
+    return infinityTowerEnemyPacks.filter(
+      (pack) => pack.id !== this.currentEnemyPack.id,
+    );
+  }
+
+  onRewardUnlocked(callback: RewardUnlockedCallback) {
+    this.rewardUnlockedCallbacks.push(callback);
+
+    return () => {
+      const index = this.rewardUnlockedCallbacks.indexOf(callback);
+
+      if (index >= 0) {
+        this.rewardUnlockedCallbacks.splice(index, 1);
+      }
+    };
+  }
+
   private saveMaxFloor() {
     if (this.currentFloor > this.profile.getInfinityTowerCurrentLevel()) {
       this.profile.setInfinityTowerCurrentLevel(this.currentFloor);
     }
+  }
+
+  private rollEnemyPack() {
+    return randomItem(infinityTowerEnemyPacks);
+  }
+
+  private emitRewardUnlockedIfNeeded() {
+    const hasReward = infinityTowerRewardsConfig.some(
+      (reward) => reward.level === this.currentFloor,
+    );
+
+    if (!hasReward) {
+      return;
+    }
+
+    this.rewardUnlockedCallbacks.forEach((callback) => {
+      callback(this.currentFloor);
+    });
   }
 
   private static getEnemiesRequiredForFloor(floor: number) {

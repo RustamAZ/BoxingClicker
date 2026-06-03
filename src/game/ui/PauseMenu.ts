@@ -75,10 +75,10 @@ export class PauseMenu {
     private readonly gameSettings: GameSettings,
     private readonly onRestart: () => void,
   ) {
-    this.settingsButton = this.createSettingsButton(976, 48, () => {
+    this.settingsButton = this.createSettingsButton(976, 68, () => {
       this.open();
     });
-    this.muteButton = this.createMuteButton(900, 48);
+    this.muteButton = this.createMuteButton(900, 68);
 
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.58)

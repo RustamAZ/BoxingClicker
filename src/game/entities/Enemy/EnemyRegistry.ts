@@ -17,10 +17,12 @@ import { FiveDifficultyBoss } from "./LowGradeEnemies/FiveDifficulty/FiveDifficu
 import { FiveDifficultyEnemy } from "./LowGradeEnemies/FiveDifficulty/FiveDifficultyEnemy";
 import { InfinityTowerEnemy } from "./InfinityTower/InfinityTowerEnemy";
 import type { InfinityTowerEnemyStats } from "../../configs/infinityTower";
+import type { InfinityTowerEnemyVariantConfig } from "../../configs/infinityTowerEnemies";
 
 export type EnemySpawnContext = {
   fourDifficultyStalkerState?: FourDifficultyStalkerState;
   infinityTowerEnemyStats?: InfinityTowerEnemyStats;
+  infinityTowerEnemyVariant?: InfinityTowerEnemyVariantConfig;
 };
 
 type EnemyRegistryItem = {
@@ -100,11 +102,15 @@ const enemyRegistry: Record<EnemySpawnKind, EnemyRegistryItem> = {
       if (!context?.infinityTowerEnemyStats) {
         throw new Error("Infinity tower enemy stats are required");
       }
+      if (!context.infinityTowerEnemyVariant) {
+        throw new Error("Infinity tower enemy variant is required");
+      }
 
       return new InfinityTowerEnemy(
         scene,
         slot,
         context.infinityTowerEnemyStats,
+        context.infinityTowerEnemyVariant,
       );
     },
   },

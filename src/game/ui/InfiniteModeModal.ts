@@ -58,8 +58,8 @@ export class InfiniteModeModal {
   private static readonly emeraldIconTextureKey = "infinite-tower-emerald-icon";
   private static readonly emeraldIconPath =
     "assets/images/ui/icons/emerald.png";
-  private static readonly openButtonX = 82;
-  private static readonly openButtonY = 524;
+  private static readonly openButtonX = 805;
+  private static readonly openButtonY = 68;
   private static readonly openButtonSize = 96;
   private static readonly openButtonHoverSize = 106;
   private static readonly openButtonIconSize = 78;

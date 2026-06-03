@@ -1,18 +1,14 @@
 import { GameObjects, Scene } from "phaser";
 import type { InfinityTowerEnemyStats } from "../../../configs/infinityTower";
-import { randomItem } from "../../../utils/randomItem";
+import {
+  infinityTowerEnemyPacks,
+  type InfinityTowerEnemyPackConfig,
+  type InfinityTowerEnemyProjectileConfig,
+  type InfinityTowerEnemyVariantConfig,
+} from "../../../configs/infinityTowerEnemies";
+import type { Player } from "../../Player/Player";
 import { Enemy } from "../Enemy";
 import type { EnemySpawnSlot } from "../types";
-
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
-  dead: EnemySpriteConfig,
-];
 
 export class InfinityTowerEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -22,73 +18,46 @@ export class InfinityTowerEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
-        key: "infinity-tower-pig-zombie-1",
-        path: "assets/images/enemies/five-difficulty/pig-zombie-v1.png",
-        displayName: "Tower Pig Zombie",
-      },
-      {
-        key: "infinity-tower-pig-zombie-1-dead",
-        path: "assets/images/enemies/five-difficulty/pig-zombie-v1-die.png",
-      },
-    ],
-    [
-      {
-        key: "infinity-tower-myth-bower-1",
-        path: "assets/images/enemies/five-difficulty/myth-bower-v1.png",
-        displayName: "Tower Myth Bower",
-      },
-      {
-        key: "infinity-tower-myth-bower-1-dead",
-        path: "assets/images/enemies/five-difficulty/myth-bower-v1-die.png",
-      },
-    ],
-    [
-      {
-        key: "infinity-tower-hell-pig-1",
-        path: "assets/images/enemies/five-difficulty/hell-pig-v1.png",
-        displayName: "Tower Hell Pig",
-      },
-      {
-        key: "infinity-tower-hell-pig-1-dead",
-        path: "assets/images/enemies/five-difficulty/hell-pig-v1-die.png",
-      },
-    ],
-    [
-      {
-        key: "infinity-tower-black-skeleton-1",
-        path: "assets/images/enemies/four-difficulty/black-skeleton-v1.png",
-        displayName: "Tower Black Skeleton",
-      },
-      {
-        key: "infinity-tower-black-skeleton-1-dead",
-        path: "assets/images/enemies/four-difficulty/black-skeleton-v1-die.png",
-      },
-    ],
-    [
-      {
-        key: "infinity-tower-myth-zombie-1",
-        path: "assets/images/enemies/four-difficulty/myth-zombie-v1.png",
-        displayName: "Tower Myth Zombie",
-      },
-      {
-        key: "infinity-tower-myth-zombie-1-dead",
-        path: "assets/images/enemies/four-difficulty/myth-zombie-v1-die.png",
-      },
-    ],
-  ];
 
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
+  private readonly projectile?: InfinityTowerEnemyProjectileConfig;
   private readonly deathSpriteKey: string;
+  private readonly projectiles: GameObjects.Image[] = [];
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    InfinityTowerEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
+    InfinityTowerEnemy.preloadPacks(scene, infinityTowerEnemyPacks);
+  }
+
+  static preloadPacks(
+    scene: Scene,
+    packs: readonly InfinityTowerEnemyPackConfig[],
+  ) {
+    const loadedProjectileKeys = new Set<string>();
+
+    packs.forEach((pack) => {
+      pack.variants.forEach((variant) => {
+        if (!scene.textures.exists(variant.alive.key)) {
+          scene.load.image(variant.alive.key, variant.alive.path);
+        }
+
+        if (!scene.textures.exists(variant.dead.key)) {
+          scene.load.image(variant.dead.key, variant.dead.path);
+        }
+
+        if (
+          variant.projectile &&
+          !scene.textures.exists(variant.projectile.texture.key) &&
+          !loadedProjectileKeys.has(variant.projectile.texture.key)
+        ) {
+          scene.load.image(
+            variant.projectile.texture.key,
+            variant.projectile.texture.path,
+          );
+          loadedProjectileKeys.add(variant.projectile.texture.key);
+        }
+      });
     });
   }
 
@@ -96,11 +65,10 @@ export class InfinityTowerEnemy extends Enemy {
     scene: Scene,
     slot: EnemySpawnSlot,
     stats: InfinityTowerEnemyStats,
+    variant: InfinityTowerEnemyVariantConfig,
   ) {
-    const [aliveSprite, deadSprite] = randomItem(InfinityTowerEnemy.sprites);
-
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: stats.maxHealth,
       xpReward: stats.xpReward,
       diamondsReward: stats.diamondsReward,
@@ -112,9 +80,10 @@ export class InfinityTowerEnemy extends Enemy {
     });
 
     this.slot = slot;
-    this.deathSpriteKey = deadSprite.key;
+    this.projectile = variant.attackType === "ranged" ? variant.projectile : undefined;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }
@@ -123,9 +92,18 @@ export class InfinityTowerEnemy extends Enemy {
     this.body.on("pointerdown", callback);
   }
 
-  protected onAttack() {
+  protected onAttack(player: Player) {
     if (this.isDeathAnimationPlaying) {
       return;
+    }
+
+    if (this.projectile) {
+      this.playProjectileAnimation(this.projectile);
+      player.applyDamageOverTime({
+        sourceId: this.projectile.burnSourceId,
+        damagePerSecond: this.projectile.burnDamagePerSecond,
+        durationSeconds: this.projectile.burnDurationSeconds,
+      });
     }
 
     const baseScaleX = this.body.scaleX;
@@ -147,6 +125,7 @@ export class InfinityTowerEnemy extends Enemy {
     }
 
     this.isDeathAnimationPlaying = true;
+    this.destroyProjectiles();
     this.body.disableInteractive();
     this.body.setTexture(this.deathSpriteKey);
     this.body.setDisplaySize(this.slot.width, this.slot.height);
@@ -155,9 +134,7 @@ export class InfinityTowerEnemy extends Enemy {
 
     this.body.scene.tweens.add({
       targets: this.body,
-      x:
-        this.slot.x +
-        InfinityTowerEnemy.deathAnimationMoveOffsetX * direction,
+      x: this.slot.x + InfinityTowerEnemy.deathAnimationMoveOffsetX * direction,
       y: this.slot.y + InfinityTowerEnemy.deathAnimationMoveOffsetY,
       alpha: 0,
       duration: InfinityTowerEnemy.deathAnimationDurationMs,
@@ -171,6 +148,51 @@ export class InfinityTowerEnemy extends Enemy {
 
   destroy() {
     this.body.scene.tweens.killTweensOf(this.body);
+    this.destroyProjectiles();
     this.body.destroy();
+  }
+
+  private playProjectileAnimation(projectileConfig: InfinityTowerEnemyProjectileConfig) {
+    const projectile = this.body.scene.add
+      .image(
+        this.slot.x,
+        this.slot.y - this.slot.height * 0.2,
+        projectileConfig.texture.key,
+      )
+      .setScale(projectileConfig.startScale)
+      .setAlpha(0.95)
+      .setDepth(this.body.depth + 20);
+
+    this.projectiles.push(projectile);
+
+    this.body.scene.tweens.add({
+      targets: projectile,
+      x: this.body.scene.scale.width / 2,
+      y: this.body.scene.scale.height / 2,
+      scale: projectileConfig.endScale,
+      alpha: 0,
+      duration: projectileConfig.animationDurationMs,
+      ease: "Quad.easeOut",
+      onComplete: () => {
+        this.removeProjectile(projectile);
+      },
+    });
+  }
+
+  private removeProjectile(projectile: GameObjects.Image) {
+    const index = this.projectiles.indexOf(projectile);
+
+    if (index >= 0) {
+      this.projectiles.splice(index, 1);
+    }
+
+    projectile.destroy();
+  }
+
+  private destroyProjectiles() {
+    this.projectiles.splice(0).forEach((projectile) => {
+      this.body.scene.tweens.killTweensOf(projectile);
+      projectile.destroy();
+    });
   }
 }

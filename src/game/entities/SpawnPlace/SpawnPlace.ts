@@ -276,6 +276,8 @@ export class SpawnPlace {
       ...context,
       infinityTowerEnemyStats:
         this.infinityTowerController?.getCurrentEnemyStats(),
+      infinityTowerEnemyVariant:
+        this.infinityTowerController?.getCurrentEnemyVariant(),
     };
   }
 

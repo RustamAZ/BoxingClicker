@@ -1,6 +1,8 @@
 import type { Scene } from "phaser";
 import { GameBackground } from "../entities/Background/GameBackground";
+import { InfinityTowerEnemy } from "../entities/Enemy/InfinityTower/InfinityTowerEnemy";
 import { EnemyRegistry } from "../entities/Enemy/EnemyRegistry";
+import type { InfinityTowerEnemyPackConfig } from "../configs/infinityTowerEnemies";
 import { gameLevelsConfig, infiniteLevelConfig } from "./gameLevelsConfig";
 import type { EnemySpawnKind, GameLevelConfig } from "./types";
 
@@ -41,6 +43,29 @@ export class LocationAssetPreloader {
 
   prefetchInfiniteLevel(onComplete?: () => void) {
     this.prefetchGameLevel(infiniteLevelConfig, onComplete);
+  }
+
+  prefetchInfiniteLevelBackground(onComplete?: () => void) {
+    if (this.scene.textures.exists(infiniteLevelConfig.background.key)) {
+      onComplete?.();
+      return;
+    }
+
+    GameBackground.preloadBackground(this.scene, infiniteLevelConfig.background);
+    this.startLoader(onComplete);
+  }
+
+  prefetchInfinityTowerEnemyPacks(
+    packs: readonly InfinityTowerEnemyPackConfig[],
+    onComplete?: () => void,
+  ) {
+    if (this.areInfinityTowerEnemyPacksLoaded(packs)) {
+      onComplete?.();
+      return;
+    }
+
+    InfinityTowerEnemy.preloadPacks(this.scene, packs);
+    this.startLoader(onComplete);
   }
 
   isGameLevelLoaded(gameLevel: number) {
@@ -162,5 +187,33 @@ export class LocationAssetPreloader {
 
   private getSpawnKindsForGameLevel(gameLevel: GameLevelConfig) {
     return LocationAssetPreloader.getSpawnKindsForGameLevel(gameLevel);
+  }
+
+  private areInfinityTowerEnemyPacksLoaded(
+    packs: readonly InfinityTowerEnemyPackConfig[],
+  ) {
+    return packs.every((pack) =>
+      pack.variants.every((variant) => {
+        const areSpritesLoaded =
+          this.scene.textures.exists(variant.alive.key) &&
+          this.scene.textures.exists(variant.dead.key);
+        const isProjectileLoaded =
+          !variant.projectile ||
+          this.scene.textures.exists(variant.projectile.texture.key);
+
+        return areSpritesLoaded && isProjectileLoaded;
+      }),
+    );
+  }
+
+  private startLoader(onComplete?: () => void) {
+    if (onComplete) {
+      this.scene.load.once("complete", onComplete);
+    }
+
+    if (!this.scene.load.isLoading()) {
+      this.scene.load.start();
+    }
+
   }
 }

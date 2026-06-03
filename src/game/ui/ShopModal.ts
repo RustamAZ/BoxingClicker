@@ -74,9 +74,9 @@ export class ShopModal {
   private static readonly priceIconPath = "assets/images/ui/icons/emerald.png";
   private static readonly panelWidth = 900;
   private static readonly panelHeight = 680;
-  private static readonly buttonSize = 128;
-  private static readonly iconSize = 128;
-  private static readonly iconHoverSize = 138;
+  private static readonly buttonSize = 105;
+  private static readonly iconSize = 105;
+  private static readonly iconHoverSize = 118;
   private static readonly actionLockDurationMs = 300;
   private static readonly normalCardWidth = 240;
   private static readonly normalCardHeight = 290;
@@ -138,7 +138,7 @@ export class ShopModal {
     private readonly wallet: Wallet,
     private readonly glovesEquipmentController: GlovesEquipmentController,
   ) {
-    this.shopButton = this.createShopButton(82, 240);
+    this.shopButton = this.createShopButton(700, 68);
     this.loaderSpinner = new LoadingSpinner(
       this.scene,
       this.scene.scale.width / 2,
