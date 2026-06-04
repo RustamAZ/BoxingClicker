@@ -4,6 +4,8 @@ import { GlovesEquipmentController } from "../entities/Gloves/GlovesEquipmentCon
 import { GameHud } from "../ui/GameHud";
 import { PauseMenu } from "../ui/PauseMenu";
 import { ShopModal } from "../ui/ShopModal";
+import { DailyRewardController } from "../daily/DailyRewardController";
+import { DailyRewardModal } from "../ui/DailyRewardModal";
 import { StatusBar } from "../ui/StatusBar";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
 import { EnemyAttackSoundPlayer } from "../audio/EnemyAttackSoundPlayer";
@@ -32,6 +34,7 @@ import { LevelUpRewardController } from "../upgrades/LevelUpRewardController";
 import { PlayerDeathModal } from "../ui/PlayerDeathModal";
 import { TrainingModal } from "../ui/TrainingModal";
 import { InfiniteModeModal } from "../ui/InfiniteModeModal";
+import { InfinityTowerConsumableModal } from "../ui/InfinityTowerConsumableModal";
 import { CampaignVictoryModal } from "../ui/CampaignVictoryModal";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { NotificationController } from "../ui/NotificationController";
@@ -43,10 +46,14 @@ import { languageController } from "../localization/LanguageController";
 import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 import { FullscreenController } from "../utils/FullscreenController";
+import {
+  getInfinityTowerConsumableConfig,
+  infinityTowerConsumableIds,
+  type InfinityTowerConsumableId,
+} from "../configs/infinityTowerConsumables";
 
 export class Game extends Scene {
   private static readonly deathContinueEmeraldCost = 100;
-  private static readonly maxDeathContinuesPerRun = 2;
   private static readonly lobbyGameLevel = 1;
   private static readonly villageGameLevel = 2;
   private static readonly infinityTowerFloorCounterTextureKey =
@@ -65,6 +72,7 @@ export class Game extends Scene {
 
   private player: Player;
   private wallet: Wallet;
+  private dailyRewardController: DailyRewardController;
   private trainingController: TrainingController;
   private levelController: GameLevelController;
   private infinityTowerController: InfinityTowerController;
@@ -83,8 +91,10 @@ export class Game extends Scene {
   private hud: GameHud;
   private pauseMenu: PauseMenu;
   private shopModal: ShopModal;
+  private dailyRewardModal: DailyRewardModal;
   private trainingModal: TrainingModal;
   private infiniteModeModal: InfiniteModeModal;
+  private infinityTowerConsumableModal: InfinityTowerConsumableModal;
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private campaignVictoryModal: CampaignVictoryModal;
@@ -107,9 +117,11 @@ export class Game extends Scene {
   private unsubscribeInfinityTowerRewardUnlocked?: () => void;
   private fullscreenController?: FullscreenController;
   private previousGameLevel: number;
-  private deathContinuesUsedInRun = 0;
+  private isDeathAdContinueUsedInRun = false;
+  private isDeathEmeraldContinueUsedInRun = false;
   private isCampaignVictoryFlowActive = false;
   private isInfinityTowerRunLoading = false;
+  private isDailyRewardAutoOpenedForCurrentLobbyVisit = false;
 
   constructor() {
     super("Game");
@@ -140,11 +152,13 @@ export class Game extends Scene {
     LoadingSpinner.preload(this);
     PauseMenu.preload(this);
     ShopModal.preload(this);
+    DailyRewardModal.preload(this);
     StatusBar.preload(this);
     NotificationController.preload(this);
     PlayerDeathModal.preload(this);
     TrainingModal.preload(this);
     InfiniteModeModal.preload(this);
+    InfinityTowerConsumableModal.preload(this);
     ResourceParticleFlow.preload(this);
     DiamondContainer.preload(this);
     CoinContainer.preload(this);
@@ -162,6 +176,7 @@ export class Game extends Scene {
     this.player = new Player();
     this.fullscreenController = new FullscreenController(this);
     this.wallet = new Wallet(this.player);
+    this.dailyRewardController = new DailyRewardController(this.player.profile);
     this.trainingController = new TrainingController(this.player, this.wallet);
     this.trainingController.applyTrainingBonuses();
     this.levelController = new GameLevelController(this.player);
@@ -286,6 +301,11 @@ export class Game extends Scene {
       this.wallet,
       this.glovesEquipmentController,
     );
+    this.dailyRewardModal = new DailyRewardModal(
+      this,
+      this.pauseController,
+      this.dailyRewardController,
+    );
     this.trainingModal = new TrainingModal(
       this,
       this.pauseController,
@@ -296,15 +316,20 @@ export class Game extends Scene {
       this.pauseController,
       this.player.profile,
       () => {
-        this.startInfiniteRun();
+        this.requestStartInfiniteRun();
       },
       (itemId) => {
         this.claimInfinityTowerGlovesReward(itemId);
       },
     );
+    this.infinityTowerConsumableModal = new InfinityTowerConsumableModal(
+      this,
+      this.pauseController,
+    );
     this.statusBar = new StatusBar(this);
     this.notificationController = new NotificationController(this);
     this.updateShopModalVisibility();
+    this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
     this.playerDeathModal = new PlayerDeathModal(
@@ -368,6 +393,7 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
     this.emeraldContainer.update();
@@ -469,43 +495,81 @@ export class Game extends Scene {
     }
   }
 
+  private updateDailyRewardModalVisibility() {
+    const isVisible =
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
+      !this.levelController.isInfiniteRun();
+
+    this.dailyRewardModal.setButtonVisible(isVisible);
+
+    if (!isVisible) {
+      this.dailyRewardModal.close();
+      this.isDailyRewardAutoOpenedForCurrentLobbyVisit = false;
+      return;
+    }
+
+    if (
+      this.isDailyRewardAutoOpenedForCurrentLobbyVisit ||
+      !this.dailyRewardModal.hasAvailableReward() ||
+      this.pauseController.isPaused
+    ) {
+      return;
+    }
+
+    this.isDailyRewardAutoOpenedForCurrentLobbyVisit = true;
+    this.dailyRewardModal.open();
+  }
+
   private getPlayerDeathContinueOption() {
-    if (this.deathContinuesUsedInRun <= 0) {
+    const rewiveCount = this.player.profile.getRewiveCount();
+
+    if (rewiveCount > 0) {
       return {
-        label: languageController.t("death.continue"),
+        label: languageController.t("death.continueForRewive"),
         isEnabled: true,
+        showRewivePrice: true,
+        rewiveCount,
         onContinue: () => {
-          this.deathContinuesUsedInRun += 1;
+          if (!this.player.profile.spendRewiveCount()) {
+            return;
+          }
+
           this.restorePlayerAfterDeath();
         },
       };
     }
 
-    if (this.deathContinuesUsedInRun >= Game.maxDeathContinuesPerRun) {
+    if (!this.isDeathAdContinueUsedInRun) {
       return {
-        label: languageController.t("death.continueForEmerald", {
-          amount: Game.deathContinueEmeraldCost,
-        }),
-        isEnabled: false,
-        showEmeraldPrice: true,
-        onContinue: () => {},
+        label: languageController.t("death.continueForAd"),
+        isEnabled: true,
+        showAdPrice: true,
+        onContinue: () => {
+          this.isDeathAdContinueUsedInRun = true;
+          this.restorePlayerAfterDeath();
+        },
       };
     }
 
     const cost = Game.deathContinueEmeraldCost;
+    const canUseEmeraldContinue = !this.isDeathEmeraldContinueUsedInRun;
 
     return {
       label: languageController.t("death.continueForEmerald", {
         amount: cost,
       }),
-      isEnabled: this.wallet.canWithdraw(cost),
+      isEnabled: canUseEmeraldContinue && this.wallet.canWithdraw(cost),
       showEmeraldPrice: true,
       onContinue: () => {
+        if (!canUseEmeraldContinue) {
+          return;
+        }
+
         if (!this.wallet.withdraw(cost)) {
           return;
         }
 
-        this.deathContinuesUsedInRun += 1;
+        this.isDeathEmeraldContinueUsedInRun = true;
         this.restorePlayerAfterDeath();
       },
     };
@@ -541,7 +605,7 @@ export class Game extends Scene {
     }
   }
 
-  private startInfiniteRun() {
+  private requestStartInfiniteRun() {
     if (
       !this.player.profile.isInfinityTowerAvailable() ||
       this.isInfinityTowerRunLoading
@@ -549,9 +613,26 @@ export class Game extends Scene {
       return;
     }
 
+    const consumables = this.player.profile.getTowerConsumables();
+    const hasAvailableConsumable = infinityTowerConsumableIds.some(
+      (consumableId) => (consumables[consumableId] ?? 0) > 0,
+    );
+
+    if (hasAvailableConsumable) {
+      this.infinityTowerConsumableModal.show(consumables, (consumableId) => {
+        this.startInfiniteRun(consumableId);
+      });
+      return;
+    }
+
+    this.startInfiniteRun();
+  }
+
+  private startInfiniteRun(consumableId?: InfinityTowerConsumableId) {
     this.isInfinityTowerRunLoading = true;
     this.setInfinityTowerRunLoaderVisible(true);
     this.infinityTowerController.startRun();
+    this.applyInfinityTowerRunConsumable(consumableId);
 
     this.locationAssetPreloader.prefetchInfiniteLevelBackground(() => {
       this.locationAssetPreloader.prefetchInfinityTowerEnemyPacks(
@@ -576,10 +657,34 @@ export class Game extends Scene {
       this.background.update();
       this.updateResourceContainersVisibility();
       this.updateShopModalVisibility();
+      this.updateDailyRewardModalVisibility();
       this.updateTrainingModalVisibility();
       this.updateInfiniteModeModalVisibility();
       this.enemySpawnPlace.spawnNextEnemy();
       this.backgroundMusicController.resume();
+  }
+
+  private applyInfinityTowerRunConsumable(
+    consumableId?: InfinityTowerConsumableId,
+  ) {
+    const consumable = consumableId
+      ? getInfinityTowerConsumableConfig(consumableId)
+      : undefined;
+
+    this.player.setPermanentStatEffects("infinity-tower-consumable", []);
+
+    if (!consumable) {
+      return;
+    }
+
+    if (!this.player.profile.spendTowerConsumable(consumable.id)) {
+      return;
+    }
+
+    this.player.setPermanentStatEffects(
+      "infinity-tower-consumable",
+      consumable.effects,
+    );
   }
 
   private claimInfinityTowerGlovesReward(itemId: string) {
@@ -611,7 +716,8 @@ export class Game extends Scene {
   }
 
   private resetDeathContinuesForNewRun() {
-    this.deathContinuesUsedInRun = 0;
+    this.isDeathAdContinueUsedInRun = false;
+    this.isDeathEmeraldContinueUsedInRun = false;
   }
 
   private handleFiveDifficultyBossAttack() {
@@ -624,6 +730,11 @@ export class Game extends Scene {
 
       if (this.pauseController.has("shop")) {
         this.shopModal.close();
+        return;
+      }
+
+      if (this.pauseController.has("daily-reward")) {
+        this.dailyRewardModal.close();
         return;
       }
 
@@ -698,15 +809,17 @@ export class Game extends Scene {
 
   private returnToLobbyAfterCampaignVictory() {
     this.infinityTowerController.stopRun();
+    this.player.setPermanentStatEffects("infinity-tower-consumable", []);
     this.levelController.returnToCampaign();
     this.player.resetSessionProgress();
     this.resetPendingRunRewards();
     this.isCampaignVictoryFlowActive = false;
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
-    this.deathContinuesUsedInRun = 0;
+    this.resetDeathContinuesForNewRun();
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
     this.enemySpawnPlace.spawnNextEnemy();

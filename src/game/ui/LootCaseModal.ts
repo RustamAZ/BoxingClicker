@@ -9,6 +9,7 @@ import { languageController } from "../localization/LanguageController";
 type LootCaseButton = {
   background: GameObjects.Image;
   label: GameObjects.Text;
+  adBadge?: GameObjects.Image;
 };
 
 type LootCaseButtonAction = "continue" | "extra";
@@ -88,6 +89,8 @@ export class LootCaseModal {
   private static readonly absidianButtonTextureKey = "loot-case-absidian-button";
   private static readonly absidianButtonPath =
     "assets/images/loot-case/buttons/absidian-shop-button.png";
+  private static readonly adIconTextureKey = "loot-case-ad-icon";
+  private static readonly adIconPath = "assets/images/ui/icons/adIcon.png";
   private static readonly openSoundKey = "loot-case-open-sound";
   private static readonly openSoundPath = "assets/audio/ui/loot-case-open.mp3";
   private static readonly openSoundVolume = 3;
@@ -107,6 +110,9 @@ export class LootCaseModal {
   private static readonly buttonOffsetY = 350;
   private static readonly buttonWidth = 380;
   private static readonly buttonHeight = 96;
+  private static readonly adBadgeSize = 108;
+  private static readonly adBadgeOffsetX = 164;
+  private static readonly adBadgeOffsetY = -38;
   private static readonly rewardTextOffsetY = 188;
   private static readonly rewardTextStackOffsetY = -32;
   private static readonly rewardTextLineHeight = 26;
@@ -150,6 +156,7 @@ export class LootCaseModal {
       LootCaseModal.absidianButtonTextureKey,
       LootCaseModal.absidianButtonPath,
     );
+    scene.load.image(LootCaseModal.adIconTextureKey, LootCaseModal.adIconPath);
     scene.load.audio(LootCaseModal.openSoundKey, LootCaseModal.openSoundPath);
   }
 
@@ -374,6 +381,21 @@ export class LootCaseModal {
       .setResolution(2)
       .setDepth(LootCaseModal.depth + 10)
       .setVisible(false);
+    const adBadge =
+      action === "extra"
+        ? this.scene.add
+            .image(
+              x + LootCaseModal.adBadgeOffsetX,
+              y + LootCaseModal.adBadgeOffsetY,
+              LootCaseModal.adIconTextureKey,
+            )
+            .setDisplaySize(
+              LootCaseModal.adBadgeSize,
+              LootCaseModal.adBadgeSize,
+            )
+            .setDepth(LootCaseModal.depth + 11)
+            .setVisible(false)
+        : undefined;
 
     background.on(
       "pointerdown",
@@ -398,21 +420,16 @@ export class LootCaseModal {
         return;
       }
 
-      background.setDisplaySize(
-        LootCaseModal.buttonWidth * 1.03,
-        LootCaseModal.buttonHeight * 1.03,
-      );
+      this.setButtonScale({ background, label, adBadge }, 1.03);
     });
     background.on("pointerout", () => {
-      background.setDisplaySize(
-        LootCaseModal.buttonWidth,
-        LootCaseModal.buttonHeight,
-      );
+      this.setButtonScale({ background, label, adBadge }, 1);
     });
 
     return {
       background,
       label,
+      adBadge,
     };
   }
 
@@ -534,12 +551,30 @@ export class LootCaseModal {
   private setButtonVisible(button: LootCaseButton, visible: boolean) {
     button.background.setVisible(visible);
     button.label.setVisible(visible);
+    button.adBadge?.setVisible(visible);
 
     if (visible) {
       button.background.setInteractive({ useHandCursor: true });
     } else {
       button.background.disableInteractive();
     }
+  }
+
+  private setButtonScale(button: LootCaseButton, scale: number) {
+    button.background.setDisplaySize(
+      LootCaseModal.buttonWidth * scale,
+      LootCaseModal.buttonHeight * scale,
+    );
+    button.label.setScale(scale);
+    button.adBadge
+      ?.setDisplaySize(
+        LootCaseModal.adBadgeSize * scale,
+        LootCaseModal.adBadgeSize * scale,
+      )
+      .setPosition(
+        button.background.x + LootCaseModal.adBadgeOffsetX * scale,
+        button.background.y + LootCaseModal.adBadgeOffsetY * scale,
+      );
   }
 
   private clearRollTimer() {

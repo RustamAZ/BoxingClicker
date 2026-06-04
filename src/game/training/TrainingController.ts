@@ -14,6 +14,7 @@ export type TrainingItemState = {
   config: TrainingItemConfig;
   level: number;
   maxLevel: number;
+  isInfinite: boolean;
   nextPrice?: number;
   isMaxLevel: boolean;
   canBuy: boolean;
@@ -56,14 +57,18 @@ export class TrainingController {
       throw new Error(`Unknown training item: ${itemId}`);
     }
 
+    const isInfinite = this.isInfiniteTrainingUnlocked();
     const level = this.getSafeTrainingLevel(item);
-    const isMaxLevel = level >= item.maxLevel;
-    const nextPrice = isMaxLevel ? undefined : item.priceByLevel[level];
+    const isMaxLevel = !isInfinite && level >= item.maxLevel;
+    const nextPrice = isMaxLevel
+      ? undefined
+      : (item.priceByLevel[level] ?? trainingConfig.infinityTowerLevelPrice);
 
     return {
       config: item,
       level,
       maxLevel: item.maxLevel,
+      isInfinite,
       nextPrice,
       isMaxLevel,
       canBuy: nextPrice !== undefined && this.wallet.canWithdraw(nextPrice),
@@ -128,9 +133,16 @@ export class TrainingController {
   }
 
   private getSafeTrainingLevel(item: TrainingItemConfig) {
-    return Math.max(
-      0,
-      Math.min(item.maxLevel, this.player.profile.getTrainingLevel(item.id)),
-    );
+    const level = Math.max(0, this.player.profile.getTrainingLevel(item.id));
+
+    if (this.isInfiniteTrainingUnlocked()) {
+      return level;
+    }
+
+    return Math.min(item.maxLevel, level);
+  }
+
+  private isInfiniteTrainingUnlocked() {
+    return this.player.profile.isInfinityTowerAvailable();
   }
 }

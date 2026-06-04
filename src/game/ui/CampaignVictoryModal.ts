@@ -18,6 +18,7 @@ export class CampaignVictoryModal {
 
   private overlay?: GameObjects.Rectangle;
   private panel?: GameObjects.Image;
+  private title?: GameObjects.Text;
   private message?: GameObjects.Text;
   private closeLabel?: GameObjects.Text;
   private closeHitArea?: GameObjects.Rectangle;
@@ -125,10 +126,23 @@ export class CampaignVictoryModal {
       )
       .setDepth(CampaignVictoryModal.depth + 1)
       .setVisible(false);
-    this.message = this.scene.add
-      .text(centerX, centerY - 30, "", {
+    this.title = this.scene.add
+      .text(centerX, centerY - 124, "", {
         fontFamily: "Hardpixel",
-        fontSize: 22,
+        fontSize: 32,
+        color: "#ffe85a",
+        stroke: "#1f1f1f",
+        strokeThickness: 5,
+        align: "center",
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(CampaignVictoryModal.depth + 2)
+      .setVisible(false);
+    this.message = this.scene.add
+      .text(centerX, centerY - 16, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 21,
         color: "#ffffff",
         stroke: "#1f1f1f",
         strokeThickness: 4,
@@ -184,6 +198,7 @@ export class CampaignVictoryModal {
   }
 
   private refreshTexts() {
+    this.title?.setText(languageController.t("victory.campaign.title"));
     this.message?.setText(languageController.t("victory.campaign.message"));
     this.closeLabel?.setText(languageController.t("victory.close"));
   }
@@ -191,6 +206,7 @@ export class CampaignVictoryModal {
   private setVisible(visible: boolean) {
     this.overlay?.setVisible(visible);
     this.panel?.setVisible(visible);
+    this.title?.setVisible(visible);
     this.message?.setVisible(visible);
     this.closeLabel?.setVisible(visible);
     this.closeHitArea?.setVisible(visible);

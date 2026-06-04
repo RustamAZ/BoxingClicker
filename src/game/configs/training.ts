@@ -20,6 +20,7 @@ export type TrainingItemConfig = {
 };
 
 export const trainingConfig = {
+  infinityTowerLevelPrice: 350,
   items: [
     {
       id: "punch-power",
@@ -30,7 +31,7 @@ export const trainingConfig = {
       stat: "damage",
       valuePerLevel: 2,
       maxLevel: 10,
-      priceByLevel: [30, 50, 90, 90, 140, 165, 200, 240, 300, 400],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
     },
     {
       id: "strong-jaw",
@@ -41,7 +42,8 @@ export const trainingConfig = {
       stat: "max-health",
       valuePerLevel: 15,
       maxLevel: 10,
-      priceByLevel: [30, 50, 90, 90, 140, 165, 200, 240, 300, 400],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      // priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
     },
     {
       id: "endurance",
@@ -52,7 +54,7 @@ export const trainingConfig = {
       stat: "max-stamina",
       valuePerLevel: 25,
       maxLevel: 10,
-      priceByLevel: [30, 50, 90, 90, 140, 165, 200, 240, 300, 400],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
     },
     {
       id: "light-gloves",
@@ -63,7 +65,7 @@ export const trainingConfig = {
       stat: "stamina-cost",
       valuePerLevel: -0.1,
       maxLevel: 10,
-      priceByLevel: [30, 50, 90, 90, 140, 165, 200, 240, 300, 400],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
     },
     {
       id: "fast-hands",
@@ -74,7 +76,7 @@ export const trainingConfig = {
       stat: "punch-speed",
       valuePerLevel: 0.15,
       maxLevel: 10,
-      priceByLevel: [30, 50, 90, 90, 140, 165, 200, 240, 300, 400],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
     },
   ] satisfies TrainingItemConfig[],
 } as const;

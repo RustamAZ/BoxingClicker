@@ -4,10 +4,10 @@ export const gameLevelStartPlayerLevels = {
   lobby: 1,
   village: 2,
   cave: 11,
-  lowDungeon: 16,
-  midDungeon: 21,
-  highDungeon: 31,
-  hell: 41,
+  lowDungeon: 13,
+  midDungeon: 18,
+  highDungeon: 27,
+  hell: 37,
   infinite: 51,
 } as const;
 

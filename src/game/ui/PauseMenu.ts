@@ -39,8 +39,9 @@ export class PauseMenu {
   private static readonly muteIconPath = "assets/images/ui/icons/mute.png";
   private static readonly voiceIconTextureKey = "voice-icon";
   private static readonly voiceIconPath = "assets/images/ui/icons/voice.png";
-  private static readonly settingsButtonSize = 72;
-  private static readonly settingsIconSize = 64;
+  private static readonly settingsButtonSize = 92;
+  private static readonly headerIconSize = 86;
+  private static readonly headerIconHoverSize = 92;
   private static readonly menuPanelWidth = 480;
   private static readonly menuPanelHeight = 440;
 
@@ -106,7 +107,7 @@ export class PauseMenu {
     this.volumeSlider = this.createVolumeSlider(512, 340);
     this.continueButton = this.createButton(
       512,
-      430,
+      410,
       240,
       48,
       languageController.t("settings.continue"),
@@ -116,7 +117,7 @@ export class PauseMenu {
     );
     this.restartButton = this.createButton(
       512,
-      496,
+      476,
       240,
       48,
       languageController.t("settings.restart"),
@@ -127,7 +128,7 @@ export class PauseMenu {
     );
     this.languageButton = this.createButton(
       512,
-      562,
+      542,
       240,
       48,
       languageController.t("settings.language"),
@@ -222,20 +223,24 @@ export class PauseMenu {
       .setInteractive({ useHandCursor: true });
     const icon = this.scene.add
       .image(x, y, textureKey)
-      .setDisplaySize(PauseMenu.settingsIconSize, PauseMenu.settingsIconSize)
+      .setDisplaySize(PauseMenu.headerIconSize, PauseMenu.headerIconSize)
       .setDepth(PauseMenu.depth + 1);
-    const iconBaseScaleX = icon.scaleX;
-    const iconBaseScaleY = icon.scaleY;
 
     hitArea.on("pointerdown", () => {
       UiSoundPlayer.playClick(this.scene);
       onClick();
     });
     hitArea.on("pointerover", () => {
-      icon.setScale(iconBaseScaleX * 1.08, iconBaseScaleY * 1.08);
+      icon.setDisplaySize(
+        PauseMenu.headerIconHoverSize,
+        PauseMenu.headerIconHoverSize,
+      );
     });
     hitArea.on("pointerout", () => {
-      icon.setScale(iconBaseScaleX, iconBaseScaleY);
+      icon.setDisplaySize(
+        PauseMenu.headerIconSize,
+        PauseMenu.headerIconSize,
+      );
     });
 
     return {

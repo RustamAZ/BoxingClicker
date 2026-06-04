@@ -71,6 +71,7 @@ export class ThirdDifficultyBoss extends Enemy {
       diamondsReward: thirdBossConfig.buff_container_reward,
       coinsReward: thirdBossConfig.lootbox_container_reward,
       emeraldDropChance: thirdBossConfig.emerald_drop_chance,
+      emeraldDropAmount: thirdBossConfig.emerald_drop_amount,
       damagePerHit: thirdBossConfig.damage,
       attackCooldownSeconds: thirdBossConfig.attack_speed,
       initialAttackDelaySeconds: thirdBossConfig.initial_attack_delay,

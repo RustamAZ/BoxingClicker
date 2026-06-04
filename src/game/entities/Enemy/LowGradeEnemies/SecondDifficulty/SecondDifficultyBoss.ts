@@ -94,6 +94,7 @@ export class SecondDifficultyBoss extends Enemy {
       diamondsReward: secondBossConfig.buff_container_reward,
       coinsReward: secondBossConfig.lootbox_container_reward,
       emeraldDropChance: secondBossConfig.emerald_drop_chance,
+      emeraldDropAmount: secondBossConfig.emerald_drop_amount,
       damagePerHit: secondBossConfig.damage,
       attackCooldownSeconds: secondBossConfig.attack_speed,
       initialAttackDelaySeconds: secondBossConfig.initial_attack_delay,

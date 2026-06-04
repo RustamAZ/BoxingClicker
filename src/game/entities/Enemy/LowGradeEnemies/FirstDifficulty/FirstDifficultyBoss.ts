@@ -54,6 +54,7 @@ export class FirstDifficultyBoss extends Enemy {
       diamondsReward: firstBossConfig.buff_container_reward,
       coinsReward: firstBossConfig.lootbox_container_reward,
       emeraldDropChance: firstBossConfig.emerald_drop_chance,
+      emeraldDropAmount: firstBossConfig.emerald_drop_amount,
       damagePerHit: firstBossConfig.damage,
       attackCooldownSeconds: firstBossConfig.attack_speed,
       initialAttackDelaySeconds: firstBossConfig.initial_attack_delay,

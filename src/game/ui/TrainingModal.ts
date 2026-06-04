@@ -45,7 +45,8 @@ export class TrainingModal {
   private static readonly openButtonX = 600;
   private static readonly openButtonY = 68;
   private static readonly openButtonSize = 100;
-  private static readonly openButtonHoverSize = 118;
+  private static readonly openButtonIconSize = 96;
+  private static readonly openButtonIconHoverSize = 102;
   private static readonly panelWidth = 760;
   private static readonly panelHeight = 560;
   private static readonly rowWidth = 650;
@@ -140,8 +141,8 @@ export class TrainingModal {
     } else {
       this.openButton.hitArea.disableInteractive();
       this.openButton.icon?.setDisplaySize(
-        TrainingModal.openButtonSize,
-        TrainingModal.openButtonSize,
+        TrainingModal.openButtonIconSize,
+        TrainingModal.openButtonIconSize,
       );
     }
   }
@@ -284,8 +285,8 @@ export class TrainingModal {
         TrainingModal.openButtonIconTextureKey,
       )
       .setDisplaySize(
-        TrainingModal.openButtonSize,
-        TrainingModal.openButtonSize,
+        TrainingModal.openButtonIconSize,
+        TrainingModal.openButtonIconSize,
       )
       .setDepth(TrainingModal.buttonDepth + 1);
     const label = this.scene.add
@@ -327,14 +328,14 @@ export class TrainingModal {
     });
     hitArea.on("pointerover", () => {
       icon.setDisplaySize(
-        TrainingModal.openButtonHoverSize,
-        TrainingModal.openButtonHoverSize,
+        TrainingModal.openButtonIconHoverSize,
+        TrainingModal.openButtonIconHoverSize,
       );
     });
     hitArea.on("pointerout", () => {
       icon.setDisplaySize(
-        TrainingModal.openButtonSize,
-        TrainingModal.openButtonSize,
+        TrainingModal.openButtonIconSize,
+        TrainingModal.openButtonIconSize,
       );
     });
 
@@ -555,7 +556,9 @@ export class TrainingModal {
         value: TrainingModal.getDisplayValue(state.config),
       }),
     );
-    row.level.setText(`${state.level}/${state.maxLevel}`);
+    row.level.setText(
+      state.isInfinite ? String(state.level) : `${state.level}/${state.maxLevel}`,
+    );
     row.priceIcon.setVisible(!state.isMaxLevel && isPanelVisible);
     row.price.setVisible(!state.isMaxLevel && isPanelVisible);
     row.price.setText(String(state.nextPrice ?? ""));

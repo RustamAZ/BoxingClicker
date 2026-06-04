@@ -8,6 +8,7 @@ export type EnemyConfig = {
     diamondsReward: number;
     coinsReward: number;
     emeraldDropChance?: number;
+    emeraldDropAmount?: number;
     damagePerHit: number;
     attackCooldownSeconds: number;
     initialAttackDelaySeconds?: number;
@@ -25,6 +26,7 @@ export abstract class Enemy
     readonly diamondsReward: number;
     readonly coinsReward: number;
     readonly emeraldDropChance: number;
+    readonly emeraldDropAmount: number;
     readonly damagePerHit: number;
     readonly attackCooldownSeconds: number;
 
@@ -44,6 +46,7 @@ export abstract class Enemy
         this.diamondsReward = config.diamondsReward;
         this.coinsReward = config.coinsReward;
         this.emeraldDropChance = Math.max(0, Math.min(1, config.emeraldDropChance ?? 0));
+        this.emeraldDropAmount = Math.max(0, Math.floor(config.emeraldDropAmount ?? 1));
         this.damagePerHit = config.damagePerHit;
         this.attackCooldownSeconds = config.attackCooldownSeconds;
         this.attackCooldownRemaining =
@@ -120,7 +123,7 @@ export abstract class Enemy
         }
 
         return Math.random() <= this.emeraldDropChance
-            ? 1
+            ? this.emeraldDropAmount
             : 0;
     }
 

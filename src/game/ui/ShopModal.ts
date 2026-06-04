@@ -75,8 +75,8 @@ export class ShopModal {
   private static readonly panelWidth = 900;
   private static readonly panelHeight = 680;
   private static readonly buttonSize = 105;
-  private static readonly iconSize = 105;
-  private static readonly iconHoverSize = 118;
+  private static readonly iconSize = 86;
+  private static readonly iconHoverSize = 92;
   private static readonly actionLockDurationMs = 300;
   private static readonly normalCardWidth = 240;
   private static readonly normalCardHeight = 290;
@@ -611,7 +611,7 @@ export class ShopModal {
       },
     );
     card.buttonHitArea.on("pointerover", () => {
-      if (card.item?.status === "locked") {
+      if (card.item?.status === "locked" || card.item?.isEquipped) {
         return;
       }
 
@@ -757,6 +757,7 @@ export class ShopModal {
     if (
       isInteractive &&
       card.item?.status !== "locked" &&
+      !card.item.isEquipped &&
       (card.item.status !== "not-purchased" ||
         card.item.price <= 0 ||
         this.wallet.canWithdraw(card.item.price)) &&

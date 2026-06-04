@@ -120,7 +120,9 @@ export class InfinityTowerController {
 
   private emitRewardUnlockedIfNeeded() {
     const hasReward = infinityTowerRewardsConfig.some(
-      (reward) => reward.level === this.currentFloor,
+      (reward) =>
+        reward.level === this.currentFloor &&
+        !this.isInfinityTowerRewardClaimed(reward),
     );
 
     if (!hasReward) {
@@ -130,6 +132,16 @@ export class InfinityTowerController {
     this.rewardUnlockedCallbacks.forEach((callback) => {
       callback(this.currentFloor);
     });
+  }
+
+  private isInfinityTowerRewardClaimed(
+    reward: (typeof infinityTowerRewardsConfig)[number],
+  ) {
+    if (reward.type === "gloves") {
+      return this.profile.hasPurchasedItem(reward.itemId);
+    }
+
+    return this.profile.hasClaimedInfinityTowerReward(reward.id);
   }
 
   private static getEnemiesRequiredForFloor(floor: number) {

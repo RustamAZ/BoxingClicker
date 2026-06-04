@@ -69,6 +69,7 @@ export class FourDifficultyBoss extends Enemy {
       diamondsReward: fourthBossConfig.buff_container_reward,
       coinsReward: fourthBossConfig.lootbox_container_reward,
       emeraldDropChance: fourthBossConfig.emerald_drop_chance,
+      emeraldDropAmount: fourthBossConfig.emerald_drop_amount,
       damagePerHit: fourthBossConfig.damage,
       attackCooldownSeconds: fourthBossConfig.attack_speed,
       initialAttackDelaySeconds: fourthBossConfig.initial_attack_delay,

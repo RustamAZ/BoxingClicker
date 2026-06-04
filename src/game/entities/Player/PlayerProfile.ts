@@ -3,6 +3,11 @@ import {
   type TrainingItemId,
   type TrainingLevels,
 } from "../../configs/training";
+import {
+  infinityTowerConsumableIds,
+  type InfinityTowerConsumableId,
+  type InfinityTowerConsumables,
+} from "../../configs/infinityTowerConsumables";
 
 export type InfinityTowerProfile = {
   isAvailable: boolean;
@@ -10,27 +15,38 @@ export type InfinityTowerProfile = {
   claimedRewardIds: string[];
 };
 
+export type DailyRewardsProfile = {
+  last_claim_date?: string;
+  claimedRewards: number[];
+};
+
 export type PlayerProfileSnapshot = {
   id: string;
   emeralds: number;
+  rewiveCount: number;
   purchasedItemIds: string[];
   discoveredItemIds: string[];
   equippedItemId: string;
   globalLevel: number;
   InfinityTower: InfinityTowerProfile;
+  towerConsumables: InfinityTowerConsumables;
   trainingLevels: TrainingLevels;
+  dailyRewards: DailyRewardsProfile;
 };
 
 type StoredPlayerProfile = {
   id?: string;
   emeralds?: number;
+  rewiveCount?: number;
   purchasedItemIds?: string[];
   discoveredItemIds?: string[];
   equippedItemId?: string;
   globalLevel?: number;
   currentLevel?: number;
   InfinityTower?: Partial<InfinityTowerProfile>;
+  towerConsumables?: InfinityTowerConsumables;
   trainingLevels?: TrainingLevels;
+  dailyRewards?: Partial<DailyRewardsProfile>;
 };
 
 type StoredLegacyWallet = {
@@ -53,6 +69,7 @@ export class PlayerProfile {
   // private static readonly mockProfile: StoredPlayerProfile | undefined = {
   //   id: "mock-player",
   //   emeralds: 9999,
+  //   rewiveCount: 3,
   //   purchasedItemIds: [
   //     "basic-gloves",
   //     "amogus-gloves",
@@ -75,6 +92,10 @@ export class PlayerProfile {
   //     isAvailable: true,
   //     currentLevel: 12,
   //   },
+  //   towerConsumables: {
+  //     "attack-speed-potion": 2,
+  //     "attack-power-potion": 2,
+  //   },
   //   trainingLevels: {
   //     "punch-power": 8,
   //     "strong-jaw": 7,
@@ -87,12 +108,15 @@ export class PlayerProfile {
 
   private id: string;
   private emeralds: number;
+  private rewiveCount: number;
   private purchasedItemIds: string[];
   private discoveredItemIds: string[];
   private equippedItemId: string;
   private globalLevel: number;
   private InfinityTower: InfinityTowerProfile;
+  private towerConsumables: InfinityTowerConsumables;
   private trainingLevels: TrainingLevels;
+  private dailyRewards: DailyRewardsProfile;
 
   static getStoredEquippedItemId() {
     try {
@@ -120,12 +144,15 @@ export class PlayerProfile {
 
     this.id = profile.id;
     this.emeralds = profile.emeralds;
+    this.rewiveCount = profile.rewiveCount;
     this.purchasedItemIds = profile.purchasedItemIds;
     this.discoveredItemIds = profile.discoveredItemIds;
     this.equippedItemId = profile.equippedItemId;
     this.globalLevel = profile.globalLevel;
     this.InfinityTower = profile.InfinityTower;
+    this.towerConsumables = profile.towerConsumables;
     this.trainingLevels = profile.trainingLevels;
+    this.dailyRewards = profile.dailyRewards;
     this.normalizeProfile();
     this.save();
   }
@@ -136,6 +163,40 @@ export class PlayerProfile {
 
   getEmeralds() {
     return this.emeralds;
+  }
+
+  getRewiveCount() {
+    return this.rewiveCount;
+  }
+
+  addRewiveCount(amount: number) {
+    const safeAmount = Math.max(0, Math.floor(amount));
+
+    if (safeAmount <= 0) {
+      return this.rewiveCount;
+    }
+
+    this.rewiveCount += safeAmount;
+    this.save();
+
+    return this.rewiveCount;
+  }
+
+  spendRewiveCount(amount = 1) {
+    const safeAmount = Math.max(0, Math.floor(amount));
+
+    if (safeAmount <= 0) {
+      return true;
+    }
+
+    if (this.rewiveCount < safeAmount) {
+      return false;
+    }
+
+    this.rewiveCount -= safeAmount;
+    this.save();
+
+    return true;
   }
 
   addEmeralds(amount: number) {
@@ -302,6 +363,47 @@ export class PlayerProfile {
     return true;
   }
 
+  getTowerConsumables(): InfinityTowerConsumables {
+    return { ...this.towerConsumables };
+  }
+
+  getTowerConsumableCount(consumableId: InfinityTowerConsumableId) {
+    return this.towerConsumables[consumableId] ?? 0;
+  }
+
+  addTowerConsumable(consumableId: InfinityTowerConsumableId, amount: number) {
+    const safeAmount = Math.max(0, Math.floor(amount));
+
+    if (safeAmount <= 0) {
+      return this.getTowerConsumableCount(consumableId);
+    }
+
+    this.towerConsumables = {
+      ...this.towerConsumables,
+      [consumableId]:
+        this.getTowerConsumableCount(consumableId) + safeAmount,
+    };
+    this.save();
+
+    return this.getTowerConsumableCount(consumableId);
+  }
+
+  spendTowerConsumable(consumableId: InfinityTowerConsumableId) {
+    const currentCount = this.getTowerConsumableCount(consumableId);
+
+    if (currentCount <= 0) {
+      return false;
+    }
+
+    this.towerConsumables = {
+      ...this.towerConsumables,
+      [consumableId]: currentCount - 1,
+    };
+    this.save();
+
+    return true;
+  }
+
   getTrainingLevels(): TrainingLevels {
     return { ...this.trainingLevels };
   }
@@ -326,16 +428,50 @@ export class PlayerProfile {
     return safeLevel;
   }
 
+  getDailyRewards(): DailyRewardsProfile {
+    return {
+      last_claim_date: this.dailyRewards.last_claim_date,
+      claimedRewards: [...this.dailyRewards.claimedRewards],
+    };
+  }
+
+  getDailyRewardLastClaimDate() {
+    return this.dailyRewards.last_claim_date;
+  }
+
+  getDailyRewardClaimedRewards() {
+    return [...this.dailyRewards.claimedRewards];
+  }
+
+  hasClaimedDailyReward(index: number) {
+    return this.dailyRewards.claimedRewards.includes(Math.floor(index));
+  }
+
+  claimDailyReward(index: number, date: string) {
+    const safeIndex = Math.max(0, Math.floor(index));
+
+    this.dailyRewards = {
+      last_claim_date: date,
+      claimedRewards: this.hasClaimedDailyReward(safeIndex)
+        ? [...this.dailyRewards.claimedRewards]
+        : [...this.dailyRewards.claimedRewards, safeIndex],
+    };
+    this.save();
+  }
+
   getSnapshot(): PlayerProfileSnapshot {
     return {
       id: this.id,
       emeralds: this.emeralds,
+      rewiveCount: this.rewiveCount,
       purchasedItemIds: this.getPurchasedItemIds(),
       discoveredItemIds: this.getDiscoveredItemIds(),
       equippedItemId: this.equippedItemId,
       globalLevel: this.globalLevel,
       InfinityTower: this.getInfinityTower(),
+      towerConsumables: this.getTowerConsumables(),
       trainingLevels: this.getTrainingLevels(),
+      dailyRewards: this.getDailyRewards(),
     };
   }
 
@@ -358,6 +494,10 @@ export class PlayerProfile {
           typeof profile.emeralds === "number"
             ? Math.max(0, Math.floor(profile.emeralds))
             : 0,
+        rewiveCount:
+          typeof profile.rewiveCount === "number"
+            ? Math.max(0, Math.floor(profile.rewiveCount))
+            : 0,
         purchasedItemIds: Array.isArray(profile.purchasedItemIds)
           ? profile.purchasedItemIds
               .filter((itemId): itemId is string => typeof itemId === "string")
@@ -374,7 +514,11 @@ export class PlayerProfile {
             : PlayerProfile.defaultEquippedItemId,
         globalLevel: this.getStoredGlobalLevel(profile),
         InfinityTower: this.normalizeInfinityTower(profile.InfinityTower),
+        towerConsumables: this.normalizeTowerConsumables(
+          profile.towerConsumables,
+        ),
         trainingLevels: this.normalizeTrainingLevels(profile.trainingLevels),
+        dailyRewards: this.normalizeDailyRewards(profile.dailyRewards),
       };
     } catch {
       return this.getDefaultProfile();
@@ -385,12 +529,15 @@ export class PlayerProfile {
     return {
       id: this.createId(),
       emeralds: this.loadLegacyEmeralds(),
+      rewiveCount: 0,
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],
       discoveredItemIds: [...PlayerProfile.defaultDiscoveredItemIds],
       equippedItemId: PlayerProfile.defaultEquippedItemId,
       globalLevel: 1,
       InfinityTower: PlayerProfile.getDefaultInfinityTower(),
+      towerConsumables: {},
       trainingLevels: {},
+      dailyRewards: PlayerProfile.getDefaultDailyRewards(),
     };
   }
 
@@ -414,6 +561,10 @@ export class PlayerProfile {
 
     this.trainingLevels = this.normalizeTrainingLevels(this.trainingLevels);
     this.InfinityTower = this.normalizeInfinityTower(this.InfinityTower);
+    this.towerConsumables = this.normalizeTowerConsumables(
+      this.towerConsumables,
+    );
+    this.dailyRewards = this.normalizeDailyRewards(this.dailyRewards);
   }
 
   private static normalizeItemId(itemId: string) {
@@ -505,6 +656,54 @@ export class PlayerProfile {
       isAvailable: false,
       currentLevel: 0,
       claimedRewardIds: [],
+    };
+  }
+
+  private normalizeTowerConsumables(
+    towerConsumables?: InfinityTowerConsumables,
+  ): InfinityTowerConsumables {
+    const normalizedConsumables: InfinityTowerConsumables = {};
+
+    if (!towerConsumables || typeof towerConsumables !== "object") {
+      return normalizedConsumables;
+    }
+
+    infinityTowerConsumableIds.forEach((consumableId) => {
+      const count = towerConsumables[consumableId];
+
+      if (typeof count === "number" && count > 0) {
+        normalizedConsumables[consumableId] = Math.floor(count);
+      }
+    });
+
+    return normalizedConsumables;
+  }
+
+  private normalizeDailyRewards(
+    dailyRewards?: Partial<DailyRewardsProfile>,
+  ): DailyRewardsProfile {
+    const claimedRewards = Array.isArray(dailyRewards?.claimedRewards)
+      ? dailyRewards.claimedRewards
+          .filter((rewardIndex): rewardIndex is number => {
+            return typeof rewardIndex === "number" && rewardIndex >= 0;
+          })
+          .map((rewardIndex) => Math.floor(rewardIndex))
+      : [];
+
+    const lastClaimDate =
+      typeof dailyRewards?.last_claim_date === "string"
+        ? dailyRewards.last_claim_date
+        : undefined;
+
+    return {
+      last_claim_date: lastClaimDate,
+      claimedRewards: [...new Set(claimedRewards)],
+    };
+  }
+
+  private static getDefaultDailyRewards(): DailyRewardsProfile {
+    return {
+      claimedRewards: [],
     };
   }
 

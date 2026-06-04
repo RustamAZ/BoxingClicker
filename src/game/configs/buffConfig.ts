@@ -27,10 +27,10 @@ export const buffConfig: BuffConfig = {
   buffs: {
     attack: {
       values: {
-        common: 2,
-        rare: 4,
-        epic: 7,
-        legendary: 11,
+        common: 4,
+        rare: 8,
+        epic: 12,
+        legendary: 18,
       },
     },
     health: {
@@ -60,10 +60,10 @@ export const buffConfig: BuffConfig = {
     },
     attack_speed: {
       values: {
-        common: 0.45,
-        rare: 0.9,
-        epic: 1.5,
-        legendary: 2.4,
+        common: 0.25,
+        rare: 0.45,
+        epic: 1,
+        legendary: 1.5,
       },
     },
   },

@@ -7,6 +7,7 @@ export type PauseReason =
   | "loot-case"
   | "shop"
   | "training"
+  | "daily-reward"
   | "infinite-mode"
   | "campaign-victory";
 type PauseChangeCallback = (isPaused: boolean) => void;

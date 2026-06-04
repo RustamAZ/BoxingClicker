@@ -81,6 +81,7 @@ export class FiveDifficultyBoss extends Enemy {
       diamondsReward: fifthBossConfig.buff_container_reward,
       coinsReward: fifthBossConfig.lootbox_container_reward,
       emeraldDropChance: fifthBossConfig.emerald_drop_chance,
+      emeraldDropAmount: fifthBossConfig.emerald_drop_amount,
       damagePerHit: fifthBossConfig.damage,
       attackCooldownSeconds: fifthBossConfig.attack_speed,
       initialAttackDelaySeconds: fifthBossConfig.initial_attack_delay,

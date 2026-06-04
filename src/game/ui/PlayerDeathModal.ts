@@ -15,12 +15,15 @@ export type PlayerDeathContinueOption = {
   label: string;
   isEnabled: boolean;
   showEmeraldPrice?: boolean;
+  showRewivePrice?: boolean;
+  showAdPrice?: boolean;
+  rewiveCount?: number;
   onContinue: () => void;
 };
 
 export class PlayerDeathModal {
   private static readonly depth = 1400;
-  private static readonly actionLockDurationMs = 300;
+  private static readonly actionLockDurationMs = 800;
   private static readonly soundKey = "player-death";
   private static readonly soundPath = "assets/audio/ui/player-death.mp3";
   private static readonly deathSoundVolume = 0.8;
@@ -32,7 +35,12 @@ export class PlayerDeathModal {
     "assets/images/ui/buttons/settings-button-bg.png";
   private static readonly emeraldIconTextureKey = "player-death-emerald-icon";
   private static readonly emeraldIconPath = "assets/images/ui/icons/emerald.png";
+  private static readonly rewiveIconTextureKey = "player-death-rewive-icon";
+  private static readonly rewiveIconPath = "assets/images/ui/icons/rewiveIcon.png";
+  private static readonly adIconTextureKey = "player-death-ad-icon";
+  private static readonly adIconPath = "assets/images/ui/icons/adIcon.png";
   private static readonly priceIconSize = 22;
+  private static readonly adPriceIconSize = 60;
   private static readonly priceIconGap = 8;
 
   private readonly overlay: GameObjects.Rectangle;
@@ -41,9 +49,12 @@ export class PlayerDeathModal {
   private readonly subtitle: GameObjects.Text;
   private readonly restartButton: PlayerDeathButton;
   private readonly continueButton: PlayerDeathButton;
+  private readonly rewiveRemainingLabel: GameObjects.Text;
+  private readonly rewiveRemainingIcon: GameObjects.Image;
   private readonly unsubscribeLanguageChange: () => void;
   private onContinue?: () => void;
   private isActionLocked = false;
+  private shouldShowRewiveRemaining = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   static preload(scene: Scene) {
@@ -60,6 +71,11 @@ export class PlayerDeathModal {
       PlayerDeathModal.emeraldIconTextureKey,
       PlayerDeathModal.emeraldIconPath,
     );
+    scene.load.image(
+      PlayerDeathModal.rewiveIconTextureKey,
+      PlayerDeathModal.rewiveIconPath,
+    );
+    scene.load.image(PlayerDeathModal.adIconTextureKey, PlayerDeathModal.adIconPath);
   }
 
   constructor(
@@ -116,6 +132,26 @@ export class PlayerDeathModal {
       languageController.t("death.continue"),
       () => this.onContinue?.(),
     );
+    this.rewiveRemainingLabel = this.scene.add
+      .text(512, 492, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 17,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(PlayerDeathModal.depth + 3)
+      .setVisible(false);
+    this.rewiveRemainingIcon = this.scene.add
+      .image(512, 492, PlayerDeathModal.rewiveIconTextureKey)
+      .setDisplaySize(
+        PlayerDeathModal.priceIconSize,
+        PlayerDeathModal.priceIconSize,
+      )
+      .setDepth(PlayerDeathModal.depth + 3)
+      .setVisible(false);
 
     this.hide();
     this.unsubscribeLanguageChange = languageController.onChange(() => {
@@ -237,6 +273,12 @@ export class PlayerDeathModal {
     this.subtitle.setVisible(visible);
     this.setButtonVisible(this.restartButton, visible);
     this.setButtonVisible(this.continueButton, visible);
+    this.rewiveRemainingLabel.setVisible(
+      visible && this.shouldShowRewiveRemaining,
+    );
+    this.rewiveRemainingIcon.setVisible(
+      visible && this.shouldShowRewiveRemaining,
+    );
 
     if (visible) {
       this.overlay.setInteractive();
@@ -288,8 +330,26 @@ export class PlayerDeathModal {
     this.onContinue = option.onContinue;
     this.continueButton.label.setText(option.label);
     this.continueButton.enabled = option.isEnabled;
-    this.continueButton.showPriceIcon = Boolean(option.showEmeraldPrice);
+    this.shouldShowRewiveRemaining = Boolean(option.showRewivePrice);
+    this.continueButton.showPriceIcon = Boolean(
+      option.showEmeraldPrice || option.showRewivePrice || option.showAdPrice,
+    );
+    const priceIconSize = option.showAdPrice
+      ? PlayerDeathModal.adPriceIconSize
+      : PlayerDeathModal.priceIconSize;
+    this.continueButton.priceIcon.setTexture(
+      option.showAdPrice
+        ? PlayerDeathModal.adIconTextureKey
+        : option.showRewivePrice
+          ? PlayerDeathModal.rewiveIconTextureKey
+          : PlayerDeathModal.emeraldIconTextureKey,
+    );
+    this.continueButton.priceIcon.setDisplaySize(
+      priceIconSize,
+      priceIconSize,
+    );
     this.layoutButton(this.continueButton);
+    this.layoutRewiveRemaining(option);
     this.continueButton.label.setAlpha(option.isEnabled ? 1 : 0.55);
     this.applyButtonFill(this.continueButton);
   }
@@ -307,15 +367,48 @@ export class PlayerDeathModal {
       return;
     }
 
+    const groupWidth =
+      button.label.width +
+      PlayerDeathModal.priceIconGap +
+      button.priceIcon.displayWidth;
+    const groupStartX = button.background.x - groupWidth / 2;
+    const labelX = groupStartX + button.label.width / 2;
     const iconX =
-      button.background.x +
+      labelX +
       button.label.width / 2 +
       PlayerDeathModal.priceIconGap +
-      PlayerDeathModal.priceIconSize / 2;
+      button.priceIcon.displayWidth / 2;
 
+    button.label.setX(labelX);
     button.priceIcon
       .setPosition(iconX, button.background.y)
       .setVisible(button.background.visible);
+  }
+
+  private layoutRewiveRemaining(option: PlayerDeathContinueOption) {
+    if (!option.showRewivePrice) {
+      this.rewiveRemainingLabel.setVisible(false);
+      this.rewiveRemainingIcon.setVisible(false);
+      return;
+    }
+
+    this.rewiveRemainingLabel
+      .setText(
+        languageController.t("death.rewiveRemaining", {
+          amount: option.rewiveCount ?? 0,
+        }),
+      )
+      .setVisible(this.continueButton.background.visible);
+
+    const iconX =
+      this.rewiveRemainingLabel.x -
+      this.rewiveRemainingLabel.width / 2 -
+      PlayerDeathModal.priceIconGap -
+      PlayerDeathModal.priceIconSize / 2;
+
+    this.rewiveRemainingIcon
+      .setPosition(iconX, this.rewiveRemainingLabel.y)
+      .setVisible(this.continueButton.background.visible);
   }
 
   private applyButtonFill(button: PlayerDeathButton) {

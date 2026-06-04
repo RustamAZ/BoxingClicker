@@ -18,18 +18,20 @@ export type BossConfig = {
   buff_container_reward: number;
   lootbox_container_reward: number;
   emerald_drop_chance: number;
+  emerald_drop_amount: number;
   effect?: BossEffectConfig;
 };
 
 export const firstBossConfig: BossConfig = {
   health: 520,
-  damage: 16,
-  attack_speed: 1.5,
-  initial_attack_delay: 0.55,
+  damage: 33,
+  attack_speed: 1.2,
+  initial_attack_delay: 0.35,
   xp_reward: 1,
   buff_container_reward: 54,
   lootbox_container_reward: 54,
   emerald_drop_chance: 1.0,
+  emerald_drop_amount: 5,
   effect: {},
 };
 
@@ -42,6 +44,7 @@ export const secondBossConfig: BossConfig = {
   buff_container_reward: 40,
   lootbox_container_reward: 40,
   emerald_drop_chance: 1.0,
+  emerald_drop_amount: 5,
   effect: {
     type: "explosion",
     explosion_damage: 120,
@@ -57,6 +60,7 @@ export const thirdBossConfig: BossConfig = {
   buff_container_reward: 64,
   lootbox_container_reward: 64,
   emerald_drop_chance: 1.0,
+  emerald_drop_amount: 5,
   effect: {
     type: "attack_speed_slow",
     max_attack_speed: 3,
@@ -72,6 +76,7 @@ export const fourthBossConfig: BossConfig = {
   buff_container_reward: 56,
   lootbox_container_reward: 56,
   emerald_drop_chance: 1.0,
+  emerald_drop_amount: 5,
 };
 
 export const fifthBossConfig: BossConfig = {
@@ -83,4 +88,5 @@ export const fifthBossConfig: BossConfig = {
   buff_container_reward: 80,
   lootbox_container_reward: 80,
   emerald_drop_chance: 1.0,
+  emerald_drop_amount: 10,
 };
