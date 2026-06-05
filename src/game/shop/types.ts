@@ -12,7 +12,7 @@ export type ShopItemConfig = {
   lockedCardTextureKey?: string;
   lockedCardTexturePath?: string;
   unlockBossId?: string;
-  unlockSource?: "boss" | "infinityTower";
+  unlockSource?: "boss" | "infinityTower" | "dailyReward";
 };
 
 export type ShopItemView = ShopItemConfig & {

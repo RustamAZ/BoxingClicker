@@ -98,6 +98,20 @@ export class ShopCatalog {
         "assets/images/ui/shop/cards/glove-card-locked-diamond.png",
       unlockSource: "infinityTower",
     },
+    {
+      id: "red-daily-gloves",
+      glovesId: "red-daily-gloves",
+      title: "Red daily gloves",
+      price: 0,
+      attackBonus: 0,
+      attackSpeedBonus: 0,
+      iconTextureKey: "shop-item-red-daily-gloves",
+      iconTexturePath: "assets/images/ui/shop/items/red-daily-weapon-icon.png",
+      lockedCardTextureKey: "shop-glove-card-locked-red-daily",
+      lockedCardTexturePath:
+        "assets/images/ui/shop/cards/glove-card-locked-red-daily.png",
+      unlockSource: "dailyReward",
+    },
   ];
 
   static getItems() {

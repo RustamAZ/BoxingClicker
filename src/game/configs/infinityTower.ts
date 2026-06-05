@@ -94,12 +94,18 @@ export const infinityTowerDifficultyConfig = {
 };
 
 export const infinityTowerRewardsConfig: InfinityTowerRewardConfig[] = [
-  { type: "emerald", id: "floor-50-left-emerald", level: 23, amount: 500 },
-  { type: "emerald", id: "floor-40-right-emerald", level: 22, amount: 400 },
+  { type: "emerald", id: "floor-50-left-emerald", level: 50, amount: 500 },
+  {
+    type: "consumable",
+    id: "floor-40-left-attack-power-potion",
+    level: 40,
+    consumableId: "attack-power-potion",
+    amount: 2,
+  },
   {
     type: "gloves",
     id: "floor-10-diamond-tower-gloves",
-    level: 13,
+    level: 40,
     itemId: "diamond-tower-gloves",
     titleKey: "infinite.diamondGlovesRewardItem",
     iconTextureKey: "infinite-tower-diamond-gloves-icon",
@@ -109,20 +115,26 @@ export const infinityTowerRewardsConfig: InfinityTowerRewardConfig[] = [
   {
     type: "consumable",
     id: "floor-40-left-attack-power-potion",
-    level: 12,
+    level: 40,
     consumableId: "attack-power-potion",
     amount: 1,
   },
   {
     type: "consumable",
     id: "floor-30-left-attack-speed-potion",
-    level: 11,
+    level: 30,
     consumableId: "attack-speed-potion",
     amount: 1,
   },
-  { type: "emerald", id: "floor-30-right-emerald", level: 10, amount: 300 },
-  { type: "emerald", id: "floor-20-left-emerald", level: 10, amount: 200 },
-  { type: "rewive", id: "floor-20-right-rewive", level: 10, amount: 1 },
+  { type: "emerald", id: "floor-30-right-emerald", level: 30, amount: 300 },
+  { type: "emerald", id: "floor-20-left-emerald", level: 20, amount: 200 },
+  { type: "rewive", id: "floor-20-right-rewive", level: 20, amount: 1 },
   { type: "emerald", id: "floor-10-left-emerald", level: 10, amount: 100 },
-  { type: "emerald", id: "floor-10-right-emerald", level: 10, amount: 100 },
+  {
+    type: "consumable",
+    id: "floor-40-left-attack-power-potion",
+    level: 40,
+    consumableId: "attack-power-potion",
+    amount: 1,
+  },
 ];

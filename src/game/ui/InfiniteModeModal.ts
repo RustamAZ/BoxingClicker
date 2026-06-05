@@ -16,6 +16,8 @@ type InfinityTowerAssetConfig = {
 };
 
 type RewardSlotView = {
+  baseX: number;
+  baseY: number;
   icon: GameObjects.Image;
   amountText: GameObjects.Text;
   button: GameObjects.Image;
@@ -101,6 +103,8 @@ export class InfiniteModeModal {
   private static readonly rewardIconSize = 36;
   private static readonly rewardButtonDisplayWidth = 222;
   private static readonly rewardButtonDisplayHeight = 75;
+  private static readonly rewardButtonLockedDisplayWidth = 285;
+  private static readonly rewardButtonLockedDisplayHeight = 115;
   private static readonly rewardButtonClaimedDisplayWidth = 170;
   private static readonly rewardButtonClaimedDisplayHeight = 80;
   private static readonly startRewardButtonDisplayWidth = 250;
@@ -112,6 +116,10 @@ export class InfiniteModeModal {
   private static readonly rewardTitleWrapWidth = 130;
   private static readonly rewardButtonOffsetY = 31;
   private static readonly rewardButtonOffsetX = -3;
+  private static readonly rewardButtonLockedOffsetY = 31;
+  private static readonly rewardButtonLockedOffsetX = -3;
+  private static readonly rewardButtonLockedLabelOffsetY = 0;
+  private static readonly rewardButtonLockedLabelOffsetX = 0;
   private static readonly startRewardButtonOffsetY = 34;
   private static readonly startRewardButtonOffsetX = -20;
   private static readonly mainCloseHitOffsetX = 358;
@@ -424,10 +432,17 @@ export class InfiniteModeModal {
     this.createLockedPanel(centerX, centerY);
     this.createRewardDetails(centerX, centerY);
 
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
     this.panelBlocker.on(
       "pointerdown",
       (
@@ -585,6 +600,8 @@ export class InfiniteModeModal {
     );
 
     return {
+      baseX: x,
+      baseY: y,
       icon,
       amountText,
       button,
@@ -997,7 +1014,7 @@ export class InfiniteModeModal {
             ? InfiniteModeModal.rewardButtonOpenTextureKey
             : InfiniteModeModal.rewardButtonLockedTextureKey,
       );
-      InfiniteModeModal.applyRewardButtonDisplaySize(slot.button, isClaimed);
+      InfiniteModeModal.applyRewardButtonLayout(slot, isClaimed, isOpen);
       slot.buttonBaseWidth = slot.button.displayWidth;
       slot.buttonBaseHeight = slot.button.displayHeight;
       slot.buttonLabel.setText(
@@ -1418,18 +1435,45 @@ export class InfiniteModeModal {
     return InfiniteModeModal.baseRewardSlotIndexes.includes(index);
   }
 
-  private static applyRewardButtonDisplaySize(
-    button: GameObjects.Image,
-    isClaimed = false,
+  private static applyRewardButtonLayout(
+    slot: RewardSlotView,
+    isClaimed: boolean,
+    isOpen: boolean,
   ) {
-    button.setDisplaySize(
-      isClaimed
-        ? InfiniteModeModal.rewardButtonClaimedDisplayWidth
-        : InfiniteModeModal.rewardButtonDisplayWidth,
-      isClaimed
-        ? InfiniteModeModal.rewardButtonClaimedDisplayHeight
-        : InfiniteModeModal.rewardButtonDisplayHeight,
+    const isLocked = !isClaimed && !isOpen;
+    const buttonX =
+      slot.baseX +
+      (isLocked
+        ? InfiniteModeModal.rewardButtonLockedOffsetX
+        : InfiniteModeModal.rewardButtonOffsetX);
+    const buttonY =
+      slot.baseY +
+      (isLocked
+        ? InfiniteModeModal.rewardButtonLockedOffsetY
+        : InfiniteModeModal.rewardButtonOffsetY);
+    const buttonWidth = isClaimed
+      ? InfiniteModeModal.rewardButtonClaimedDisplayWidth
+      : isLocked
+        ? InfiniteModeModal.rewardButtonLockedDisplayWidth
+        : InfiniteModeModal.rewardButtonDisplayWidth;
+    const buttonHeight = isClaimed
+      ? InfiniteModeModal.rewardButtonClaimedDisplayHeight
+      : isLocked
+        ? InfiniteModeModal.rewardButtonLockedDisplayHeight
+        : InfiniteModeModal.rewardButtonDisplayHeight;
+
+    slot.button.setPosition(buttonX, buttonY);
+    slot.button.setDisplaySize(buttonWidth, buttonHeight);
+    slot.buttonLabel.setPosition(
+      isLocked
+        ? buttonX + InfiniteModeModal.rewardButtonLockedLabelOffsetX
+        : slot.baseX,
+      isLocked
+        ? buttonY + InfiniteModeModal.rewardButtonLockedLabelOffsetY
+        : slot.baseY + InfiniteModeModal.rewardButtonOffsetY,
     );
+    slot.hitArea.setPosition(buttonX, buttonY);
+    slot.hitArea.setSize(buttonWidth, buttonHeight);
   }
 
   private static areAssetsLoaded(scene: Scene) {

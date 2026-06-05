@@ -305,6 +305,19 @@ export class Game extends Scene {
       this,
       this.pauseController,
       this.dailyRewardController,
+      (result) => {
+        if (result.reward.type !== "gloves") {
+          return;
+        }
+
+        this.glovesEquipmentController.loadAndEquipShopItem(
+          this,
+          result.reward.itemId,
+          () => {
+            this.updatePlayerStatsDebugText();
+          },
+        );
+      },
     );
     this.trainingModal = new TrainingModal(
       this,

@@ -82,6 +82,8 @@ export class ShopModal {
   private static readonly normalCardHeight = 290;
   private static readonly lockedCardWidth = 245;
   private static readonly lockedCardHeight = 302;
+  private static readonly redDailyLockedCardWidth = 275;
+  private static readonly redDailyLockedCardHeight = 286;
   private static readonly itemIconMaxSize = 146;
   private static readonly cardButtonWidth = 225;
   private static readonly cardButtonHeight = 62;
@@ -103,8 +105,9 @@ export class ShopModal {
     { x: -260, y: 150 },
     { x: 0, y: 150 },
     { x: 260, y: 150 },
-    { x: -130, y: 430 },
-    { x: 130, y: 430 },
+    { x: -260, y: 430 },
+    { x: 0, y: 430 },
+    { x: 260, y: 430 },
   ];
 
   private readonly shopButton: ShopIconButton;
@@ -295,10 +298,17 @@ export class ShopModal {
       this.createItemCard(centerX + slot.x, centerY + slot.y),
     );
 
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
     this.panelBlocker.on(
       "pointerdown",
       (
@@ -398,7 +408,7 @@ export class ShopModal {
         ? item.lockedCardTextureKey ?? ShopModal.lockedCardTextureKey
         : ShopModal.cardTextureKey,
     );
-    this.setCardBackgroundSize(card.background, isLocked);
+    this.setCardBackgroundSize(card.background, isLocked, item);
     card.itemIcon.setTexture(item.iconTextureKey);
     this.fitItemIcon(card.itemIcon);
     card.itemIcon.setVisible(!isLocked && card.background.visible);
@@ -409,17 +419,26 @@ export class ShopModal {
 
     if (isLocked) {
       const isInfinityTowerItem = item.unlockSource === "infinityTower";
+      const isDailyRewardItem = item.unlockSource === "dailyReward";
 
       this.setCardButtonTexture(card, ShopModal.lockedButtonTextureKey);
       card.attackText.setText("");
       card.speedText.setText("");
       card.buttonLabel.setText(
         languageController.t(
-          isInfinityTowerItem ? "shop.openInInfiniteTower" : "shop.reachBoss",
+          isInfinityTowerItem
+            ? "shop.openInInfiniteTower"
+            : isDailyRewardItem
+              ? "shop.openInDailyReward"
+              : "shop.reachBoss",
         ),
       );
-      card.buttonLabel.setFontSize(isInfinityTowerItem ? 15 : 18);
-      card.buttonLabel.setColor(isInfinityTowerItem ? "#ffe85a" : "#ffffff");
+      card.buttonLabel.setFontSize(
+        isInfinityTowerItem || isDailyRewardItem ? 15 : 18,
+      );
+      card.buttonLabel.setColor(
+        isInfinityTowerItem || isDailyRewardItem ? "#ffe85a" : "#ffffff",
+      );
       card.priceIcon.setVisible(false);
       card.buttonLabel.setX(card.buttonImage.x);
       return;
@@ -654,10 +673,21 @@ export class ShopModal {
   private setCardBackgroundSize(
     background: GameObjects.Image,
     isLocked: boolean,
+    item?: ShopItemView,
   ) {
+    const isRedDailyLockedCard = isLocked && item?.id === "red-daily-gloves";
+
     background.setDisplaySize(
-      isLocked ? ShopModal.lockedCardWidth : ShopModal.normalCardWidth,
-      isLocked ? ShopModal.lockedCardHeight : ShopModal.normalCardHeight,
+      isRedDailyLockedCard
+        ? ShopModal.redDailyLockedCardWidth
+        : isLocked
+          ? ShopModal.lockedCardWidth
+          : ShopModal.normalCardWidth,
+      isRedDailyLockedCard
+        ? ShopModal.redDailyLockedCardHeight
+        : isLocked
+          ? ShopModal.lockedCardHeight
+          : ShopModal.normalCardHeight,
     );
   }
 
@@ -754,13 +784,16 @@ export class ShopModal {
   }
 
   private setCardInteractive(card: ShopItemCard, isInteractive: boolean) {
+    const item = card.item;
+
     if (
       isInteractive &&
-      card.item?.status !== "locked" &&
-      !card.item.isEquipped &&
-      (card.item.status !== "not-purchased" ||
-        card.item.price <= 0 ||
-        this.wallet.canWithdraw(card.item.price)) &&
+      item &&
+      item.status !== "locked" &&
+      !item.isEquipped &&
+      (item.status !== "not-purchased" ||
+        item.price <= 0 ||
+        this.wallet.canWithdraw(item.price)) &&
       this.isPointInsideCardsViewport(card.buttonHitArea.x, card.buttonHitArea.y)
     ) {
       card.buttonHitArea.setInteractive({ useHandCursor: true });

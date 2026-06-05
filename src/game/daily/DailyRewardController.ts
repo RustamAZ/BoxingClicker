@@ -57,9 +57,7 @@ export class DailyRewardController {
       return undefined;
     }
 
-    if (reward.type === "emerald") {
-      this.profile.addEmeralds(reward.amount);
-    }
+    this.applyReward(reward);
 
     this.profile.claimDailyReward(index, today);
 
@@ -67,5 +65,16 @@ export class DailyRewardController {
       reward,
       index,
     };
+  }
+
+  private applyReward(reward: DailyRewardConfig) {
+    if (reward.type === "emerald") {
+      this.profile.addEmeralds(reward.amount);
+      return;
+    }
+
+    this.profile.discoverItem(reward.itemId);
+    this.profile.purchaseItem(reward.itemId);
+    this.profile.equipItem(reward.itemId);
   }
 }

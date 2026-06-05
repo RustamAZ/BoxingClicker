@@ -260,10 +260,17 @@ export class TrainingModal {
       },
     );
 
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
   }
 
   private createOpenButton() {
@@ -416,12 +423,12 @@ export class TrainingModal {
       .setDepth(TrainingModal.depth + 4)
       .setVisible(false);
     const priceIcon = this.scene.add
-      .image(centerX + 112, y, TrainingModal.emeraldIconTextureKey)
+      .image(centerX + 105, y, TrainingModal.emeraldIconTextureKey)
       .setDisplaySize(30, 38)
       .setDepth(TrainingModal.depth + 4)
       .setVisible(false);
     const price = this.scene.add
-      .text(centerX + 144, y, "", {
+      .text(centerX + 129, y, "", {
         fontFamily: "Hardpixel",
         fontSize: 25,
         color: "#7dff76",

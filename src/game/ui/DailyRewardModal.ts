@@ -1,6 +1,13 @@
 import { GameObjects, Scene } from "phaser";
 import { UiSoundPlayer } from "../audio/UiSoundPlayer";
-import type { DailyRewardController } from "../daily/DailyRewardController";
+import type {
+  DailyRewardClaimResult,
+  DailyRewardController,
+} from "../daily/DailyRewardController";
+import {
+  dailyRewardsConfig,
+  type DailyRewardConfig,
+} from "../configs/dailyRewards";
 import { languageController } from "../localization/LanguageController";
 import type { PauseController } from "../state/PauseController";
 
@@ -52,18 +59,29 @@ export class DailyRewardModal {
   private static readonly panelHeight = 600;
   private static readonly slotWidth = 136;
   private static readonly slotHeight = 168;
-  private static readonly slotGapX = 18;
-  private static readonly slotGapY = 24;
-  private static readonly slotStartY = -48;
-  private static readonly cardTitleOffsetY = -70;
+  private static readonly slotPositions = [
+    { offsetX: -200, offsetY: -60 },
+    { offsetX: -65, offsetY: -60 },
+    { offsetX: 70, offsetY: -60 },
+    { offsetX: 205, offsetY: -60 },
+    { offsetX: -140, offsetY: 105 },
+    { offsetX: -5, offsetY: 105 },
+    { offsetX: 145, offsetY: 105 },
+  ];
+  private static readonly cardTitleOffsetY = -65;
   private static readonly cardIconOffsetY = -12;
   private static readonly cardAmountOffsetY = 28;
-  private static readonly cardStatusOffsetY = 62;
+  private static readonly cardStatusOffsetY = 55;
+  private static readonly finalCardTitleOffsetY = -60;
+  private static readonly finalCardIconOffsetY = -5;
+  private static readonly finalCardAmountOffsetY = 28;
+  private static readonly finalCardStatusOffsetY = 47;
   private static readonly cardButtonWidth = 114;
   private static readonly cardButtonHeight = 30;
-  private static readonly closeHitOffsetX = 355;
-  private static readonly closeHitOffsetY = -220;
-  private static readonly closeHitSize = 54;
+  private static readonly closeHitOffsetX = 260;
+  private static readonly closeHitOffsetY = -190;
+  private static readonly closeHitWidth = 70;
+  private static readonly closeHitHeight = 70;
   private static readonly actionLockDurationMs = 220;
 
   static preload(scene: Scene) {
@@ -90,6 +108,7 @@ export class DailyRewardModal {
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly controller: DailyRewardController,
+    private readonly onClaim?: (result: DailyRewardClaimResult) => void,
   ) {
     this.openButton = this.createOpenButton();
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
@@ -225,21 +244,37 @@ export class DailyRewardModal {
       .rectangle(
         centerX + DailyRewardModal.closeHitOffsetX,
         centerY + DailyRewardModal.closeHitOffsetY,
-        DailyRewardModal.closeHitSize,
-        DailyRewardModal.closeHitSize,
+        DailyRewardModal.closeHitWidth,
+        DailyRewardModal.closeHitHeight,
         0x000000,
         0,
       )
-      .setDepth(DailyRewardModal.depth + 5)
+      .setDepth(DailyRewardModal.depth + 20)
       .setVisible(false);
-    this.closeHitArea.on("pointerdown", () => {
+    this.closeHitArea.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
         UiSoundPlayer.playClick(this.scene);
         this.close();
-    });
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
+      },
+    );
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
   }
 
   private createOpenButton(): DailyRewardOpenButton {
@@ -288,18 +323,7 @@ export class DailyRewardModal {
   }
 
   private createSlot(index: number, centerX: number, centerY: number) {
-    const col = index % 4;
-    const row = Math.floor(index / 4);
-    const rowSlots = row === 0 ? 4 : 3;
-    const totalWidth =
-      rowSlots * DailyRewardModal.slotWidth +
-      (rowSlots - 1) * DailyRewardModal.slotGapX;
-    const startX = centerX - totalWidth / 2 + DailyRewardModal.slotWidth / 2;
-    const x = startX + col * (DailyRewardModal.slotWidth + DailyRewardModal.slotGapX);
-    const y =
-      centerY +
-      DailyRewardModal.slotStartY +
-      row * (DailyRewardModal.slotHeight + DailyRewardModal.slotGapY);
+    const { x, y } = DailyRewardModal.getSlotPosition(index, centerX, centerY);
     const background = this.scene.add
       .image(
         x,
@@ -343,7 +367,7 @@ export class DailyRewardModal {
       .setDepth(DailyRewardModal.depth + 3)
       .setVisible(false);
     const status = this.scene.add
-      .text(x + 12, y + DailyRewardModal.cardStatusOffsetY, "", {
+      .text(x + 3, y + DailyRewardModal.cardStatusOffsetY, "", {
         fontFamily: "Hardpixel",
         fontSize: 12,
         color: "#cfcfcf",
@@ -415,6 +439,83 @@ export class DailyRewardModal {
     };
   }
 
+  private static getSlotPosition(index: number, centerX: number, centerY: number) {
+    const position = DailyRewardModal.slotPositions[index];
+
+    return {
+      x: centerX + (position?.offsetX ?? 0),
+      y: centerY + (position?.offsetY ?? 0),
+    };
+  }
+
+  private static getRewardIconTextureKey(reward: DailyRewardConfig) {
+    return reward.type === "gloves"
+      ? reward.iconTextureKey
+      : DailyRewardModal.emeraldIconTextureKey;
+  }
+
+  private static getRewardIconSize(reward: DailyRewardConfig) {
+    return reward.type === "gloves" ? 82 : 48;
+  }
+
+  private static setSlotElementPositions(
+    slot: DailyRewardSlot,
+    isFinalReward: boolean,
+  ) {
+    const x = slot.background.x;
+    const y = slot.background.y;
+
+    slot.dayLabel.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardTitleOffsetY
+          : DailyRewardModal.cardTitleOffsetY),
+    );
+    slot.icon.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardIconOffsetY
+          : DailyRewardModal.cardIconOffsetY),
+    );
+    slot.amount.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardAmountOffsetY
+          : DailyRewardModal.cardAmountOffsetY),
+    );
+    slot.status.setPosition(
+      x + 3,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardStatusOffsetY
+          : DailyRewardModal.cardStatusOffsetY),
+    );
+    slot.button.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardStatusOffsetY
+          : DailyRewardModal.cardStatusOffsetY),
+    );
+    slot.buttonLabel.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardStatusOffsetY
+          : DailyRewardModal.cardStatusOffsetY),
+    );
+    slot.hitArea.setPosition(
+      x,
+      y +
+        (isFinalReward
+          ? DailyRewardModal.finalCardStatusOffsetY
+          : DailyRewardModal.cardStatusOffsetY),
+    );
+  }
+
   private handleClaim(index: number) {
     if (index !== this.controller.getNextRewardIndex()) {
       return;
@@ -426,6 +527,7 @@ export class DailyRewardModal {
       return;
     }
 
+    this.onClaim?.(result);
     this.refresh();
   }
 
@@ -436,6 +538,7 @@ export class DailyRewardModal {
 
     const nextRewardIndex = this.controller.getNextRewardIndex();
     const canClaimToday = this.controller.canClaimToday();
+    const isPanelVisible = this.panel.visible;
 
     this.title?.setText(languageController.t("daily.title"));
     this.hint?.setText(
@@ -447,8 +550,14 @@ export class DailyRewardModal {
     );
     this.controller.getRewards().forEach((reward, index) => {
       const slot = this.slots[index];
+
+      if (!slot) {
+        return;
+      }
+
       const claimed = this.isRewardClaimed(index);
       const isNext = index === nextRewardIndex;
+      const isFinalReward = index === this.controller.getRewards().length - 1;
       const canClaimSlot = isNext && canClaimToday;
       const daysUntil = Math.max(
         1,
@@ -456,16 +565,24 @@ export class DailyRewardModal {
       );
 
       slot.background.setTexture(
-        index === this.controller.getRewards().length - 1
-          ? DailyRewardModal.cardFinalTextureKey
-          : canClaimSlot || claimed
-            ? DailyRewardModal.cardActiveTextureKey
+        canClaimSlot
+          ? DailyRewardModal.cardActiveTextureKey
+          : isFinalReward
+            ? DailyRewardModal.cardFinalTextureKey
             : DailyRewardModal.cardLockedTextureKey,
       );
+      DailyRewardModal.setSlotElementPositions(slot, isFinalReward);
       slot.dayLabel.setText(
         languageController.t("daily.day", { day: index + 1 }),
       );
-      slot.amount.setText(String(reward.amount));
+      slot.icon.setTexture(DailyRewardModal.getRewardIconTextureKey(reward));
+      slot.icon.setDisplaySize(
+        DailyRewardModal.getRewardIconSize(reward),
+        DailyRewardModal.getRewardIconSize(reward),
+      );
+      slot.amount.setText(
+        reward.type === "emerald" ? String(reward.amount) : "",
+      );
       slot.status.setText(
         claimed
           ? languageController.t("daily.claimed")
@@ -475,11 +592,11 @@ export class DailyRewardModal {
               ? languageController.t("daily.tomorrow")
               : languageController.t("daily.afterDays", { days: daysUntil }),
       );
-      slot.status.setColor(claimed ? "#7dff76" : "#cfcfcf");
-      slot.button.setVisible(canClaimSlot && this.panel.visible);
+      slot.status.setColor("#cfcfcf");
+      slot.button.setVisible(canClaimSlot && isPanelVisible);
       slot.buttonLabel.setText(languageController.t("daily.claim"));
-      slot.buttonLabel.setVisible(canClaimSlot && this.panel.visible);
-      slot.hitArea.setVisible(canClaimSlot && this.panel.visible);
+      slot.buttonLabel.setVisible(canClaimSlot && isPanelVisible);
+      slot.hitArea.setVisible(canClaimSlot && isPanelVisible);
     });
     this.setClaimButtonInteractive(!this.isActionLocked);
   }
@@ -543,6 +660,7 @@ export class DailyRewardModal {
       DailyRewardModal.cardFinalTextureKey,
       DailyRewardModal.buttonTextureKey,
       DailyRewardModal.emeraldIconTextureKey,
+      ...DailyRewardModal.getRewardAssetTextureKeys(),
     ].every((textureKey) => scene.textures.exists(textureKey));
   }
 
@@ -588,7 +706,30 @@ export class DailyRewardModal {
       );
     }
 
+    DailyRewardModal.getRewardAssets().forEach((asset) => {
+      if (!scene.textures.exists(asset.textureKey)) {
+        loader.image(asset.textureKey, asset.texturePath);
+      }
+    });
+
     loader.once("complete", onComplete);
     loader.start();
+  }
+
+  private static getRewardAssetTextureKeys() {
+    return DailyRewardModal.getRewardAssets().map((asset) => asset.textureKey);
+  }
+
+  private static getRewardAssets() {
+    return DailyRewardModal.getDailyRewards()
+      .filter((reward) => reward.type === "gloves")
+      .map((reward) => ({
+        textureKey: reward.iconTextureKey,
+        texturePath: reward.iconTexturePath,
+      }));
+  }
+
+  private static getDailyRewards() {
+    return dailyRewardsConfig;
   }
 }

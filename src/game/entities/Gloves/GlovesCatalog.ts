@@ -7,6 +7,7 @@ import { GoldenTowerGloves } from './variants/GoldenTowerGloves';
 import { InfinityGloves } from './variants/InfinityGloves';
 import { MechanicGloves } from './variants/MechanicGloves';
 import { PepeGloves } from './variants/PepeGloves';
+import { RedDailyGloves } from './variants/RedDailyGloves';
 import { SixSevenGloves } from './variants/SixSevenGloves';
 
 export class GlovesCatalog
@@ -21,6 +22,7 @@ export class GlovesCatalog
         new SixSevenGloves(),
         new GoldenTowerGloves(),
         new DiamondTowerGloves(),
+        new RedDailyGloves(),
     ];
 
     static preload (scene: Scene, equippedGlovesId?: string)

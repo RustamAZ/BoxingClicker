@@ -181,10 +181,17 @@ export class CampaignVictoryModal {
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
 
-    this.overlay.on("pointerdown", () => {
-      UiSoundPlayer.playClick(this.scene);
-      this.close();
-    });
+    this.overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
     this.closeHitArea.on("pointerdown", () => {
       UiSoundPlayer.playClick(this.scene);
       this.close();
