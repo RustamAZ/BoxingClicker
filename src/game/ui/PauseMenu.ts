@@ -57,7 +57,10 @@ export class PauseMenu {
   private readonly unsubscribeLanguageChange: () => void;
 
   static preload(scene: Scene) {
-    scene.load.image(PauseMenu.settingsIconTextureKey, PauseMenu.settingsIconPath);
+    scene.load.image(
+      PauseMenu.settingsIconTextureKey,
+      PauseMenu.settingsIconPath,
+    );
     scene.load.image(
       PauseMenu.settingsMenuBackgroundTextureKey,
       PauseMenu.settingsMenuBackgroundPath,
@@ -79,7 +82,7 @@ export class PauseMenu {
     this.settingsButton = this.createSettingsButton(976, 68, () => {
       this.open();
     });
-    this.muteButton = this.createMuteButton(900, 68);
+    this.muteButton = this.createMuteButton(976, 148);
 
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.58)
@@ -198,10 +201,17 @@ export class PauseMenu {
   }
 
   private createMuteButton(x: number, y: number): PauseMenuIconButton {
-    return this.createIconButton(x, y, this.getMuteButtonTextureKey(), () => {
-      this.gameSettings.toggleMuted();
-      this.syncMuteButtonTexture();
-    });
+    return this.createIconButton(
+      x,
+      y,
+      this.getMuteButtonTextureKey(),
+      () => {
+        this.gameSettings.toggleMuted();
+        this.syncMuteButtonTexture();
+      },
+      100,
+      105,
+    );
   }
 
   private createIconButton(
@@ -209,21 +219,16 @@ export class PauseMenu {
     y: number,
     textureKey: string,
     onClick: () => void,
+    size: number = PauseMenu.headerIconSize,
+    hoverSize: number = PauseMenu.headerIconHoverSize,
   ): PauseMenuIconButton {
     const hitArea = this.scene.add
-      .rectangle(
-        x,
-        y,
-        PauseMenu.settingsButtonSize,
-        PauseMenu.settingsButtonSize,
-        0x000000,
-        0,
-      )
+      .rectangle(x, y, size, size, 0x000000, 0)
       .setDepth(PauseMenu.depth)
       .setInteractive({ useHandCursor: true });
     const icon = this.scene.add
       .image(x, y, textureKey)
-      .setDisplaySize(PauseMenu.headerIconSize, PauseMenu.headerIconSize)
+      .setDisplaySize(size, size)
       .setDepth(PauseMenu.depth + 1);
 
     hitArea.on("pointerdown", () => {
@@ -231,16 +236,10 @@ export class PauseMenu {
       onClick();
     });
     hitArea.on("pointerover", () => {
-      icon.setDisplaySize(
-        PauseMenu.headerIconHoverSize,
-        PauseMenu.headerIconHoverSize,
-      );
+      icon.setDisplaySize(hoverSize, hoverSize);
     });
     hitArea.on("pointerout", () => {
-      icon.setDisplaySize(
-        PauseMenu.headerIconSize,
-        PauseMenu.headerIconSize,
-      );
+      icon.setDisplaySize(size, size);
     });
 
     return {
@@ -315,7 +314,8 @@ export class PauseMenu {
   }
 
   private setMasterVolumeByPointerX(pointerX: number) {
-    const trackLeft = this.volumeSlider.track.x - PauseMenu.volumeSliderWidth / 2;
+    const trackLeft =
+      this.volumeSlider.track.x - PauseMenu.volumeSliderWidth / 2;
     const volume = (pointerX - trackLeft) / PauseMenu.volumeSliderWidth;
 
     this.gameSettings.setMasterVolume(volume);
@@ -326,7 +326,8 @@ export class PauseMenu {
 
   private setVolumeSliderValue(volume: number) {
     const normalizedVolume = Math.max(0, Math.min(1, volume));
-    const trackLeft = this.volumeSlider.track.x - PauseMenu.volumeSliderWidth / 2;
+    const trackLeft =
+      this.volumeSlider.track.x - PauseMenu.volumeSliderWidth / 2;
     const fillWidth = PauseMenu.volumeSliderWidth * normalizedVolume;
 
     this.volumeSlider.label.setText(
@@ -340,9 +341,13 @@ export class PauseMenu {
 
   private refreshTexts() {
     this.title.setText(languageController.t("settings.title"));
-    this.continueButton.label.setText(languageController.t("settings.continue"));
+    this.continueButton.label.setText(
+      languageController.t("settings.continue"),
+    );
     this.restartButton.label.setText(languageController.t("settings.restart"));
-    this.languageButton.label.setText(languageController.t("settings.language"));
+    this.languageButton.label.setText(
+      languageController.t("settings.language"),
+    );
     this.setVolumeSliderValue(this.gameSettings.getMasterVolume());
   }
 

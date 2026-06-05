@@ -90,7 +90,7 @@ export class InfiniteModeModal {
     "infinite-tower-golden-gloves-icon";
   private static readonly startRewardIconPath =
     "assets/images/ui/shop/items/golden-tower-weapon-icon.png";
-  private static readonly openButtonX = 805;
+  private static readonly openButtonX = 820;
   private static readonly openButtonY = 68;
   private static readonly openButtonSize = 96;
   private static readonly openButtonHoverSize = 106;

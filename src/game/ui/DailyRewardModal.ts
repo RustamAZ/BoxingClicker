@@ -30,11 +30,11 @@ type DailyRewardSlot = {
 export class DailyRewardModal {
   private static readonly depth = 1140;
   private static readonly buttonDepth = 1001;
-  private static readonly openButtonX = 976;
-  private static readonly openButtonY = 158;
+  private static readonly openButtonX = 900;
+  private static readonly openButtonY = 68;
   private static readonly openButtonSize = 100;
-  private static readonly openButtonIconSize = 92;
-  private static readonly openButtonIconHoverSize = 100;
+  private static readonly openButtonIconSize = 100;
+  private static readonly openButtonIconHoverSize = 105;
   private static readonly openButtonIconTextureKey = "daily-reward-open-icon";
   private static readonly openButtonIconPath =
     "assets/images/ui/daily-rewards/daily-reward-icon.png";
