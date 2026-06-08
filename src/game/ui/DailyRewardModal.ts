@@ -76,8 +76,8 @@ export class DailyRewardModal {
   private static readonly finalCardIconOffsetY = -5;
   private static readonly finalCardAmountOffsetY = 28;
   private static readonly finalCardStatusOffsetY = 47;
-  private static readonly cardButtonWidth = 114;
-  private static readonly cardButtonHeight = 30;
+  private static readonly cardButtonWidth = 150;
+  private static readonly cardButtonHeight = 80;
   private static readonly closeHitOffsetX = 260;
   private static readonly closeHitOffsetY = -190;
   private static readonly closeHitWidth = 70;

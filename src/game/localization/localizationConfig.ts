@@ -94,7 +94,7 @@ export const localizationConfig: Record<Language, LocalizationDictionary> = {
     "infinite.sealedHint": "Победи хранителя и сними печать с башни.",
     "victory.close": "Закрыть",
     "victory.campaign.title": "Победа!",
-    "victory.campaign.message": "Открыт новый режим - Башня бесконечности\n\nТеперь тебе доступны новые награды, усиления, перчатки и многое другое\n\nПоднимайся все выше, становись сильнее и побеждай других в рейтинге!",
+    "victory.campaign.message": "Открыт новый режим - Башня бесконечности\nТеперь тебе доступны новые награды, усиления, перчатки и многое другое\nПоднимайся все выше, становись сильнее и побеждай других в рейтинге!",
     "buff.rarity.wooden": "Дерево",
     "buff.rarity.golden": "Золото",
     "buff.rarity.emerald": "Изумруд",

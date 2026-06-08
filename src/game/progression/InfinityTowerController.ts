@@ -1,7 +1,6 @@
 import {
   infinityTowerDifficultyConfig,
   infinityTowerFloorRequirementsConfig,
-  infinityTowerRewardsConfig,
   type InfinityTowerEnemyStats,
 } from "../configs/infinityTower";
 import {
@@ -13,6 +12,7 @@ import {
 } from "../configs/infinityTowerEnemies";
 import type { PlayerProfile } from "../entities/Player/PlayerProfile";
 import { randomItem } from "../utils/randomItem";
+import { InfinityTowerRewardController } from "./InfinityTowerRewardController";
 
 type RewardUnlockedCallback = (floor: number) => void;
 
@@ -23,8 +23,11 @@ export class InfinityTowerController {
   private currentEnemyPack: InfinityTowerEnemyPackConfig =
     infinityTowerEnemyPacks[0];
   private readonly rewardUnlockedCallbacks: RewardUnlockedCallback[] = [];
+  private readonly rewardController: InfinityTowerRewardController;
 
-  constructor(private readonly profile: PlayerProfile) {}
+  constructor(private readonly profile: PlayerProfile) {
+    this.rewardController = new InfinityTowerRewardController(profile);
+  }
 
   startRun() {
     this.isActive = true;
@@ -119,29 +122,13 @@ export class InfinityTowerController {
   }
 
   private emitRewardUnlockedIfNeeded() {
-    const hasReward = infinityTowerRewardsConfig.some(
-      (reward) =>
-        reward.level === this.currentFloor &&
-        !this.isInfinityTowerRewardClaimed(reward),
-    );
-
-    if (!hasReward) {
+    if (!this.rewardController.hasClaimableRewardForFloor(this.currentFloor)) {
       return;
     }
 
     this.rewardUnlockedCallbacks.forEach((callback) => {
       callback(this.currentFloor);
     });
-  }
-
-  private isInfinityTowerRewardClaimed(
-    reward: (typeof infinityTowerRewardsConfig)[number],
-  ) {
-    if (reward.type === "gloves") {
-      return this.profile.hasPurchasedItem(reward.itemId);
-    }
-
-    return this.profile.hasClaimedInfinityTowerReward(reward.id);
   }
 
   private static getEnemiesRequiredForFloor(floor: number) {

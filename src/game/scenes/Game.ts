@@ -65,8 +65,8 @@ export class Game extends Scene {
   private static readonly infinityTowerEnemiesCounterPath =
     "assets/images/ui/infinity-tower/enemies-counter.png";
   private static readonly infinityTowerCounterX = 960;
-  private static readonly infinityTowerFloorCounterY = 188;
-  private static readonly infinityTowerEnemiesCounterY = 252;
+  private static readonly infinityTowerFloorCounterY = 230;
+  private static readonly infinityTowerEnemiesCounterY = 300;
   private static readonly infinityTowerCounterDepth = 950;
   private static readonly infinityTowerCounterTextOffsetX = 0;
 

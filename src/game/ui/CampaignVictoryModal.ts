@@ -157,7 +157,7 @@ export class CampaignVictoryModal {
       .setDepth(CampaignVictoryModal.depth + 2)
       .setVisible(false);
     this.closeLabel = this.scene.add
-      .text(centerX, centerY + 142, "", {
+      .text(centerX, centerY + 124, "", {
         fontFamily: "Hardpixel",
         fontSize: 25,
         color: "#ffffff",
