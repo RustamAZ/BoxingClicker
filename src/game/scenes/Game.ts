@@ -323,6 +323,10 @@ export class Game extends Scene {
       this,
       this.pauseController,
       this.trainingController,
+      () => {
+        this.emeraldContainer.update();
+        this.updatePlayerStatsDebugText();
+      },
     );
     this.infiniteModeModal = new InfiniteModeModal(
       this,
@@ -966,6 +970,7 @@ export class Game extends Scene {
       `H: Количество здоровья максимальное - ${Game.formatDebugNumber(this.player.maxHealth)}`,
       `A: Количество выносливости максимальное - ${Game.formatDebugNumber(this.player.maxStamina)}`,
       `C: текущая цена за удар - ${Game.formatDebugNumber(this.player.getStaminaCostPerHit())}`,
+      `K: шанс критического удара - ${Game.formatDebugNumber(this.player.getCriticalHitChance() * 100)}%`,
     ]);
   }
 

@@ -5,6 +5,7 @@ type PlayerConfig = {
     stamina: number;
     stamina_cost_per_hit: number;
     attack_speed: number;
+    critical_hit_chance: number;
     stamina_regen_per_second: number;
   };
   player_limits: {
@@ -19,6 +20,7 @@ export const playerConfig: PlayerConfig = {
     stamina: 300,
     stamina_cost_per_hit: 2,
     attack_speed: 4.5,
+    critical_hit_chance: 0.02,
     stamina_regen_per_second: 2.5,
   },
   player_limits: {

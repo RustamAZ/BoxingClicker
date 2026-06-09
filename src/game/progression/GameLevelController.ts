@@ -1,7 +1,10 @@
 import type { Scene } from "phaser";
 import type { RewardContainerLocationId } from "../configs/rewardContainers";
 import type { Player } from "../entities/Player/Player";
-import { gameLevelsConfig, infiniteLevelConfig } from "./gameLevelsConfig";
+import {
+  gameLevelsConfig,
+  infiniteLevelConfig,
+} from "../configs/gameLevelsConfig";
 import type { GameLevelConfig } from "./types";
 
 export type GameRunMode = "campaign" | "infinite";

@@ -114,7 +114,7 @@ export class InfinityTowerRewardsScrollView {
     emeraldIconSize: 36,
     smallIconSize: 32,
     glovesIconSize: 52,
-    amountTextOffsetX: -18,
+    amountTextOffsetX: -35,
     amountTextOffsetY: -20,
     amountTextOriginX: 0,
     amountTextOriginY: 0.5,

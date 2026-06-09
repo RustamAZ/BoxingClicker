@@ -15,6 +15,8 @@ export type TrainingItemState = {
   level: number;
   maxLevel: number;
   isInfinite: boolean;
+  isUnlocked: boolean;
+  lockedReasonKey?: string;
   nextPrice?: number;
   isMaxLevel: boolean;
   canBuy: boolean;
@@ -28,7 +30,7 @@ export type TrainingPurchaseResult =
     }
   | {
       success: false;
-      reason: "unknown-item" | "max-level" | "not-enough-emeralds";
+      reason: "unknown-item" | "locked" | "max-level" | "not-enough-emeralds";
       state?: TrainingItemState;
     };
 
@@ -57,10 +59,11 @@ export class TrainingController {
       throw new Error(`Unknown training item: ${itemId}`);
     }
 
-    const isInfinite = this.isInfiniteTrainingUnlocked();
+    const isUnlocked = this.isItemUnlocked(item);
+    const isInfinite = this.canExceedMaxLevel(item);
     const level = this.getSafeTrainingLevel(item);
     const isMaxLevel = !isInfinite && level >= item.maxLevel;
-    const nextPrice = isMaxLevel
+    const nextPrice = !isUnlocked || isMaxLevel
       ? undefined
       : (item.priceByLevel[level] ?? trainingConfig.infinityTowerLevelPrice);
 
@@ -69,9 +72,14 @@ export class TrainingController {
       level,
       maxLevel: item.maxLevel,
       isInfinite,
+      isUnlocked,
+      lockedReasonKey: isUnlocked
+        ? undefined
+        : "training.locked.infinityTower",
       nextPrice,
       isMaxLevel,
-      canBuy: nextPrice !== undefined && this.wallet.canWithdraw(nextPrice),
+      canBuy:
+        isUnlocked && nextPrice !== undefined && this.wallet.canWithdraw(nextPrice),
       totalBonus: level * item.valuePerLevel,
     };
   }
@@ -87,6 +95,14 @@ export class TrainingController {
     }
 
     const state = this.getItemState(itemId);
+
+    if (!state.isUnlocked) {
+      return {
+        success: false,
+        reason: "locked",
+        state,
+      };
+    }
 
     if (state.isMaxLevel || state.nextPrice === undefined) {
       return {
@@ -119,6 +135,10 @@ export class TrainingController {
 
   getTrainingBonuses(): PlayerPermanentStatBonuses {
     return this.getItems().reduce<PlayerPermanentStatBonuses>((bonuses, item) => {
+      if (!this.isItemUnlocked(item)) {
+        return bonuses;
+      }
+
       const level = this.getSafeTrainingLevel(item);
       const value = level * item.valuePerLevel;
 
@@ -135,11 +155,26 @@ export class TrainingController {
   private getSafeTrainingLevel(item: TrainingItemConfig) {
     const level = Math.max(0, this.player.profile.getTrainingLevel(item.id));
 
-    if (this.isInfiniteTrainingUnlocked()) {
+    if (!this.isItemUnlocked(item)) {
+      return 0;
+    }
+
+    if (this.canExceedMaxLevel(item)) {
       return level;
     }
 
     return Math.min(item.maxLevel, level);
+  }
+
+  private isItemUnlocked(item: TrainingItemConfig) {
+    return !item.requiresInfinityTower || this.isInfiniteTrainingUnlocked();
+  }
+
+  private canExceedMaxLevel(item: TrainingItemConfig) {
+    return (
+      this.isInfiniteTrainingUnlocked() &&
+      item.canExceedMaxLevelInInfinityTower !== false
+    );
   }
 
   private isInfiniteTrainingUnlocked() {

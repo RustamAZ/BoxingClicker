@@ -1,4 +1,5 @@
 import {
+  trainingConfig,
   trainingItemIds,
   type TrainingItemId,
   type TrainingLevels,
@@ -8,6 +9,7 @@ import {
   type InfinityTowerConsumableId,
   type InfinityTowerConsumables,
 } from "../../configs/infinityTowerConsumables";
+import { gameLevelStartPlayerLevels } from "../../configs/gameLevelsConfig";
 
 export type InfinityTowerProfile = {
   isAvailable: boolean;
@@ -53,6 +55,41 @@ type StoredLegacyWallet = {
   emeralds?: number;
 };
 
+const mockStoryGlovesItemIds = [
+  "basic-gloves",
+  "amogus-gloves",
+  "pepe-gloves",
+  "mechanic-gloves",
+  "infinity-gloves",
+  "six-seven-gloves",
+];
+
+const mockMaxTrainingLevels = Object.fromEntries(
+  trainingConfig.items
+    .filter((item) => !item.requiresInfinityTower)
+    .map((item) => [item.id, item.maxLevel]),
+) as TrainingLevels;
+
+const mockInfinityTowerStartProfile: StoredPlayerProfile = {
+  id: "mock-player",
+  emeralds: 0,
+  rewiveCount: 0,
+  purchasedItemIds: [...mockStoryGlovesItemIds],
+  discoveredItemIds: [...mockStoryGlovesItemIds],
+  equippedItemId: "six-seven-gloves",
+  globalLevel: gameLevelStartPlayerLevels.infinite,
+  InfinityTower: {
+    isAvailable: true,
+    currentLevel: 0,
+    claimedRewardIds: [],
+  },
+  towerConsumables: {},
+  trainingLevels: mockMaxTrainingLevels,
+  dailyRewards: {
+    claimedRewards: [],
+  },
+};
+
 export class PlayerProfile {
   private static readonly storageKey = "boxing-clicker-player-profile";
   private static readonly legacyWalletStorageKey = "boxing-clicker-wallet";
@@ -66,45 +103,8 @@ export class PlayerProfile {
   private static readonly legacyItemIdAliases: Record<string, string> = {
     "heavy-gloves": "mechanic-gloves",
   };
-  // private static readonly mockProfile: StoredPlayerProfile | undefined = {
-  //   id: "mock-player",
-  //   emeralds: 9999,
-  //   rewiveCount: 3,
-  //   purchasedItemIds: [
-  //     "basic-gloves",
-  //     "amogus-gloves",
-  //     "pepe-gloves",
-  //     "mechanic-gloves",
-  //     "infinity-gloves",
-  //     "six-seven-gloves",
-  //   ],
-  //   discoveredItemIds: [
-  //     "basic-gloves",
-  //     "amogus-gloves",
-  //     "pepe-gloves",
-  //     "mechanic-gloves",
-  //     "infinity-gloves",
-  //     "six-seven-gloves",
-  //   ],
-  //   equippedItemId: "six-seven-gloves",
-  //   globalLevel: 50,
-  //   InfinityTower: {
-  //     isAvailable: true,
-  //     currentLevel: 12,
-  //   },
-  //   towerConsumables: {
-  //     "attack-speed-potion": 2,
-  //     "attack-power-potion": 2,
-  //   },
-  //   trainingLevels: {
-  //     "punch-power": 8,
-  //     "strong-jaw": 7,
-  //     endurance: 7,
-  //     "light-gloves": 7,
-  //     "fast-hands": 7,
-  //   },
-  // };
-  private static readonly mockProfile: StoredPlayerProfile | undefined = undefined;
+  private static readonly mockProfile: StoredPlayerProfile | undefined =
+    undefined;
 
   private id: string;
   private emeralds: number;
@@ -380,8 +380,7 @@ export class PlayerProfile {
 
     this.towerConsumables = {
       ...this.towerConsumables,
-      [consumableId]:
-        this.getTowerConsumableCount(consumableId) + safeAmount,
+      [consumableId]: this.getTowerConsumableCount(consumableId) + safeAmount,
     };
     this.save();
 
@@ -640,9 +639,7 @@ export class PlayerProfile {
 
     return {
       isAvailable:
-        typeof tower?.isAvailable === "boolean"
-          ? tower.isAvailable
-          : false,
+        typeof tower?.isAvailable === "boolean" ? tower.isAvailable : false,
       currentLevel:
         typeof tower?.currentLevel === "number"
           ? Math.max(0, Math.floor(tower.currentLevel))

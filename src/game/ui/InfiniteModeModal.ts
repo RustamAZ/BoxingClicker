@@ -156,7 +156,7 @@ export class InfiniteModeModal {
   private static readonly startRewardOffsetY = 236;
   private static readonly startEmeraldRewardId =
     "infinite-tower-start-emeralds";
-  private static readonly startEmeraldRewardAmount = 100;
+  private static readonly startEmeraldRewardAmount = 350;
   // Reward scroll viewport position and size inside the modal panel.
   private static readonly rewardsScrollViewport = {
     offsetX: 0,

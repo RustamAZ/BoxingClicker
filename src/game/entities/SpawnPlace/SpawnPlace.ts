@@ -158,7 +158,7 @@ export class SpawnPlace {
     }
 
     const currentWeapon = this.glovesEquipmentController.getCurrentWeapon();
-    const enemySurvived = enemy.takeDamage(this.player.getDamagePerHit());
+    const enemySurvived = enemy.takeDamage(this.player.rollHitDamage().damage);
 
     this.hitSoundPlayer.playRandom(
       currentWeapon.hitSoundKeys,

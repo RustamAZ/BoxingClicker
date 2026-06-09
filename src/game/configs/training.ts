@@ -5,7 +5,8 @@ export type TrainingItemId =
   | "strong-jaw"
   | "endurance"
   | "light-gloves"
-  | "fast-hands";
+  | "fast-hands"
+  | "critical-hit";
 
 export type TrainingItemConfig = {
   id: TrainingItemId;
@@ -17,6 +18,8 @@ export type TrainingItemConfig = {
   valuePerLevel: number;
   maxLevel: number;
   priceByLevel: number[];
+  requiresInfinityTower?: boolean;
+  canExceedMaxLevelInInfinityTower?: boolean;
 };
 
 export const trainingConfig = {
@@ -66,6 +69,7 @@ export const trainingConfig = {
       valuePerLevel: -0.1,
       maxLevel: 10,
       priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      canExceedMaxLevelInInfinityTower: false,
     },
     {
       id: "fast-hands",
@@ -77,6 +81,20 @@ export const trainingConfig = {
       valuePerLevel: 0.15,
       maxLevel: 10,
       priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      canExceedMaxLevelInInfinityTower: false,
+    },
+    {
+      id: "critical-hit",
+      titleKey: "training.criticalHit.title",
+      descriptionKey: "training.criticalHit.description",
+      iconTextureKey: "training-critical-hit-icon",
+      iconPath: "assets/images/ui/buffs/icons/attackDamage.png",
+      stat: "critical-hit-chance",
+      valuePerLevel: 0.02,
+      maxLevel: 10,
+      priceByLevel: [350, 350, 350, 350, 350, 350, 350, 350, 350, 350],
+      requiresInfinityTower: true,
+      canExceedMaxLevelInInfinityTower: false,
     },
   ] satisfies TrainingItemConfig[],
 } as const;

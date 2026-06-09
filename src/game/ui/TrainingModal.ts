@@ -21,6 +21,8 @@ type TrainingButton = {
 };
 
 type TrainingRow = {
+  baseX: number;
+  baseY: number;
   background: GameObjects.Rectangle;
   iconFrame: GameObjects.Rectangle;
   icon: GameObjects.Image;
@@ -30,7 +32,13 @@ type TrainingRow = {
   priceIcon: GameObjects.Image;
   price: GameObjects.Text;
   buyButton: TrainingButton;
+  maxOverlay: GameObjects.Rectangle;
+  maxLabelBackground: GameObjects.Image;
+  maxLabel: GameObjects.Text;
+  lockedOverlay: GameObjects.Rectangle;
+  lockedLabel: GameObjects.Text;
   itemId?: TrainingItemId;
+  state?: TrainingItemState;
 };
 
 type TrainingAssetConfig = {
@@ -53,6 +61,21 @@ export class TrainingModal {
   private static readonly rowHeight = 70;
   private static readonly rowGap = 12;
   private static readonly rowStartY = -166;
+  private static readonly rowsScrollViewport = {
+    offsetX: 0,
+    offsetY: 4,
+    width: 690,
+    height: 410,
+  };
+  private static readonly scrollStep = 62;
+  private static readonly maxOverlayAlpha = 0.58;
+  private static readonly maxLabelBackgroundWidth = 260;
+  private static readonly maxLabelBackgroundHeight = 70;
+  private static readonly maxLabelBackgroundTextureKey =
+    "training-maximum-background";
+  private static readonly maxLabelBackgroundPath =
+    "assets/images/ui/infinity-tower/fight-button.png";
+  private static readonly lockedLabelWrapWidth = 520;
   private static readonly openButtonColor = 0x3a2a43;
   private static readonly openButtonHoverColor = 0x4a3a53;
   private static readonly openButtonAlpha = 0.95;
@@ -82,6 +105,10 @@ export class TrainingModal {
       key: TrainingModal.emeraldIconTextureKey,
       path: TrainingModal.emeraldIconPath,
     },
+    {
+      key: TrainingModal.maxLabelBackgroundTextureKey,
+      path: TrainingModal.maxLabelBackgroundPath,
+    },
   ];
 
   static preload(scene: Scene) {
@@ -97,19 +124,25 @@ export class TrainingModal {
   private panel?: GameObjects.Image;
   private logo?: GameObjects.Image;
   private title?: GameObjects.Text;
-  private balanceText?: GameObjects.Text;
+  private rowsViewportHitArea?: GameObjects.Rectangle;
   private rows: TrainingRow[] = [];
   private closeButton?: TrainingButton;
   private unsubscribeLanguageChange?: () => void;
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
   private isActionLocked = false;
+  private scrollOffsetY = 0;
+  private maxScrollOffsetY = 0;
+  private isDraggingScroll = false;
+  private dragStartY = 0;
+  private dragStartScrollOffsetY = 0;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   constructor(
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly trainingController: TrainingController,
+    private readonly onPurchase?: () => void,
   ) {
     this.openButton = this.createOpenButton();
     this.loaderSpinner = new LoadingSpinner(
@@ -125,9 +158,11 @@ export class TrainingModal {
     });
     this.scene.events.once("shutdown", () => {
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
+      this.scene.input.off("wheel", this.handleWheel, this);
       this.unsubscribeLanguageChange?.();
       this.loaderSpinner.destroy();
     });
+    this.scene.input.on("wheel", this.handleWheel, this);
   }
 
   setButtonVisible(visible: boolean) {
@@ -232,17 +267,17 @@ export class TrainingModal {
       .setResolution(2)
       .setDepth(TrainingModal.depth + 3)
       .setVisible(false);
-    this.balanceText = this.scene.add
-      .text(centerX - 314, centerY - 248, "", {
-        fontFamily: "Hardpixel",
-        fontSize: 29,
-        color: "#7dff76",
-        stroke: "#123b12",
-        strokeThickness: 4,
-      })
-      .setOrigin(0, 0.5)
-      .setResolution(2)
+    this.rowsViewportHitArea = this.scene.add
+      .rectangle(
+        centerX + TrainingModal.rowsScrollViewport.offsetX,
+        centerY + TrainingModal.rowsScrollViewport.offsetY,
+        TrainingModal.rowsScrollViewport.width,
+        TrainingModal.rowsScrollViewport.height,
+        0x000000,
+        0,
+      )
       .setDepth(TrainingModal.depth + 3)
+      .setInteractive({ useHandCursor: false })
       .setVisible(false);
     this.rows = this.trainingController
       .getItems()
@@ -271,6 +306,21 @@ export class TrainingModal {
         event.stopPropagation();
       },
     );
+    this.rowsViewportHitArea.on(
+      "pointerdown",
+      (
+        pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+        this.handleScrollPointerDown(pointer);
+      },
+    );
+    this.rowsViewportHitArea.on("pointermove", this.handleScrollPointerMove, this);
+    this.rowsViewportHitArea.on("pointerup", this.handleScrollPointerUp, this);
+    this.rowsViewportHitArea.on("pointerout", this.handleScrollPointerUp, this);
   }
 
   private createOpenButton() {
@@ -450,8 +500,72 @@ export class TrainingModal {
         this.handleBuy(item.id);
       },
     );
+    const maxOverlay = this.scene.add
+      .rectangle(
+        centerX,
+        y,
+        TrainingModal.rowWidth - 42,
+        TrainingModal.rowHeight,
+        0x000000,
+        TrainingModal.maxOverlayAlpha,
+      )
+      .setDepth(TrainingModal.depth + 8)
+      .setVisible(false);
+    const maxLabelBackground = this.scene.add
+      .image(
+        centerX,
+        y,
+        TrainingModal.maxLabelBackgroundTextureKey,
+      )
+      .setDepth(TrainingModal.depth + 9)
+      .setDisplaySize(
+        TrainingModal.maxLabelBackgroundWidth,
+        TrainingModal.maxLabelBackgroundHeight,
+      )
+      .setVisible(false);
+    const maxLabel = this.scene.add
+      .text(centerX, y, languageController.t("training.maximum"), {
+        fontFamily: "Hardpixel",
+        fontSize: 21,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(TrainingModal.depth + 10)
+      .setVisible(false);
+    const lockedOverlay = this.scene.add
+      .rectangle(
+        centerX,
+        y,
+        TrainingModal.rowWidth - 42,
+        TrainingModal.rowHeight,
+        0x000000,
+        TrainingModal.maxOverlayAlpha,
+      )
+      .setDepth(TrainingModal.depth + 8)
+      .setVisible(false);
+    const lockedLabel = this.scene.add
+      .text(centerX, y, languageController.t("training.locked.infinityTower"), {
+        fontFamily: "Hardpixel",
+        fontSize: 20,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 5,
+        align: "center",
+        wordWrap: {
+          width: TrainingModal.lockedLabelWrapWidth,
+        },
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(TrainingModal.depth + 10)
+      .setVisible(false);
 
     return {
+      baseX: centerX,
+      baseY: y,
       background,
       iconFrame,
       icon,
@@ -461,6 +575,11 @@ export class TrainingModal {
       priceIcon,
       price,
       buyButton,
+      maxOverlay,
+      maxLabelBackground,
+      maxLabel,
+      lockedOverlay,
+      lockedLabel,
       itemId: item.id,
     };
   }
@@ -529,7 +648,12 @@ export class TrainingModal {
       return;
     }
 
-    this.trainingController.purchase(itemId);
+    const result = this.trainingController.purchase(itemId);
+
+    if (result.success) {
+      this.onPurchase?.();
+    }
+
     this.refresh();
   }
 
@@ -541,8 +665,8 @@ export class TrainingModal {
     }
 
     this.title?.setText(languageController.t("training.title"));
-    this.balanceText?.setText(String(this.trainingController.getBalance()));
     this.closeButton?.label.setText(languageController.t("training.close"));
+    this.updateMaxScrollOffset();
     this.rows.forEach((row) => {
       if (!row.itemId) {
         return;
@@ -551,32 +675,60 @@ export class TrainingModal {
       const state = this.trainingController.getItemState(row.itemId);
 
       this.setRowState(row, state);
+      this.setRowVisible(row, this.panel?.visible === true);
     });
   }
 
   private setRowState(row: TrainingRow, state: TrainingItemState) {
     const isPanelVisible = this.panel?.visible === true;
+    const showTowerUnlockHint = TrainingModal.shouldShowTowerUnlockHint(state);
+    const showMaxOverlay =
+      state.isUnlocked && state.isMaxLevel && !showTowerUnlockHint;
+    const showLockedOverlay = !state.isUnlocked || showTowerUnlockHint;
 
+    row.state = state;
     row.title.setText(languageController.t(state.config.titleKey));
     row.description.setText(
-      languageController.t(state.config.descriptionKey, {
-        value: TrainingModal.getDisplayValue(state.config),
-      }),
+      state.isUnlocked
+        ? languageController.t(state.config.descriptionKey, {
+            value: TrainingModal.getDisplayValue(state.config),
+          })
+        : "",
     );
+    row.title.setColor("#ffffff");
+    row.description.setColor("#f6e36b");
     row.level.setText(
       state.isInfinite ? String(state.level) : `${state.level}/${state.maxLevel}`,
     );
-    row.priceIcon.setVisible(!state.isMaxLevel && isPanelVisible);
-    row.price.setVisible(!state.isMaxLevel && isPanelVisible);
+    row.priceIcon.setVisible(state.isUnlocked && !state.isMaxLevel && isPanelVisible);
+    row.price.setVisible(state.isUnlocked && !state.isMaxLevel && isPanelVisible);
     row.price.setText(String(state.nextPrice ?? ""));
+    row.buyButton.background.setVisible(
+      state.isUnlocked && !state.isMaxLevel && isPanelVisible,
+    );
+    row.buyButton.label.setVisible(
+      state.isUnlocked && !state.isMaxLevel && isPanelVisible,
+    );
+    row.buyButton.hitArea.setVisible(
+      state.isUnlocked && !state.isMaxLevel && isPanelVisible,
+    );
     row.buyButton.label.setText(
-      state.isMaxLevel
-        ? languageController.t("training.max")
-        : languageController.t("training.buy"),
+      languageController.t("training.buy"),
     );
     row.buyButton.label.setColor(
       state.canBuy || state.isMaxLevel ? "#ffffff" : "#ff8f8f",
     );
+    row.maxLabel.setText(languageController.t("training.maximum"));
+    row.maxOverlay.setVisible(showMaxOverlay && isPanelVisible);
+    row.maxLabelBackground.setVisible(showMaxOverlay && isPanelVisible);
+    row.maxLabel.setVisible(showMaxOverlay && isPanelVisible);
+    row.lockedLabel.setText(
+      languageController.t(
+        state.lockedReasonKey ?? "training.locked.infinityTower",
+      ),
+    );
+    row.lockedOverlay.setVisible(showLockedOverlay && isPanelVisible);
+    row.lockedLabel.setVisible(showLockedOverlay && isPanelVisible);
   }
 
   private setVisible(visible: boolean) {
@@ -584,12 +736,16 @@ export class TrainingModal {
     this.panel?.setVisible(visible);
     this.logo?.setVisible(visible);
     this.title?.setVisible(visible);
-    this.balanceText?.setVisible(visible);
+    this.rowsViewportHitArea?.setVisible(visible);
 
     if (visible) {
       this.overlay?.setInteractive();
+      this.rowsViewportHitArea?.setInteractive({ useHandCursor: false });
+      this.updateMaxScrollOffset();
     } else {
       this.overlay?.disableInteractive();
+      this.rowsViewportHitArea?.disableInteractive();
+      this.isDraggingScroll = false;
     }
 
     this.rows.forEach((row) => {
@@ -599,17 +755,41 @@ export class TrainingModal {
   }
 
   private setRowVisible(row: TrainingRow, visible: boolean) {
-    row.background.setVisible(visible);
-    row.iconFrame.setVisible(visible);
-    row.icon.setVisible(visible);
-    row.title.setVisible(visible);
-    row.description.setVisible(visible);
-    row.level.setVisible(visible);
-    row.buyButton.background.setVisible(visible);
-    row.buyButton.label.setVisible(visible);
-    row.buyButton.hitArea.setVisible(visible);
-    row.priceIcon.setVisible(visible && row.price.text.length > 0);
-    row.price.setVisible(visible && row.price.text.length > 0);
+    this.applyRowPosition(row);
+
+    const state = row.state;
+    const canShowRow = visible && this.isRowOverlappingViewport(row);
+    const canShowAction = canShowRow && Boolean(state?.isUnlocked) && !state?.isMaxLevel;
+    const canShowTowerUnlockHint =
+      state !== undefined && TrainingModal.shouldShowTowerUnlockHint(state);
+    const canShowMaxOverlay =
+      canShowRow &&
+      Boolean(state?.isUnlocked) &&
+      Boolean(state?.isMaxLevel) &&
+      !canShowTowerUnlockHint;
+    const canShowLockedOverlay =
+      canShowRow &&
+      Boolean(state) &&
+      (!state?.isUnlocked || canShowTowerUnlockHint);
+
+    row.background.setVisible(canShowRow);
+    row.iconFrame.setVisible(canShowRow);
+    row.icon.setVisible(canShowRow);
+    row.title.setVisible(canShowRow);
+    row.description.setVisible(canShowRow && row.description.text.length > 0);
+    row.level.setVisible(canShowRow);
+    row.buyButton.background.setVisible(canShowAction);
+    row.buyButton.label.setVisible(canShowAction);
+    row.buyButton.hitArea.setVisible(canShowAction);
+    row.priceIcon.setVisible(canShowAction && row.price.text.length > 0);
+    row.price.setVisible(canShowAction && row.price.text.length > 0);
+    row.maxOverlay.setVisible(canShowMaxOverlay);
+    row.maxLabelBackground.setVisible(canShowMaxOverlay);
+    row.maxLabel.setVisible(canShowMaxOverlay);
+    row.lockedOverlay.setVisible(canShowLockedOverlay);
+    row.lockedLabel.setVisible(canShowLockedOverlay);
+
+    this.applyViewportClip(row);
   }
 
   private setRowsInteractive(isInteractive: boolean) {
@@ -618,7 +798,15 @@ export class TrainingModal {
         ? this.trainingController.getItemState(row.itemId)
         : undefined;
       const canInteract =
-        isInteractive && Boolean(state) && !state?.isMaxLevel;
+        isInteractive &&
+        Boolean(state) &&
+        Boolean(state?.isUnlocked) &&
+        !state?.isMaxLevel &&
+        Boolean(state?.canBuy) &&
+        this.isPointInsideRowsViewport(
+          row.buyButton.hitArea.x,
+          row.buyButton.hitArea.y,
+        );
 
       if (canInteract) {
         row.buyButton.hitArea.setInteractive({ useHandCursor: true });
@@ -656,6 +844,239 @@ export class TrainingModal {
     this.loaderSpinner.hide();
   }
 
+  private handleWheel(
+    _pointer: Phaser.Input.Pointer,
+    _gameObjects: GameObjects.GameObject[],
+    _deltaX: number,
+    deltaY: number,
+  ) {
+    if (!this.pauseController.has("training") || !this.panel?.visible) {
+      return;
+    }
+
+    this.setScrollOffset(
+      this.scrollOffsetY + Math.sign(deltaY) * TrainingModal.scrollStep,
+    );
+  }
+
+  private handleScrollPointerDown(pointer: Phaser.Input.Pointer) {
+    if (!this.panel?.visible) {
+      return;
+    }
+
+    this.isDraggingScroll = true;
+    this.dragStartY = pointer.y;
+    this.dragStartScrollOffsetY = this.scrollOffsetY;
+  }
+
+  private handleScrollPointerMove(pointer: Phaser.Input.Pointer) {
+    if (!this.isDraggingScroll) {
+      return;
+    }
+
+    this.setScrollOffset(
+      this.dragStartScrollOffsetY + this.dragStartY - pointer.y,
+    );
+  }
+
+  private handleScrollPointerUp() {
+    this.isDraggingScroll = false;
+  }
+
+  private updateMaxScrollOffset() {
+    const rowStride = TrainingModal.rowHeight + TrainingModal.rowGap;
+    const contentHeight =
+      this.rows.length === 0
+        ? 0
+        : (this.rows.length - 1) * rowStride + TrainingModal.rowHeight;
+
+    this.maxScrollOffsetY = Math.max(
+      0,
+      contentHeight - TrainingModal.rowsScrollViewport.height,
+    );
+    this.setScrollOffset(Math.min(this.scrollOffsetY, this.maxScrollOffsetY));
+  }
+
+  private setScrollOffset(offsetY: number) {
+    const nextOffset = TrainingModal.clamp(
+      offsetY,
+      0,
+      this.maxScrollOffsetY,
+    );
+
+    if (nextOffset === this.scrollOffsetY) {
+      this.applyScrollOffset();
+      return;
+    }
+
+    this.scrollOffsetY = nextOffset;
+    this.applyScrollOffset();
+  }
+
+  private applyScrollOffset() {
+    this.rows.forEach((row) => {
+      this.applyRowPosition(row);
+      this.setRowVisible(row, this.panel?.visible === true);
+    });
+    this.setRowsInteractive(!this.isActionLocked);
+  }
+
+  private applyRowPosition(row: TrainingRow) {
+    const x = row.baseX;
+    const y = row.baseY - this.scrollOffsetY;
+
+    row.background
+      .setPosition(x, y)
+      .setDisplaySize(TrainingModal.rowWidth - 42, TrainingModal.rowHeight);
+    row.iconFrame.setPosition(x - 270, y).setDisplaySize(52, 52);
+    row.icon.setPosition(x - 270, y);
+    row.title.setPosition(x - 220, y - 13);
+    row.description.setPosition(x - 220, y + 15);
+    row.level.setPosition(x + 32, y);
+    row.priceIcon.setPosition(x + 105, y);
+    row.price.setPosition(x + 129, y);
+    row.buyButton.background.setPosition(x + 246, y);
+    row.buyButton.label.setPosition(x + 246, y);
+    row.buyButton.hitArea.setPosition(x + 246, y);
+    row.maxOverlay
+      .setPosition(x, y)
+      .setDisplaySize(TrainingModal.rowWidth - 42, TrainingModal.rowHeight);
+    row.maxLabelBackground
+      .setPosition(x, y)
+      .setDisplaySize(
+        TrainingModal.maxLabelBackgroundWidth,
+        TrainingModal.maxLabelBackgroundHeight,
+      );
+    row.maxLabel.setPosition(x, y);
+    row.lockedOverlay
+      .setPosition(x, y)
+      .setDisplaySize(TrainingModal.rowWidth - 42, TrainingModal.rowHeight);
+    row.lockedLabel.setPosition(x, y);
+  }
+
+  private isRowOverlappingViewport(row: TrainingRow) {
+    const y = row.baseY - this.scrollOffsetY;
+    const viewport = this.getRowsViewport();
+    const halfHeight = TrainingModal.rowHeight / 2;
+
+    return y + halfHeight >= viewport.top && y - halfHeight <= viewport.bottom;
+  }
+
+  private applyViewportClip(row: TrainingRow) {
+    this.cropRectangleToRowsViewport(row.background);
+    this.cropRectangleToRowsViewport(row.iconFrame);
+    this.cropImageToRowsViewport(row.icon);
+    this.cropImageToRowsViewport(row.priceIcon);
+    if (row.buyButton.background instanceof GameObjects.Image) {
+      this.cropImageToRowsViewport(row.buyButton.background);
+    }
+    this.cropRectangleToRowsViewport(row.maxOverlay);
+    this.cropImageToRowsViewport(row.maxLabelBackground);
+    this.cropRectangleToRowsViewport(row.lockedOverlay);
+    this.setTextVisibleInRowsViewport(row.title);
+    this.setTextVisibleInRowsViewport(row.description);
+    this.setTextVisibleInRowsViewport(row.level);
+    this.setTextVisibleInRowsViewport(row.price);
+    this.setTextVisibleInRowsViewport(row.buyButton.label);
+    this.setTextVisibleInRowsViewport(row.maxLabel);
+    this.setTextVisibleInRowsViewport(row.lockedLabel);
+  }
+
+  private cropImageToRowsViewport(image: GameObjects.Image | undefined) {
+    if (!image?.visible) {
+      return;
+    }
+
+    const viewport = this.getRowsViewport();
+    const displayWidth = image.displayWidth;
+    const displayHeight = image.displayHeight;
+    const left = image.x - displayWidth * image.originX;
+    const top = image.y - displayHeight * image.originY;
+    const right = left + displayWidth;
+    const bottom = top + displayHeight;
+    const visibleLeft = TrainingModal.clamp(left, viewport.left, viewport.right);
+    const visibleTop = TrainingModal.clamp(top, viewport.top, viewport.bottom);
+    const visibleRight = TrainingModal.clamp(right, viewport.left, viewport.right);
+    const visibleBottom = TrainingModal.clamp(bottom, viewport.top, viewport.bottom);
+    const visibleWidth = visibleRight - visibleLeft;
+    const visibleHeight = visibleBottom - visibleTop;
+
+    if (visibleWidth <= 0 || visibleHeight <= 0) {
+      image.setVisible(false);
+      return;
+    }
+
+    const source = image.texture.getSourceImage() as HTMLImageElement;
+    const cropX = ((visibleLeft - left) / displayWidth) * source.width;
+    const cropY = ((visibleTop - top) / displayHeight) * source.height;
+    const cropWidth = (visibleWidth / displayWidth) * source.width;
+    const cropHeight = (visibleHeight / displayHeight) * source.height;
+
+    image.setCrop(cropX, cropY, cropWidth, cropHeight);
+  }
+
+  private cropRectangleToRowsViewport(rectangle: GameObjects.Rectangle) {
+    if (!rectangle.visible) {
+      return;
+    }
+
+    const viewport = this.getRowsViewport();
+    const displayWidth = rectangle.displayWidth;
+    const displayHeight = rectangle.displayHeight;
+    const left = rectangle.x - displayWidth * rectangle.originX;
+    const top = rectangle.y - displayHeight * rectangle.originY;
+    const right = left + displayWidth;
+    const bottom = top + displayHeight;
+    const visibleLeft = TrainingModal.clamp(left, viewport.left, viewport.right);
+    const visibleTop = TrainingModal.clamp(top, viewport.top, viewport.bottom);
+    const visibleRight = TrainingModal.clamp(right, viewport.left, viewport.right);
+    const visibleBottom = TrainingModal.clamp(bottom, viewport.top, viewport.bottom);
+    const visibleWidth = visibleRight - visibleLeft;
+    const visibleHeight = visibleBottom - visibleTop;
+
+    if (visibleWidth <= 0 || visibleHeight <= 0) {
+      rectangle.setVisible(false);
+      return;
+    }
+
+    rectangle
+      .setPosition(visibleLeft + visibleWidth / 2, visibleTop + visibleHeight / 2)
+      .setDisplaySize(visibleWidth, visibleHeight);
+  }
+
+  private setTextVisibleInRowsViewport(text: GameObjects.Text) {
+    if (!text.visible) {
+      return;
+    }
+
+    text.setVisible(this.isPointInsideRowsViewport(text.x, text.y));
+  }
+
+  private isPointInsideRowsViewport(x: number, y: number) {
+    const viewport = this.getRowsViewport();
+
+    return (
+      x >= viewport.left &&
+      x <= viewport.right &&
+      y >= viewport.top &&
+      y <= viewport.bottom
+    );
+  }
+
+  private getRowsViewport() {
+    const centerX = this.scene.scale.width / 2;
+    const centerY = this.scene.scale.height / 2;
+    const viewportX = centerX + TrainingModal.rowsScrollViewport.offsetX;
+    const viewportY = centerY + TrainingModal.rowsScrollViewport.offsetY;
+
+    return {
+      left: viewportX - TrainingModal.rowsScrollViewport.width / 2,
+      right: viewportX + TrainingModal.rowsScrollViewport.width / 2,
+      top: viewportY - TrainingModal.rowsScrollViewport.height / 2,
+      bottom: viewportY + TrainingModal.rowsScrollViewport.height / 2,
+    };
+  }
+
   private handleEsc() {
     if (!this.pauseController.has("training")) {
       return;
@@ -671,11 +1092,24 @@ export class TrainingModal {
   }
 
   private static getDisplayValue(config: TrainingItemConfig) {
-    if (config.stat === "punch-speed") {
+    if (config.stat === "punch-speed" || config.stat === "critical-hit-chance") {
       return Math.round(config.valuePerLevel * 100);
     }
 
     return Math.abs(config.valuePerLevel);
+  }
+
+  private static clamp(value: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  private static shouldShowTowerUnlockHint(state: TrainingItemState) {
+    return (
+      state.isUnlocked &&
+      state.isMaxLevel &&
+      !state.isInfinite &&
+      state.config.canExceedMaxLevelInInfinityTower !== false
+    );
   }
 
   private static areAssetsLoaded(scene: Scene) {

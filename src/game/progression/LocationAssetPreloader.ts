@@ -3,7 +3,10 @@ import { GameBackground } from "../entities/Background/GameBackground";
 import { InfinityTowerEnemy } from "../entities/Enemy/InfinityTower/InfinityTowerEnemy";
 import { EnemyRegistry } from "../entities/Enemy/EnemyRegistry";
 import type { InfinityTowerEnemyPackConfig } from "../configs/infinityTowerEnemies";
-import { gameLevelsConfig, infiniteLevelConfig } from "./gameLevelsConfig";
+import {
+  gameLevelsConfig,
+  infiniteLevelConfig,
+} from "../configs/gameLevelsConfig";
 import type { EnemySpawnKind, GameLevelConfig } from "./types";
 
 export class LocationAssetPreloader {
@@ -51,7 +54,10 @@ export class LocationAssetPreloader {
       return;
     }
 
-    GameBackground.preloadBackground(this.scene, infiniteLevelConfig.background);
+    GameBackground.preloadBackground(
+      this.scene,
+      infiniteLevelConfig.background,
+    );
     this.startLoader(onComplete);
   }
 
@@ -72,10 +78,11 @@ export class LocationAssetPreloader {
     return this.loadedGameLevels.has(gameLevel);
   }
 
-  private prefetchGameLevel(gameLevel: GameLevelConfig, onComplete?: () => void) {
-    if (
-      this.loadedGameLevels.has(gameLevel.level)
-    ) {
+  private prefetchGameLevel(
+    gameLevel: GameLevelConfig,
+    onComplete?: () => void,
+  ) {
+    if (this.loadedGameLevels.has(gameLevel.level)) {
       onComplete?.();
       return;
     }
@@ -88,15 +95,13 @@ export class LocationAssetPreloader {
       return;
     }
 
-    const spawnKindsToLoad =
-      this.getSpawnKindsForGameLevel(gameLevel).filter(
-        (spawnKind) => !this.loadedEnemySpawnKinds.has(spawnKind),
-      );
+    const spawnKindsToLoad = this.getSpawnKindsForGameLevel(gameLevel).filter(
+      (spawnKind) => !this.loadedEnemySpawnKinds.has(spawnKind),
+    );
     const shouldLoadBackground = !this.scene.textures.exists(
       gameLevel.background.key,
     );
-    const hasFilesToLoad =
-      shouldLoadBackground || spawnKindsToLoad.length > 0;
+    const hasFilesToLoad = shouldLoadBackground || spawnKindsToLoad.length > 0;
 
     if (!hasFilesToLoad) {
       this.markGameLevelLoaded(gameLevel);
@@ -214,6 +219,5 @@ export class LocationAssetPreloader {
     if (!this.scene.load.isLoading()) {
       this.scene.load.start();
     }
-
   }
 }

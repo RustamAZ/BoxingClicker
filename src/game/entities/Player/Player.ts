@@ -7,7 +7,8 @@ export type PlayerStat =
   | "punch-speed"
   | "max-stamina"
   | "max-health"
-  | "stamina-cost";
+  | "stamina-cost"
+  | "critical-hit-chance";
 
 export type PlayerStatEffect = {
   stat: PlayerStat;
@@ -38,6 +39,11 @@ export type PlayerActiveDamageOverTimeEffect =
 
 export type PlayerPermanentStatBonuses = Partial<Record<PlayerStat, number>>;
 
+export type PlayerHitDamage = {
+  damage: number;
+  isCritical: boolean;
+};
+
 export class Player {
   readonly profile = new PlayerProfile();
 
@@ -57,6 +63,7 @@ export class Player {
 
   punchSpeed = playerConfig.player_start.attack_speed;
   staminaCostPerHit = playerConfig.player_start.stamina_cost_per_hit;
+  criticalHitChance = playerConfig.player_start.critical_hit_chance;
 
   lowStaminaPercent = 0.15;
   lowHealthPercent = 0.25;
@@ -110,6 +117,25 @@ export class Player {
   getDamagePerHit(damageMultiplier = 1) {
     return (
       this.getCurrentDamagePerHit() * Math.max(0, damageMultiplier)
+    );
+  }
+
+  rollHitDamage(damageMultiplier = 1): PlayerHitDamage {
+    const damage = this.getDamagePerHit(damageMultiplier);
+    const isCritical = Math.random() < this.getCriticalHitChance();
+
+    return {
+      damage: isCritical ? damage * 2 : damage,
+      isCritical,
+    };
+  }
+
+  getCriticalHitChance() {
+    return Player.clampChance(
+      this.applyStatEffectMultipliers(
+        "critical-hit-chance",
+        this.criticalHitChance,
+      ),
     );
   }
 
@@ -360,6 +386,11 @@ export class Player {
           this.applyStatEffectValue(this.staminaCostPerHit, effect),
         );
         break;
+      case "critical-hit-chance":
+        this.criticalHitChance = Player.clampChance(
+          this.applyStatEffectValue(this.criticalHitChance, effect),
+        );
+        break;
     }
   }
 
@@ -530,6 +561,13 @@ export class Player {
         effects,
       ),
     );
+    this.criticalHitChance = Player.clampChance(
+      this.applyPermanentStatEffects(
+        "critical-hit-chance",
+        playerConfig.player_start.critical_hit_chance,
+        effects,
+      ),
+    );
     this.health = Math.max(0, Math.min(this.maxHealth, this.maxHealth - healthMissing));
     this.stamina = Math.max(
       0,
@@ -549,5 +587,9 @@ export class Player {
 
       return this.applyStatEffectValue(result, effect);
     }, value);
+  }
+
+  private static clampChance(value: number) {
+    return Math.min(1, Math.max(0, value));
   }
 }
