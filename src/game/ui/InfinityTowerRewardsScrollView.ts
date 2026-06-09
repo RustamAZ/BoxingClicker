@@ -49,6 +49,11 @@ type InfinityTowerRewardsScrollViewConfig = {
   rewardController: InfinityTowerRewardController;
   onClaimGlovesReward: (itemId: string) => void;
   onShowRewardDetails: (reward: InfinityTowerRewardConfig) => void;
+  onRewardsChanged?: () => void;
+  onEmeraldRewardClaimed?: (
+    amount: number,
+    from: { x: number; y: number },
+  ) => void;
 };
 
 type RewardCardButtonLayout = {
@@ -151,6 +156,7 @@ export class InfinityTowerRewardsScrollView {
   private static readonly rewardsPerRow = 2;
   private static readonly futureLockedRowCount = 2;
   private static readonly pastClaimedRowCount = 2;
+  private static readonly minimumVisibleRowCount = 4;
 
   private readonly scene: Scene;
   private readonly profile: PlayerProfile;
@@ -158,6 +164,11 @@ export class InfinityTowerRewardsScrollView {
   private readonly onClaimGlovesReward: (itemId: string) => void;
   private readonly onShowRewardDetails: (
     reward: InfinityTowerRewardConfig,
+  ) => void;
+  private readonly onRewardsChanged?: () => void;
+  private readonly onEmeraldRewardClaimed?: (
+    amount: number,
+    from: { x: number; y: number },
   ) => void;
   private readonly x: number;
   private readonly y: number;
@@ -181,6 +192,8 @@ export class InfinityTowerRewardsScrollView {
     this.rewardController = config.rewardController;
     this.onClaimGlovesReward = config.onClaimGlovesReward;
     this.onShowRewardDetails = config.onShowRewardDetails;
+    this.onRewardsChanged = config.onRewardsChanged;
+    this.onEmeraldRewardClaimed = config.onEmeraldRewardClaimed;
     this.x = config.x;
     this.y = config.y;
     this.width = config.width;
@@ -340,6 +353,8 @@ export class InfinityTowerRewardsScrollView {
       pastClaimedCount:
         InfinityTowerRewardsScrollView.pastClaimedRowCount *
         InfinityTowerRewardsScrollView.rewardsPerRow,
+      minimumLevelGroupCount:
+        InfinityTowerRewardsScrollView.minimumVisibleRowCount,
     });
     const rowsByLevel = new Map<number, InfinityTowerRewardView[]>();
 
@@ -499,7 +514,7 @@ export class InfinityTowerRewardsScrollView {
           return;
         }
 
-        this.claimReward(rewardView);
+        this.claimReward(rewardView, { x: pointer.x, y: pointer.y });
       },
     );
     hitArea.on("pointerover", (pointer: Phaser.Input.Pointer) => {
@@ -601,8 +616,19 @@ export class InfinityTowerRewardsScrollView {
     slot.canClaim = state === "claimable";
   }
 
-  private claimReward(rewardView: InfinityTowerRewardView) {
-    const claimResult = this.rewardController.claimReward(rewardView.reward.id);
+  private claimReward(
+    rewardView: InfinityTowerRewardView,
+    from: { x: number; y: number },
+  ) {
+    const shouldDeferEmeraldReward =
+      rewardView.reward.type === "emerald" &&
+      this.onEmeraldRewardClaimed !== undefined;
+    const claimResult = this.rewardController.claimReward(
+      rewardView.reward.id,
+      {
+        deferEmeraldReward: shouldDeferEmeraldReward,
+      },
+    );
 
     if (!claimResult) {
       return;
@@ -614,6 +640,14 @@ export class InfinityTowerRewardsScrollView {
       this.onClaimGlovesReward(claimResult.glovesItemId);
     }
 
+    if (
+      claimResult.reward.type === "emerald" &&
+      this.onEmeraldRewardClaimed
+    ) {
+      this.onEmeraldRewardClaimed?.(claimResult.reward.amount, from);
+    } else {
+      this.onRewardsChanged?.();
+    }
     this.onShowRewardDetails(claimResult.reward);
     this.refresh();
     this.setVisible(this.isVisible);

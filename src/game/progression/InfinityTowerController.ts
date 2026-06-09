@@ -146,22 +146,31 @@ export class InfinityTowerController {
 
   private static getEnemyStatsForFloor(floor: number): InfinityTowerEnemyStats {
     const safeFloor = Math.max(1, Math.floor(floor));
-    const floorIndex = safeFloor - 1;
-    const { base, scalingPerFloor, limits } = infinityTowerDifficultyConfig;
+    const {
+      base,
+      floorsPerDifficultyStep,
+      scalingPerDifficultyStep,
+      limits,
+    } = infinityTowerDifficultyConfig;
+    const difficultyStep = Math.floor(
+      (safeFloor - 1) / Math.max(1, floorsPerDifficultyStep),
+    );
 
     return {
       maxHealth: Math.round(
-        base.maxHealth * (1 + scalingPerFloor.maxHealth * floorIndex),
+        base.maxHealth *
+          scalingPerDifficultyStep.maxHealthMultiplier ** difficultyStep,
       ),
       damagePerHit: Math.round(
-        base.damagePerHit * (1 + scalingPerFloor.damagePerHit * floorIndex),
+        base.damagePerHit *
+          scalingPerDifficultyStep.damagePerHitMultiplier ** difficultyStep,
       ),
       attackCooldownSeconds: Math.max(
         limits.minAttackCooldownSeconds,
         Number(
           (
             base.attackCooldownSeconds +
-            scalingPerFloor.attackCooldownSeconds * floorIndex
+            scalingPerDifficultyStep.attackCooldownSeconds * difficultyStep
           ).toFixed(2),
         ),
       ),

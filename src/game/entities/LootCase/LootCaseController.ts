@@ -8,6 +8,7 @@ import {
   LootReward,
   type LootRewardApplyContext,
 } from "./rewards/LootReward";
+import { EmeraldLootReward } from "./rewards/EmeraldLootReward";
 import { LootRewardFactory } from "./rewards/LootRewardFactory";
 
 export class LootCaseController {
@@ -68,6 +69,11 @@ export class LootCaseController {
     private readonly player: Player,
     private readonly wallet: Wallet,
     private readonly pauseController: PauseController,
+    private readonly isInfinityTowerRun = () => false,
+    private readonly onEmeraldRewardClaimed?: (
+      amount: number,
+      from: { x: number; y: number },
+    ) => void,
   ) {
   }
 
@@ -142,7 +148,13 @@ export class LootCaseController {
   }
 
   private claimRewards() {
-    this.applyRewards(this.currentRewards);
+    this.applyRewards(
+      this.currentRewards,
+      this.modal?.getRewardParticleOrigin() ?? {
+        x: this.scene.scale.width / 2,
+        y: this.scene.scale.height / 2,
+      },
+    );
     this.currentRewards = [];
     this.isOpen = false;
     this.modal?.hide();
@@ -175,16 +187,23 @@ export class LootCaseController {
   private rollReward() {
     const drop = rollLootCaseDrop();
 
-    return LootRewardFactory.create(drop.rewardId, drop.rarity);
+    return LootRewardFactory.create(drop.rewardId, drop.rarity, {
+      isInfinityTowerRun: this.isInfinityTowerRun(),
+    });
   }
 
-  private applyRewards(rewards: LootReward[]) {
+  private applyRewards(rewards: LootReward[], from: { x: number; y: number }) {
     const context: LootRewardApplyContext = {
       player: this.player,
       wallet: this.wallet,
     };
 
     rewards.forEach((reward) => {
+      if (reward instanceof EmeraldLootReward && this.onEmeraldRewardClaimed) {
+        this.onEmeraldRewardClaimed(reward.value, from);
+        return;
+      }
+
       reward.playApplySound(this.scene);
       reward.apply(context);
     });

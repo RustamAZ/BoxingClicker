@@ -64,28 +64,30 @@ export const infinityTowerFloorRequirementsConfig: InfinityTowerFloorRequirement
 
 export const infinityTowerDifficultyConfig = {
   base: {
-    maxHealth: 460,
-    damagePerHit: 34,
-    attackCooldownSeconds: 1.05,
+    maxHealth: 300,
+    damagePerHit: 12,
+    attackCooldownSeconds: 1.35,
     initialAttackDelaySeconds: 0.35,
     xpReward: 1,
     diamondsReward: 16,
     coinsReward: 12,
     emeraldDropChance: 0.4,
   },
-  scalingPerFloor: {
-    maxHealth: 0.12,
-    damagePerHit: 0.08,
-    attackCooldownSeconds: -0.006,
+  floorsPerDifficultyStep: 5,
+  scalingPerDifficultyStep: {
+    maxHealthMultiplier: 1.2,
+    damagePerHitMultiplier: 1.14,
+    attackCooldownSeconds: -0.015,
   },
   limits: {
-    minAttackCooldownSeconds: 0.55,
+    minAttackCooldownSeconds: 0.75,
   },
 } satisfies {
   base: InfinityTowerEnemyStats;
-  scalingPerFloor: {
-    maxHealth: number;
-    damagePerHit: number;
+  floorsPerDifficultyStep: number;
+  scalingPerDifficultyStep: {
+    maxHealthMultiplier: number;
+    damagePerHitMultiplier: number;
     attackCooldownSeconds: number;
   };
   limits: {

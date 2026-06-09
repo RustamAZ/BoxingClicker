@@ -12,7 +12,10 @@ import type { Wallet } from "../entities/Wallet/Wallet";
 
 export type TrainingItemState = {
   config: TrainingItemConfig;
+  titleKey: string;
+  descriptionKey: string;
   level: number;
+  displayLevel: number;
   maxLevel: number;
   isInfinite: boolean;
   isUnlocked: boolean;
@@ -20,6 +23,7 @@ export type TrainingItemState = {
   nextPrice?: number;
   isMaxLevel: boolean;
   canBuy: boolean;
+  valuePerLevel: number;
   totalBonus: number;
 };
 
@@ -41,7 +45,16 @@ export class TrainingController {
   ) {}
 
   getItems() {
-    return trainingConfig.items;
+    if (!this.isInfiniteTrainingUnlocked()) {
+      return trainingConfig.items;
+    }
+
+    return [...trainingConfig.items].sort((firstItem, secondItem) => {
+      return (
+        this.getInfinityTowerSortOrder(firstItem) -
+        this.getInfinityTowerSortOrder(secondItem)
+      );
+    });
   }
 
   getBalance() {
@@ -60,16 +73,35 @@ export class TrainingController {
     }
 
     const isUnlocked = this.isItemUnlocked(item);
+    const isTowerUpgrade = this.isTowerUpgradeActive(item);
     const isInfinite = this.canExceedMaxLevel(item);
     const level = this.getSafeTrainingLevel(item);
+    const towerLevel = Math.max(0, level - item.maxLevel);
+    const displayLevel = isTowerUpgrade ? towerLevel : level;
     const isMaxLevel = !isInfinite && level >= item.maxLevel;
-    const nextPrice = !isUnlocked || isMaxLevel
-      ? undefined
-      : (item.priceByLevel[level] ?? trainingConfig.infinityTowerLevelPrice);
+    const nextPrice =
+      !isUnlocked || isMaxLevel
+        ? undefined
+        : isTowerUpgrade
+          ? item.infinityTowerUpgrade?.price
+          : (item.priceByLevel[level] ?? trainingConfig.infinityTowerLevelPrice);
+    const valuePerLevel =
+      isTowerUpgrade && item.infinityTowerUpgrade
+        ? item.infinityTowerUpgrade.valuePerLevel
+        : item.valuePerLevel;
 
     return {
       config: item,
+      titleKey:
+        isTowerUpgrade && item.infinityTowerUpgrade
+          ? item.infinityTowerUpgrade.titleKey
+          : item.titleKey,
+      descriptionKey:
+        isTowerUpgrade && item.infinityTowerUpgrade
+          ? item.infinityTowerUpgrade.descriptionKey
+          : item.descriptionKey,
       level,
+      displayLevel,
       maxLevel: item.maxLevel,
       isInfinite,
       isUnlocked,
@@ -80,8 +112,52 @@ export class TrainingController {
       isMaxLevel,
       canBuy:
         isUnlocked && nextPrice !== undefined && this.wallet.canWithdraw(nextPrice),
-      totalBonus: level * item.valuePerLevel,
+      valuePerLevel,
+      totalBonus: this.getTotalBonus(item, level),
     };
+  }
+
+  completeBaseTrainingForInfinityTower() {
+    if (!this.isInfiniteTrainingUnlocked()) {
+      return false;
+    }
+
+    let hasChanged = false;
+
+    this.getItems().forEach((item) => {
+      if (item.requiresInfinityTower) {
+        return;
+      }
+
+      const currentLevel = this.player.profile.getTrainingLevel(item.id);
+
+      if (currentLevel >= item.maxLevel) {
+        return;
+      }
+
+      this.player.profile.setTrainingLevel(item.id, item.maxLevel);
+      hasChanged = true;
+    });
+
+    if (hasChanged) {
+      this.applyTrainingBonuses();
+    }
+
+    return hasChanged;
+  }
+
+  shouldShowInfinityTowerTrainingAnnouncement() {
+    if (!this.isInfiniteTrainingUnlocked()) {
+      return false;
+    }
+
+    const heroPower = getTrainingItemConfig("punch-power");
+
+    if (!heroPower) {
+      return false;
+    }
+
+    return this.getTowerUpgradeLevel(heroPower) <= 0;
   }
 
   purchase(itemId: TrainingItemId): TrainingPurchaseResult {
@@ -140,7 +216,7 @@ export class TrainingController {
       }
 
       const level = this.getSafeTrainingLevel(item);
-      const value = level * item.valuePerLevel;
+      const value = this.getTotalBonus(item, level);
 
       if (value === 0) {
         return bonuses;
@@ -179,5 +255,42 @@ export class TrainingController {
 
   private isInfiniteTrainingUnlocked() {
     return this.player.profile.isInfinityTowerAvailable();
+  }
+
+  private getInfinityTowerSortOrder(item: TrainingItemConfig) {
+    if (item.infinityTowerUpgrade) {
+      return 0;
+    }
+
+    if (item.id === "critical-hit") {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  private isTowerUpgradeActive(item: TrainingItemConfig) {
+    return (
+      this.isInfiniteTrainingUnlocked() &&
+      item.infinityTowerUpgrade !== undefined
+    );
+  }
+
+  private getTowerUpgradeLevel(item: TrainingItemConfig) {
+    return Math.max(0, this.getSafeTrainingLevel(item) - item.maxLevel);
+  }
+
+  private getTotalBonus(item: TrainingItemConfig, level: number) {
+    if (!this.isTowerUpgradeActive(item) || !item.infinityTowerUpgrade) {
+      return level * item.valuePerLevel;
+    }
+
+    const baseLevel = Math.min(level, item.maxLevel);
+    const towerLevel = Math.max(0, level - item.maxLevel);
+
+    return (
+      baseLevel * item.valuePerLevel +
+      towerLevel * item.infinityTowerUpgrade.valuePerLevel
+    );
   }
 }

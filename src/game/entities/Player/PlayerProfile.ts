@@ -64,10 +64,11 @@ const mockStoryGlovesItemIds = [
   "six-seven-gloves",
 ];
 
-const mockMaxTrainingLevels = Object.fromEntries(
-  trainingConfig.items
-    .filter((item) => !item.requiresInfinityTower)
-    .map((item) => [item.id, item.maxLevel]),
+const mockInfinityTowerStartTrainingLevels = Object.fromEntries(
+  trainingConfig.items.map((item) => [
+    item.id,
+    item.id === "critical-hit" ? 0 : item.maxLevel,
+  ]),
 ) as TrainingLevels;
 
 const mockInfinityTowerStartProfile: StoredPlayerProfile = {
@@ -84,7 +85,7 @@ const mockInfinityTowerStartProfile: StoredPlayerProfile = {
     claimedRewardIds: [],
   },
   towerConsumables: {},
-  trainingLevels: mockMaxTrainingLevels,
+  trainingLevels: mockInfinityTowerStartTrainingLevels,
   dailyRewards: {
     claimedRewards: [],
   },

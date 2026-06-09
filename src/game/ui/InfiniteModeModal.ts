@@ -104,6 +104,8 @@ export class InfiniteModeModal {
   private static readonly openButtonHoverSize = 106;
   private static readonly openButtonIconSize = 86;
   private static readonly openButtonIconHoverSize = 92;
+  private static readonly openButtonIconPulseScale = 1.08;
+  private static readonly openButtonIconPulseDurationMs = 520;
   private static readonly panelWidth = 900;
   private static readonly panelHeight = 675;
   private static readonly lockedPanelWidth = 640;
@@ -171,6 +173,8 @@ export class InfiniteModeModal {
   private readonly loaderSpinner: LoadingSpinner;
   private readonly rewardController: InfinityTowerRewardController;
   private readonly unsubscribeLanguageChange: () => void;
+  private readonly openButtonIconBaseScaleX: number;
+  private readonly openButtonIconBaseScaleY: number;
   private overlay?: GameObjects.Rectangle;
   private panel?: GameObjects.Image;
   private panelBlocker?: GameObjects.Rectangle;
@@ -192,6 +196,7 @@ export class InfiniteModeModal {
   private rewardsScrollView?: InfinityTowerRewardsScrollView;
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
+  private isOpenButtonIconPulsing = false;
 
   static preload(scene: Scene) {
     scene.load.image(
@@ -206,6 +211,11 @@ export class InfiniteModeModal {
     private readonly profile: PlayerProfile,
     private readonly onStart: () => void,
     private readonly onClaimGlovesReward: (itemId: string) => void,
+    private readonly onRewardsChanged?: () => void,
+    private readonly onEmeraldRewardClaimed?: (
+      amount: number,
+      from: { x: number; y: number },
+    ) => void,
   ) {
     this.openButtonIcon = this.scene.add
       .image(
@@ -219,6 +229,8 @@ export class InfiniteModeModal {
       )
       .setOrigin(0.5)
       .setDepth(InfiniteModeModal.buttonDepth + 1);
+    this.openButtonIconBaseScaleX = this.openButtonIcon.scaleX;
+    this.openButtonIconBaseScaleY = this.openButtonIcon.scaleY;
     this.openButtonHitArea = this.scene.add
       .rectangle(
         InfiniteModeModal.openButtonX,
@@ -244,6 +256,10 @@ export class InfiniteModeModal {
     });
     this.openButtonHitArea.on("pointerover", () => {
       this.setOpenButtonSize(InfiniteModeModal.openButtonHoverSize);
+      if (this.isOpenButtonIconPulsing) {
+        return;
+      }
+
       this.openButtonIcon.setDisplaySize(
         InfiniteModeModal.openButtonIconHoverSize,
         InfiniteModeModal.openButtonIconHoverSize,
@@ -251,6 +267,10 @@ export class InfiniteModeModal {
     });
     this.openButtonHitArea.on("pointerout", () => {
       this.setOpenButtonSize(InfiniteModeModal.openButtonSize);
+      if (this.isOpenButtonIconPulsing) {
+        return;
+      }
+
       this.openButtonIcon.setDisplaySize(
         InfiniteModeModal.openButtonIconSize,
         InfiniteModeModal.openButtonIconSize,
@@ -263,6 +283,7 @@ export class InfiniteModeModal {
     this.scene.events.once("shutdown", () => {
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
       this.unsubscribeLanguageChange();
+      this.setOpenButtonIconPulsing(false);
       this.rewardsScrollView?.destroy();
       this.loaderSpinner.destroy();
     });
@@ -282,6 +303,8 @@ export class InfiniteModeModal {
         InfiniteModeModal.openButtonIconSize,
       );
     }
+
+    this.updateOpenButtonPulse();
   }
 
   open() {
@@ -445,6 +468,8 @@ export class InfiniteModeModal {
       rewardController: this.rewardController,
       onClaimGlovesReward: this.onClaimGlovesReward,
       onShowRewardDetails: (reward) => this.showRewardDetailsForReward(reward),
+      onRewardsChanged: this.onRewardsChanged,
+      onEmeraldRewardClaimed: this.onEmeraldRewardClaimed,
     });
     this.startReward = this.createStartRewardSlot(
       centerX + InfiniteModeModal.startRewardLeftOffsetX,
@@ -942,6 +967,7 @@ export class InfiniteModeModal {
     this.rewardsScrollView?.refresh();
     this.refreshStartReward();
     this.refreshStartEmeraldReward();
+    this.updateOpenButtonPulse();
   }
 
   private refreshStartReward() {
@@ -1249,16 +1275,87 @@ export class InfiniteModeModal {
     }
 
     UiSoundPlayer.playClick(this.scene);
-    this.profile.addEmeralds(InfiniteModeModal.startEmeraldRewardAmount);
     this.profile.claimInfinityTowerReward(
       InfiniteModeModal.startEmeraldRewardId,
     );
+    if (this.onEmeraldRewardClaimed) {
+      this.onEmeraldRewardClaimed(
+        InfiniteModeModal.startEmeraldRewardAmount,
+        {
+          x: this.startEmeraldReward?.icon.x ?? this.scene.scale.width / 2,
+          y: this.startEmeraldReward?.icon.y ?? this.scene.scale.height / 2,
+        },
+      );
+    } else {
+      this.profile.addEmeralds(InfiniteModeModal.startEmeraldRewardAmount);
+      this.onRewardsChanged?.();
+    }
     this.showRewardDetails({
       iconTextureKey: InfiniteModeModal.emeraldIconTextureKey,
       amount: InfiniteModeModal.startEmeraldRewardAmount,
       descriptionKey: "infinite.rewardDetails.emerald",
     });
     this.refresh();
+  }
+
+  private updateOpenButtonPulse() {
+    const shouldPulse =
+      this.openButtonIcon.visible &&
+      this.profile.isInfinityTowerAvailable() &&
+      this.hasClaimableReward();
+
+    this.setOpenButtonIconPulsing(shouldPulse);
+  }
+
+  private hasClaimableReward() {
+    if (
+      !this.profile.hasPurchasedItem(InfiniteModeModal.startRewardItemId) ||
+      !this.profile.hasClaimedInfinityTowerReward(
+        InfiniteModeModal.startEmeraldRewardId,
+      )
+    ) {
+      return true;
+    }
+
+    const currentFloor = this.profile.getInfinityTowerCurrentLevel();
+
+    return InfinityTowerRewardController.getRewards().some((reward) => {
+      return (
+        reward.level <= currentFloor &&
+        this.rewardController.getRewardView(reward).state === "claimable"
+      );
+    });
+  }
+
+  private setOpenButtonIconPulsing(shouldPulse: boolean) {
+    if (this.isOpenButtonIconPulsing === shouldPulse) {
+      return;
+    }
+
+    this.isOpenButtonIconPulsing = shouldPulse;
+    this.scene.tweens.killTweensOf(this.openButtonIcon);
+    this.openButtonIcon.setScale(
+      this.openButtonIconBaseScaleX,
+      this.openButtonIconBaseScaleY,
+    );
+
+    if (!shouldPulse) {
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: this.openButtonIcon,
+      scaleX:
+        this.openButtonIconBaseScaleX *
+        InfiniteModeModal.openButtonIconPulseScale,
+      scaleY:
+        this.openButtonIconBaseScaleY *
+        InfiniteModeModal.openButtonIconPulseScale,
+      duration: InfiniteModeModal.openButtonIconPulseDurationMs,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 
   private setBottomButtonHovered(isHovered: boolean) {

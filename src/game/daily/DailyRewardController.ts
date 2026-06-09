@@ -9,6 +9,10 @@ export type DailyRewardClaimResult = {
   index: number;
 };
 
+export type DailyRewardClaimOptions = {
+  deferEmeraldReward?: boolean;
+};
+
 export class DailyRewardController {
   constructor(private readonly profile: PlayerProfile) {}
 
@@ -45,7 +49,10 @@ export class DailyRewardController {
     );
   }
 
-  claimToday(today = this.getTodayKey()): DailyRewardClaimResult | undefined {
+  claimToday(
+    today = this.getTodayKey(),
+    options: DailyRewardClaimOptions = {},
+  ): DailyRewardClaimResult | undefined {
     if (!this.canClaimToday(today)) {
       return undefined;
     }
@@ -57,7 +64,7 @@ export class DailyRewardController {
       return undefined;
     }
 
-    this.applyReward(reward);
+    this.applyReward(reward, options);
 
     this.profile.claimDailyReward(index, today);
 
@@ -67,8 +74,15 @@ export class DailyRewardController {
     };
   }
 
-  private applyReward(reward: DailyRewardConfig) {
+  private applyReward(
+    reward: DailyRewardConfig,
+    options: DailyRewardClaimOptions,
+  ) {
     if (reward.type === "emerald") {
+      if (options.deferEmeraldReward) {
+        return;
+      }
+
       this.profile.addEmeralds(reward.amount);
       return;
     }

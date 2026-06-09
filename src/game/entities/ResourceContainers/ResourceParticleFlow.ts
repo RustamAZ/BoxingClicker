@@ -13,6 +13,8 @@ type ResourceParticleFlowConfig = {
   diamondsCount: number;
   coinsCount: number;
   emeraldsCount?: number;
+  depth?: number;
+  spawnOffsetY?: number;
   onComplete?: () => void;
 };
 
@@ -124,6 +126,8 @@ export class ResourceParticleFlow {
         emeraldsCount,
         config.from,
         config.emeraldTarget,
+        config.depth,
+        config.spawnOffsetY,
       );
     }
 
@@ -140,10 +144,12 @@ export class ResourceParticleFlow {
     count: number,
     from: Point,
     target: Point,
+    depth = ResourceParticleFlow.depth,
+    spawnOffsetY = ResourceParticleFlow.spawnOffsetY,
   ) {
     const emitPoint = {
       x: from.x,
-      y: from.y + ResourceParticleFlow.spawnOffsetY,
+      y: from.y + spawnOffsetY,
     };
     const particleMotions = new WeakMap<
       Phaser.GameObjects.Particles.Particle,
@@ -210,7 +216,7 @@ export class ResourceParticleFlow {
           },
         },
       })
-      .setDepth(ResourceParticleFlow.depth);
+      .setDepth(depth);
 
     emitter.explode(count);
 

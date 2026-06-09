@@ -26,6 +26,9 @@ type TrainingRow = {
   background: GameObjects.Rectangle;
   iconFrame: GameObjects.Rectangle;
   icon: GameObjects.Image;
+  iconBaseScaleX: number;
+  iconBaseScaleY: number;
+  isIconPulsing: boolean;
   title: GameObjects.Text;
   description: GameObjects.Text;
   level: GameObjects.Text;
@@ -46,6 +49,14 @@ type TrainingAssetConfig = {
   path: string;
 };
 
+type TrainingUnlockAnnouncementView = {
+  overlay: GameObjects.Rectangle;
+  panel: GameObjects.Image;
+  message: GameObjects.Text;
+  closeLabel: GameObjects.Text;
+  closeHitArea: GameObjects.Rectangle;
+};
+
 export class TrainingModal {
   private static readonly depth = 1130;
   private static readonly buttonDepth = 1002;
@@ -55,10 +66,13 @@ export class TrainingModal {
   private static readonly openButtonSize = 100;
   private static readonly openButtonIconSize = 108;
   private static readonly openButtonIconHoverSize = 112;
+  private static readonly openButtonIconPulseScale = 1.08;
   private static readonly panelWidth = 760;
   private static readonly panelHeight = 560;
   private static readonly rowWidth = 650;
   private static readonly rowHeight = 70;
+  private static readonly rowIconSize = 42;
+  private static readonly rowIconPulseScale = 1.14;
   private static readonly rowGap = 12;
   private static readonly rowStartY = -166;
   private static readonly rowsScrollViewport = {
@@ -75,7 +89,16 @@ export class TrainingModal {
     "training-maximum-background";
   private static readonly maxLabelBackgroundPath =
     "assets/images/ui/infinity-tower/fight-button.png";
+  private static readonly unlockAnnouncementPanelTextureKey =
+    "training-unlock-announcement-panel";
+  private static readonly unlockAnnouncementPanelPath =
+    "assets/images/ui/infinity-tower/reward-details-panel.png";
+  private static readonly unlockAnnouncementCloseOffsetY = 170;
+  private static readonly unlockAnnouncementCloseHitWidth = 220;
+  private static readonly unlockAnnouncementCloseHitHeight = 58;
+  private static readonly unlockAnnouncementMessageWrapWidth = 420;
   private static readonly lockedLabelWrapWidth = 520;
+  private static readonly iconPulseDurationMs = 520;
   private static readonly openButtonColor = 0x3a2a43;
   private static readonly openButtonHoverColor = 0x4a3a53;
   private static readonly openButtonAlpha = 0.95;
@@ -109,6 +132,10 @@ export class TrainingModal {
       key: TrainingModal.maxLabelBackgroundTextureKey,
       path: TrainingModal.maxLabelBackgroundPath,
     },
+    {
+      key: TrainingModal.unlockAnnouncementPanelTextureKey,
+      path: TrainingModal.unlockAnnouncementPanelPath,
+    },
   ];
 
   static preload(scene: Scene) {
@@ -125,6 +152,7 @@ export class TrainingModal {
   private logo?: GameObjects.Image;
   private title?: GameObjects.Text;
   private rowsViewportHitArea?: GameObjects.Rectangle;
+  private unlockAnnouncement?: TrainingUnlockAnnouncementView;
   private rows: TrainingRow[] = [];
   private closeButton?: TrainingButton;
   private unsubscribeLanguageChange?: () => void;
@@ -136,6 +164,10 @@ export class TrainingModal {
   private isDraggingScroll = false;
   private dragStartY = 0;
   private dragStartScrollOffsetY = 0;
+  private openButtonIconBaseScaleX = 1;
+  private openButtonIconBaseScaleY = 1;
+  private isOpenButtonIconPulsing = false;
+  private isUnlockAnnouncementDismissedForOpen = false;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
 
   constructor(
@@ -160,6 +192,10 @@ export class TrainingModal {
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
       this.scene.input.off("wheel", this.handleWheel, this);
       this.unsubscribeLanguageChange?.();
+      this.setOpenButtonIconPulsing(false);
+      this.rows.forEach((row) => {
+        this.setRowIconPulsing(row, false);
+      });
       this.loaderSpinner.destroy();
     });
     this.scene.input.on("wheel", this.handleWheel, this);
@@ -180,6 +216,8 @@ export class TrainingModal {
         TrainingModal.openButtonIconSize,
       );
     }
+
+    this.updateOpenButtonPulse();
   }
 
   open() {
@@ -212,12 +250,14 @@ export class TrainingModal {
 
     this.pauseController.resume("training");
     this.setVisible(false);
+    this.setUnlockAnnouncementVisible(false);
     this.clearUnlockActionTimer();
     this.isActionLocked = false;
   }
 
   private show() {
     this.pauseController.pause("training");
+    this.isUnlockAnnouncementDismissedForOpen = false;
     this.refresh();
     this.setVisible(true);
     this.isActionLocked = true;
@@ -294,6 +334,7 @@ export class TrainingModal {
         this.close();
       },
     );
+    this.unlockAnnouncement = this.createUnlockAnnouncement(centerX, centerY);
 
     this.overlay.on(
       "pointerdown",
@@ -346,6 +387,8 @@ export class TrainingModal {
         TrainingModal.openButtonIconSize,
       )
       .setDepth(TrainingModal.buttonDepth + 1);
+    this.openButtonIconBaseScaleX = icon.scaleX;
+    this.openButtonIconBaseScaleY = icon.scaleY;
     const label = this.scene.add
       .text(
         TrainingModal.openButtonX,
@@ -384,12 +427,20 @@ export class TrainingModal {
       this.open();
     });
     hitArea.on("pointerover", () => {
+      if (this.isOpenButtonIconPulsing) {
+        return;
+      }
+
       icon.setDisplaySize(
         TrainingModal.openButtonIconHoverSize,
         TrainingModal.openButtonIconHoverSize,
       );
     });
     hitArea.on("pointerout", () => {
+      if (this.isOpenButtonIconPulsing) {
+        return;
+      }
+
       icon.setDisplaySize(
         TrainingModal.openButtonIconSize,
         TrainingModal.openButtonIconSize,
@@ -433,7 +484,7 @@ export class TrainingModal {
       .setVisible(false);
     const icon = this.scene.add
       .image(centerX - 270, y, item.iconTextureKey)
-      .setDisplaySize(42, 42)
+      .setDisplaySize(TrainingModal.rowIconSize, TrainingModal.rowIconSize)
       .setDepth(TrainingModal.depth + 4)
       .setVisible(false);
     const title = this.scene.add
@@ -569,6 +620,9 @@ export class TrainingModal {
       background,
       iconFrame,
       icon,
+      iconBaseScaleX: icon.scaleX,
+      iconBaseScaleY: icon.scaleY,
+      isIconPulsing: false,
       title,
       description,
       level,
@@ -643,6 +697,100 @@ export class TrainingModal {
     };
   }
 
+  private createUnlockAnnouncement(
+    centerX: number,
+    centerY: number,
+  ): TrainingUnlockAnnouncementView {
+    const overlay = this.scene.add
+      .rectangle(centerX, centerY, 1024, 768, 0x000000, 0.42)
+      .setDepth(TrainingModal.depth + 30)
+      .setInteractive()
+      .setVisible(false);
+    const panel = this.scene.add
+      .image(
+        centerX,
+        centerY,
+        TrainingModal.unlockAnnouncementPanelTextureKey,
+      )
+      .setDepth(TrainingModal.depth + 31)
+      .setVisible(false);
+    const message = this.scene.add
+      .text(centerX, centerY - 20, "", {
+        fontFamily: "Hardpixel",
+        fontSize: 25,
+        color: "#ffffff",
+        stroke: "#1f1f1f",
+        strokeThickness: 5,
+        align: "center",
+        wordWrap: {
+          width: TrainingModal.unlockAnnouncementMessageWrapWidth,
+          useAdvancedWrap: true,
+        },
+      })
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(TrainingModal.depth + 32)
+      .setVisible(false);
+    const closeLabel = this.scene.add
+      .text(
+        centerX,
+        centerY + TrainingModal.unlockAnnouncementCloseOffsetY,
+        "",
+        {
+          fontFamily: "Hardpixel",
+          fontSize: 23,
+          color: "#ffffff",
+          stroke: "#1f1f1f",
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setResolution(2)
+      .setDepth(TrainingModal.depth + 32)
+      .setVisible(false);
+    const closeHitArea = this.scene.add
+      .rectangle(
+        centerX,
+        centerY + TrainingModal.unlockAnnouncementCloseOffsetY,
+        TrainingModal.unlockAnnouncementCloseHitWidth,
+        TrainingModal.unlockAnnouncementCloseHitHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(TrainingModal.depth + 33)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+
+    overlay.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        event.stopPropagation();
+      },
+    );
+    closeHitArea.on(
+      "pointerdown",
+      (
+        _pointer: Phaser.Input.Pointer,
+        _localX: number,
+        _localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => this.handleUnlockAnnouncementClose(event),
+    );
+
+    return {
+      overlay,
+      panel,
+      message,
+      closeLabel,
+      closeHitArea,
+    };
+  }
+
   private handleBuy(itemId: TrainingItemId) {
     if (this.isActionLocked) {
       return;
@@ -677,6 +825,9 @@ export class TrainingModal {
       this.setRowState(row, state);
       this.setRowVisible(row, this.panel?.visible === true);
     });
+    this.setRowsInteractive(!this.isActionLocked);
+    this.updateOpenButtonPulse();
+    this.refreshUnlockAnnouncement();
   }
 
   private setRowState(row: TrainingRow, state: TrainingItemState) {
@@ -687,18 +838,20 @@ export class TrainingModal {
     const showLockedOverlay = !state.isUnlocked || showTowerUnlockHint;
 
     row.state = state;
-    row.title.setText(languageController.t(state.config.titleKey));
+    row.title.setText(languageController.t(state.titleKey));
     row.description.setText(
       state.isUnlocked
-        ? languageController.t(state.config.descriptionKey, {
-            value: TrainingModal.getDisplayValue(state.config),
+        ? languageController.t(state.descriptionKey, {
+            value: TrainingModal.getDisplayValue(state),
           })
         : "",
     );
     row.title.setColor("#ffffff");
     row.description.setColor("#f6e36b");
     row.level.setText(
-      state.isInfinite ? String(state.level) : `${state.level}/${state.maxLevel}`,
+      state.isInfinite
+        ? String(state.displayLevel)
+        : `${state.displayLevel}/${state.maxLevel}`,
     );
     row.priceIcon.setVisible(state.isUnlocked && !state.isMaxLevel && isPanelVisible);
     row.price.setVisible(state.isUnlocked && !state.isMaxLevel && isPanelVisible);
@@ -752,6 +905,12 @@ export class TrainingModal {
       this.setRowVisible(row, visible);
     });
     this.setButtonVisibleState(this.closeButton, visible);
+
+    if (visible) {
+      this.refreshUnlockAnnouncement();
+    } else {
+      this.setUnlockAnnouncementVisible(false);
+    }
   }
 
   private setRowVisible(row: TrainingRow, visible: boolean) {
@@ -788,6 +947,7 @@ export class TrainingModal {
     row.maxLabel.setVisible(canShowMaxOverlay);
     row.lockedOverlay.setVisible(canShowLockedOverlay);
     row.lockedLabel.setVisible(canShowLockedOverlay);
+    this.updateRowIconPulse(row, canShowAction && Boolean(state?.canBuy));
 
     this.applyViewportClip(row);
   }
@@ -813,6 +973,126 @@ export class TrainingModal {
       } else {
         row.buyButton.hitArea.disableInteractive();
       }
+    });
+  }
+
+  private refreshUnlockAnnouncement() {
+    const announcement = this.unlockAnnouncement;
+
+    if (!announcement) {
+      return;
+    }
+
+    announcement.message.setText(
+      languageController.t("training.infinityUnlocked.message"),
+    );
+    announcement.closeLabel.setText(languageController.t("training.close"));
+
+    const shouldShow =
+      this.panel?.visible === true &&
+      !this.isUnlockAnnouncementDismissedForOpen &&
+      this.trainingController.shouldShowInfinityTowerTrainingAnnouncement();
+
+    this.setUnlockAnnouncementVisible(shouldShow);
+  }
+
+  private setUnlockAnnouncementVisible(visible: boolean) {
+    const announcement = this.unlockAnnouncement;
+
+    if (!announcement) {
+      return;
+    }
+
+    announcement.overlay.setVisible(visible);
+    announcement.panel.setVisible(visible);
+    announcement.message.setVisible(visible);
+    announcement.closeLabel.setVisible(visible);
+    announcement.closeHitArea.setVisible(visible);
+
+    if (visible) {
+      announcement.overlay.setInteractive();
+      announcement.closeHitArea.setInteractive({ useHandCursor: true });
+    } else {
+      announcement.overlay.disableInteractive();
+      announcement.closeHitArea.disableInteractive();
+    }
+  }
+
+  private handleUnlockAnnouncementClose(
+    event?: Phaser.Types.Input.EventData,
+  ) {
+    event?.stopPropagation();
+    UiSoundPlayer.playClick(this.scene);
+    this.isUnlockAnnouncementDismissedForOpen = true;
+    this.setUnlockAnnouncementVisible(false);
+  }
+
+  private updateOpenButtonPulse() {
+    const shouldPulse =
+      this.openButton.icon?.visible === true &&
+      this.trainingController.getItemStates().some((state) => state.canBuy);
+
+    this.setOpenButtonIconPulsing(shouldPulse);
+  }
+
+  private setOpenButtonIconPulsing(shouldPulse: boolean) {
+    const icon = this.openButton.icon;
+
+    if (!icon || this.isOpenButtonIconPulsing === shouldPulse) {
+      return;
+    }
+
+    this.isOpenButtonIconPulsing = shouldPulse;
+    this.scene.tweens.killTweensOf(icon);
+    icon.setScale(
+      this.openButtonIconBaseScaleX,
+      this.openButtonIconBaseScaleY,
+    );
+
+    if (!shouldPulse) {
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: icon,
+      scaleX:
+        this.openButtonIconBaseScaleX *
+        TrainingModal.openButtonIconPulseScale,
+      scaleY:
+        this.openButtonIconBaseScaleY *
+        TrainingModal.openButtonIconPulseScale,
+      duration: TrainingModal.iconPulseDurationMs,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private updateRowIconPulse(row: TrainingRow, shouldPulse: boolean) {
+    if (row.isIconPulsing === shouldPulse) {
+      return;
+    }
+
+    this.setRowIconPulsing(row, shouldPulse);
+  }
+
+  private setRowIconPulsing(row: TrainingRow, shouldPulse: boolean) {
+    row.isIconPulsing = shouldPulse;
+    this.scene.tweens.killTweensOf(row.icon);
+    row.icon.setScale(row.iconBaseScaleX, row.iconBaseScaleY);
+
+    if (!shouldPulse) {
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: row.icon,
+      scaleX: row.iconBaseScaleX * TrainingModal.rowIconPulseScale,
+      scaleY: row.iconBaseScaleY * TrainingModal.rowIconPulseScale,
+      duration: TrainingModal.iconPulseDurationMs,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
     });
   }
 
@@ -1082,6 +1362,11 @@ export class TrainingModal {
       return;
     }
 
+    if (this.unlockAnnouncement?.overlay.visible) {
+      this.handleUnlockAnnouncementClose();
+      return;
+    }
+
     UiSoundPlayer.playClick(this.scene);
     this.close();
   }
@@ -1091,12 +1376,15 @@ export class TrainingModal {
     this.unlockActionTimer = undefined;
   }
 
-  private static getDisplayValue(config: TrainingItemConfig) {
-    if (config.stat === "punch-speed" || config.stat === "critical-hit-chance") {
-      return Math.round(config.valuePerLevel * 100);
+  private static getDisplayValue(state: TrainingItemState) {
+    if (
+      state.config.stat === "punch-speed" ||
+      state.config.stat === "critical-hit-chance"
+    ) {
+      return Math.round(Math.abs(state.valuePerLevel) * 100);
     }
 
-    return Math.abs(config.valuePerLevel);
+    return Math.abs(state.valuePerLevel);
   }
 
   private static clamp(value: number, min: number, max: number) {

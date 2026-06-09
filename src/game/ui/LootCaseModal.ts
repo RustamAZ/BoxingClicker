@@ -353,6 +353,13 @@ export class LootCaseModal {
     this.setVisible(false);
   }
 
+  getRewardParticleOrigin() {
+    return {
+      x: this.rewardIcon.x,
+      y: this.rewardIcon.y,
+    };
+  }
+
   private createButton(
     x: number,
     y: number,

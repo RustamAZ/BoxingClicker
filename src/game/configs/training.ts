@@ -18,12 +18,18 @@ export type TrainingItemConfig = {
   valuePerLevel: number;
   maxLevel: number;
   priceByLevel: number[];
+  infinityTowerUpgrade?: {
+    titleKey: string;
+    descriptionKey: string;
+    valuePerLevel: number;
+    price: number;
+  };
   requiresInfinityTower?: boolean;
   canExceedMaxLevelInInfinityTower?: boolean;
 };
 
 export const trainingConfig = {
-  infinityTowerLevelPrice: 350,
+  infinityTowerLevelPrice: 300,
   items: [
     {
       id: "punch-power",
@@ -34,7 +40,13 @@ export const trainingConfig = {
       stat: "damage",
       valuePerLevel: 2,
       maxLevel: 10,
-      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 220],
+      infinityTowerUpgrade: {
+        titleKey: "training.heroPower.title",
+        descriptionKey: "training.heroPower.description",
+        valuePerLevel: 4,
+        price: 300,
+      },
     },
     {
       id: "strong-jaw",
@@ -45,8 +57,13 @@ export const trainingConfig = {
       stat: "max-health",
       valuePerLevel: 15,
       maxLevel: 10,
-      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
-      // priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 220],
+      infinityTowerUpgrade: {
+        titleKey: "training.heroHealth.title",
+        descriptionKey: "training.heroHealth.description",
+        valuePerLevel: 30,
+        price: 300,
+      },
     },
     {
       id: "endurance",
@@ -57,7 +74,13 @@ export const trainingConfig = {
       stat: "max-stamina",
       valuePerLevel: 25,
       maxLevel: 10,
-      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 220],
+      infinityTowerUpgrade: {
+        titleKey: "training.heroBreath.title",
+        descriptionKey: "training.heroBreath.description",
+        valuePerLevel: 30,
+        price: 300,
+      },
     },
     {
       id: "light-gloves",
@@ -68,7 +91,7 @@ export const trainingConfig = {
       stat: "stamina-cost",
       valuePerLevel: -0.1,
       maxLevel: 10,
-      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 220],
       canExceedMaxLevelInInfinityTower: false,
     },
     {
@@ -80,7 +103,7 @@ export const trainingConfig = {
       stat: "punch-speed",
       valuePerLevel: 0.15,
       maxLevel: 10,
-      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 250],
+      priceByLevel: [30, 50, 60, 80, 90, 120, 150, 180, 200, 220],
       canExceedMaxLevelInInfinityTower: false,
     },
     {
@@ -92,7 +115,7 @@ export const trainingConfig = {
       stat: "critical-hit-chance",
       valuePerLevel: 0.02,
       maxLevel: 10,
-      priceByLevel: [350, 350, 350, 350, 350, 350, 350, 350, 350, 350],
+      priceByLevel: [300, 300, 300, 300, 300, 300, 300, 300, 300, 300],
       requiresInfinityTower: true,
       canExceedMaxLevelInInfinityTower: false,
     },

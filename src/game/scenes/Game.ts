@@ -178,6 +178,7 @@ export class Game extends Scene {
     this.wallet = new Wallet(this.player);
     this.dailyRewardController = new DailyRewardController(this.player.profile);
     this.trainingController = new TrainingController(this.player, this.wallet);
+    this.trainingController.completeBaseTrainingForInfinityTower();
     this.trainingController.applyTrainingBonuses();
     this.levelController = new GameLevelController(this.player);
     this.infinityTowerController = new InfinityTowerController(
@@ -200,6 +201,10 @@ export class Game extends Scene {
       this.player,
       this.wallet,
       this.pauseController,
+      () => this.levelController.isInfiniteRun(),
+      (amount, from) => {
+        this.playModalEmeraldReward(amount, from);
+      },
     );
 
     this.cameras.main.setBackgroundColor(0x1f1f1f);
@@ -318,6 +323,9 @@ export class Game extends Scene {
           },
         );
       },
+      (amount, from) => {
+        this.playModalEmeraldReward(amount, from);
+      },
     );
     this.trainingModal = new TrainingModal(
       this,
@@ -326,6 +334,9 @@ export class Game extends Scene {
       () => {
         this.emeraldContainer.update();
         this.updatePlayerStatsDebugText();
+      },
+      (amount, from) => {
+        this.playModalEmeraldReward(amount, from);
       },
     );
     this.infiniteModeModal = new InfiniteModeModal(
@@ -337,6 +348,10 @@ export class Game extends Scene {
       },
       (itemId) => {
         this.claimInfinityTowerGlovesReward(itemId);
+      },
+      () => {
+        this.emeraldContainer.update();
+        this.updatePlayerStatsDebugText();
       },
     );
     this.infinityTowerConsumableModal = new InfinityTowerConsumableModal(
@@ -491,6 +506,33 @@ export class Game extends Scene {
             },
           );
         }
+      },
+    });
+  }
+
+  private playModalEmeraldReward(
+    amount: number,
+    from: { x: number; y: number },
+  ) {
+    const safeAmount = Math.max(0, Math.floor(amount));
+
+    if (safeAmount <= 0) {
+      return;
+    }
+
+    this.resourceParticleFlow.play({
+      from,
+      diamondTarget: this.emeraldContainer.getTargetPoint(),
+      coinTarget: this.emeraldContainer.getTargetPoint(),
+      emeraldTarget: this.emeraldContainer.getTargetPoint(),
+      diamondsCount: 0,
+      coinsCount: 0,
+      emeraldsCount: 1,
+      depth: 2200,
+      spawnOffsetY: 0,
+      onComplete: () => {
+        this.emeraldContainer.add(safeAmount);
+        this.updatePlayerStatsDebugText();
       },
     });
   }
@@ -816,6 +858,8 @@ export class Game extends Scene {
     if (bossId === "five-difficulty-boss") {
       this.isCampaignVictoryFlowActive = true;
       this.player.profile.setInfinityTowerAvailable(true);
+      this.trainingController.completeBaseTrainingForInfinityTower();
+      this.trainingController.applyTrainingBonuses();
       this.resetPendingRunRewards();
       this.campaignVictoryModal.show();
       return true;

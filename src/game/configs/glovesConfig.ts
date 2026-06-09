@@ -91,14 +91,14 @@ export const glovesConfig: GlovesConfig = {
       unlock_condition: "start",
       price_emerald: 0,
       attack_bonus: 55,
-      attack_speed_bonus: 45,
+      attack_speed_bonus: 0.45,
     },
     red_daily_gloves: {
       name: "Красные перчатки 67",
       unlock_condition: "start",
       price_emerald: 0,
-      attack_bonus: 45,
-      attack_speed_bonus: 0.5,
+      attack_bonus: 70,
+      attack_speed_bonus: 0.45,
     },
   },
 };

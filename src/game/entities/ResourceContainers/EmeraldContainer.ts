@@ -18,11 +18,15 @@ export class EmeraldContainer {
   private static readonly iconShakeOffsetX = 5;
   private static readonly iconShakeDurationMs = 32;
   private static readonly iconShakeRepeat = 4;
+  private static readonly iconPulseScale = 1.12;
+  private static readonly iconPulseDurationMs = 120;
 
   private readonly icon: GameObjects.Image;
   private readonly text: GameObjects.Text;
   private readonly originX: number;
   private readonly originY: number;
+  private readonly iconBaseScaleX: number;
+  private readonly iconBaseScaleY: number;
 
   static preload(scene: Scene) {
     scene.load.image(EmeraldContainer.iconTextureKey, EmeraldContainer.iconPath);
@@ -44,6 +48,8 @@ export class EmeraldContainer {
         EmeraldContainer.iconDisplayHeight,
       )
       .setDepth(EmeraldContainer.depth);
+    this.iconBaseScaleX = this.icon.scaleX;
+    this.iconBaseScaleY = this.icon.scaleY;
     this.text = scene.add
       .text(config.x + EmeraldContainer.textOffsetX, config.y, "", {
         fontFamily: "Hardpixel",
@@ -65,7 +71,7 @@ export class EmeraldContainer {
     this.scene.sound.play(EmeraldContainer.takeSoundKey, {
       volume: 0.8,
     });
-    this.playIconShake();
+    this.playIconReceiveFeedback();
   }
 
   update() {
@@ -79,9 +85,9 @@ export class EmeraldContainer {
     };
   }
 
-  private playIconShake() {
+  private playIconReceiveFeedback() {
     this.scene.tweens.killTweensOf(this.icon);
-    this.resetIconPosition();
+    this.resetIconTransform();
 
     this.scene.tweens.add({
       targets: this.icon,
@@ -94,9 +100,30 @@ export class EmeraldContainer {
         this.resetIconPosition();
       },
     });
+
+    this.scene.tweens.add({
+      targets: this.icon,
+      scaleX: this.iconBaseScaleX * EmeraldContainer.iconPulseScale,
+      scaleY: this.iconBaseScaleY * EmeraldContainer.iconPulseScale,
+      duration: EmeraldContainer.iconPulseDurationMs,
+      yoyo: true,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.resetIconScale();
+      },
+    });
   }
 
   private resetIconPosition() {
     this.icon.setPosition(this.originX, this.originY);
+  }
+
+  private resetIconScale() {
+    this.icon.setScale(this.iconBaseScaleX, this.iconBaseScaleY);
+  }
+
+  private resetIconTransform() {
+    this.resetIconPosition();
+    this.resetIconScale();
   }
 }

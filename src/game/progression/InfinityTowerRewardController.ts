@@ -16,9 +16,14 @@ export type InfinityTowerRewardClaimResult = {
   glovesItemId?: string;
 };
 
+export type InfinityTowerRewardClaimOptions = {
+  deferEmeraldReward?: boolean;
+};
+
 export type InfinityTowerRewardFeedOptions = {
   futureLockedCount?: number;
   pastClaimedCount?: number;
+  minimumLevelGroupCount?: number;
   excludeRewardIds?: string[];
 };
 
@@ -68,6 +73,10 @@ export class InfinityTowerRewardController {
       Math.floor(options.pastClaimedCount ?? 4),
     );
     const excludedRewardIds = new Set(options.excludeRewardIds ?? []);
+    const minimumLevelGroupCount = Math.max(
+      0,
+      Math.floor(options.minimumLevelGroupCount ?? 0),
+    );
     const rewards = InfinityTowerRewardController.getRewards().filter(
       (reward) => !excludedRewardIds.has(reward.id),
     );
@@ -87,7 +96,10 @@ export class InfinityTowerRewardController {
       return InfinityTowerRewardController.flattenRewardGroups(
         InfinityTowerRewardController.takeGroupsByRewardCount(
           lockedGroups,
-          futureLockedCount + pastClaimedCount,
+          Math.max(
+            futureLockedCount + pastClaimedCount,
+            minimumLevelGroupCount,
+          ),
         ),
       );
     }
@@ -105,11 +117,19 @@ export class InfinityTowerRewardController {
         futureLockedCount,
       );
 
-      return InfinityTowerRewardController.flattenRewardGroups([
+      const selectedGroups = [
         ...pastClaimedGroups,
         ...claimableGroups,
         ...futureLockedGroups,
-      ]);
+      ];
+
+      return InfinityTowerRewardController.flattenRewardGroups(
+        this.fillRewardGroupsToMinimum(
+          selectedGroups,
+          rewardGroups,
+          minimumLevelGroupCount,
+        ),
+      );
     }
 
     const pastClaimedGroups = InfinityTowerRewardController.takeLastGroupsByRewardCount(
@@ -123,10 +143,18 @@ export class InfinityTowerRewardController {
       futureLockedCount,
     );
 
-    return InfinityTowerRewardController.flattenRewardGroups([
+    const selectedGroups = [
       ...pastClaimedGroups,
       ...futureLockedGroups,
-    ]);
+    ];
+
+    return InfinityTowerRewardController.flattenRewardGroups(
+      this.fillRewardGroupsToMinimum(
+        selectedGroups,
+        rewardGroups,
+        minimumLevelGroupCount,
+      ),
+    );
   }
 
   hasClaimableRewardForFloor(floor: number) {
@@ -140,7 +168,10 @@ export class InfinityTowerRewardController {
     });
   }
 
-  claimReward(rewardId: string): InfinityTowerRewardClaimResult | undefined {
+  claimReward(
+    rewardId: string,
+    options: InfinityTowerRewardClaimOptions = {},
+  ): InfinityTowerRewardClaimResult | undefined {
     const reward = InfinityTowerRewardController.getRewards().find(
       (configuredReward) => configuredReward.id === rewardId,
     );
@@ -160,7 +191,7 @@ export class InfinityTowerRewardController {
       this.profile.addRewiveCount(reward.amount);
     } else if (reward.type === "consumable") {
       this.profile.addTowerConsumable(reward.consumableId, reward.amount);
-    } else {
+    } else if (!options.deferEmeraldReward) {
       this.profile.addEmeralds(reward.amount);
     }
 
@@ -251,6 +282,53 @@ export class InfinityTowerRewardController {
 
   private static flattenRewardGroups(groups: InfinityTowerRewardLevelGroup[]) {
     return groups.flatMap((group) => group.rewards);
+  }
+
+  private fillRewardGroupsToMinimum(
+    selectedGroups: InfinityTowerRewardLevelGroup[],
+    allGroups: InfinityTowerRewardLevelGroup[],
+    minimumGroupCount: number,
+  ) {
+    if (selectedGroups.length >= minimumGroupCount) {
+      return selectedGroups;
+    }
+
+    const result = [...selectedGroups];
+    const selectedLevels = new Set(result.map((group) => group.level));
+    const highestSelectedLevel = result[result.length - 1]?.level ?? 0;
+    const futureGroups = allGroups.filter((group) => {
+      return group.level > highestSelectedLevel && !selectedLevels.has(group.level);
+    });
+
+    for (const group of futureGroups) {
+      if (result.length >= minimumGroupCount) {
+        break;
+      }
+
+      result.push(group);
+      selectedLevels.add(group.level);
+    }
+
+    if (result.length >= minimumGroupCount) {
+      return result.sort((left, right) => left.level - right.level);
+    }
+
+    for (let index = allGroups.length - 1; index >= 0; index -= 1) {
+      if (result.length >= minimumGroupCount) {
+        break;
+      }
+
+      const group = allGroups[index];
+
+      if (selectedLevels.has(group.level)) {
+        continue;
+      }
+
+      result.unshift(group);
+      selectedLevels.add(group.level);
+    }
+
+    return result.sort((left, right) => left.level - right.level);
   }
 
   private getRewardState(

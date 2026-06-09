@@ -109,6 +109,10 @@ export class DailyRewardModal {
     private readonly pauseController: PauseController,
     private readonly controller: DailyRewardController,
     private readonly onClaim?: (result: DailyRewardClaimResult) => void,
+    private readonly onEmeraldRewardClaimed?: (
+      amount: number,
+      from: { x: number; y: number },
+    ) => void,
   ) {
     this.openButton = this.createOpenButton();
     this.scene.input.keyboard?.on("keydown-ESC", this.handleEsc, this);
@@ -521,10 +525,21 @@ export class DailyRewardModal {
       return;
     }
 
-    const result = this.controller.claimToday();
+    const result = this.controller.claimToday(undefined, {
+      deferEmeraldReward: this.onEmeraldRewardClaimed !== undefined,
+    });
 
     if (!result) {
       return;
+    }
+
+    if (result.reward.type === "emerald" && this.onEmeraldRewardClaimed) {
+      const slot = this.slots[index];
+
+      this.onEmeraldRewardClaimed(result.reward.amount, {
+        x: slot?.icon.x ?? this.scene.scale.width / 2,
+        y: slot?.icon.y ?? this.scene.scale.height / 2,
+      });
     }
 
     this.onClaim?.(result);

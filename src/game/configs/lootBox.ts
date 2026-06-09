@@ -19,6 +19,7 @@ type LootBoxRewardConfig = {
   descriptionKey: string;
   type: LootBoxRewardType;
   values: Record<LootBoxRarity, number>;
+  infinityTowerValues?: Record<LootBoxRarity, number>;
 };
 
 type LootBoxConfig = {
@@ -89,6 +90,11 @@ export const lootBoxConfig: LootBoxConfig = {
         common: 10,
         rare: 20,
         epic: 50,
+      },
+      infinityTowerValues: {
+        common: 30,
+        rare: 50,
+        epic: 200,
       },
     },
   },

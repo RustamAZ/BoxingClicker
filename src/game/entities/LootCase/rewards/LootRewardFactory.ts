@@ -12,7 +12,14 @@ import type {
   LootRewardRarity,
 } from "./LootReward";
 
-type LootRewardFactoryFn = (rarity: LootRewardRarity) => LootReward;
+export type LootRewardCreateOptions = {
+  isInfinityTowerRun?: boolean;
+};
+
+type LootRewardFactoryFn = (
+  rarity: LootRewardRarity,
+  options?: LootRewardCreateOptions,
+) => LootReward;
 
 export class LootRewardFactory {
   private static readonly placeholderRewardId = "placeholder-reward";
@@ -23,7 +30,7 @@ export class LootRewardFactory {
     LootRewardId,
     LootRewardFactoryFn
   >([
-    ["emerald", (rarity) => new EmeraldLootReward(rarity)],
+    ["emerald", (rarity, options) => new EmeraldLootReward(rarity, options)],
     ["health-potion", (rarity) => new HealthPotionLootReward(rarity)],
     ["stamina-potion", (rarity) => new StaminaPotionLootReward(rarity)],
     ["speed-potion", (rarity) => new SpeedPotionLootReward(rarity)],
@@ -77,9 +84,10 @@ export class LootRewardFactory {
   static create(
     rewardId: LootRewardId,
     rarity: LootRewardRarity,
+    options?: LootRewardCreateOptions,
   ) {
     const create = LootRewardFactory.factories.get(rewardId);
 
-    return create?.(rarity) ?? new PlaceholderLootReward(rewardId, rarity);
+    return create?.(rarity, options) ?? new PlaceholderLootReward(rewardId, rarity);
   }
 }
