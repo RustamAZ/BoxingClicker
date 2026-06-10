@@ -106,7 +106,6 @@ export class Game extends Scene {
   private breathSoundPlayer: BreathSoundPlayer;
   private backgroundMusicController: BackgroundMusicController;
   private screenFilterController: ScreenFilterController;
-  private playerStatsDebugText: GameObjects.Text;
   private infinityTowerFloorCounter: GameObjects.Image;
   private infinityTowerEnemiesCounter: GameObjects.Image;
   private infinityTowerFloorCounterText: GameObjects.Text;
@@ -289,7 +288,6 @@ export class Game extends Scene {
       this.player,
       this.enemySpawnPlace.currentEnemy,
     );
-    this.createPlayerStatsDebugText();
     this.createInfinityTowerCounters();
     this.createInfinityTowerRunLoader();
     this.levelUpRewardController = new LevelUpRewardController(
@@ -318,9 +316,7 @@ export class Game extends Scene {
         this.glovesEquipmentController.loadAndEquipShopItem(
           this,
           result.reward.itemId,
-          () => {
-            this.updatePlayerStatsDebugText();
-          },
+          () => {},
         );
       },
       (amount, from) => {
@@ -333,7 +329,6 @@ export class Game extends Scene {
       this.trainingController,
       () => {
         this.emeraldContainer.update();
-        this.updatePlayerStatsDebugText();
       },
       (amount, from) => {
         this.playModalEmeraldReward(amount, from);
@@ -351,7 +346,6 @@ export class Game extends Scene {
       },
       () => {
         this.emeraldContainer.update();
-        this.updatePlayerStatsDebugText();
       },
     );
     this.infinityTowerConsumableModal = new InfinityTowerConsumableModal(
@@ -454,7 +448,6 @@ export class Game extends Scene {
     }
 
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
-    this.updatePlayerStatsDebugText();
     this.updateInfinityTowerCounters();
   }
 
@@ -532,7 +525,6 @@ export class Game extends Scene {
       spawnOffsetY: 0,
       onComplete: () => {
         this.emeraldContainer.add(safeAmount);
-        this.updatePlayerStatsDebugText();
       },
     });
   }
@@ -751,9 +743,7 @@ export class Game extends Scene {
 
     profile.discoverItem(itemId);
     profile.purchaseItem(itemId);
-    this.glovesEquipmentController.loadAndEquipShopItem(this, itemId, () => {
-      this.updatePlayerStatsDebugText();
-    });
+    this.glovesEquipmentController.loadAndEquipShopItem(this, itemId, () => {});
   }
 
   private updateGameLevelTransitionEffects() {
@@ -886,7 +876,6 @@ export class Game extends Scene {
     this.enemySpawnPlace.spawnNextEnemy();
     this.backgroundMusicController.resume();
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
-    this.updatePlayerStatsDebugText();
     this.updateInfinityTowerCounters();
   }
 
@@ -903,22 +892,6 @@ export class Game extends Scene {
     if (this.playerDeathModal.isShown) {
       this.playerDeathModal.show(this.getPlayerDeathContinueOption());
     }
-  }
-
-  private createPlayerStatsDebugText() {
-    this.playerStatsDebugText = this.add
-      .text(18, 208, "", {
-        fontFamily: "Hardpixel",
-        fontSize: 14,
-        color: "#ffffff",
-        stroke: "#151515",
-        strokeThickness: 3,
-        lineSpacing: 2,
-      })
-      .setResolution(2)
-      .setDepth(1600);
-
-    this.updatePlayerStatsDebugText();
   }
 
   private createInfinityTowerCounters() {
@@ -1007,17 +980,6 @@ export class Game extends Scene {
     }
   }
 
-  private updatePlayerStatsDebugText() {
-    this.playerStatsDebugText.setText([
-      `D: cила атаки - ${Game.formatDebugNumber(this.player.getDamagePerHit())}`,
-      `S: скорость атаки в ударах в секунду - ${Game.formatDebugNumber(1000 / this.player.getPunchAnimationDurationMs())}`,
-      `H: Количество здоровья максимальное - ${Game.formatDebugNumber(this.player.maxHealth)}`,
-      `A: Количество выносливости максимальное - ${Game.formatDebugNumber(this.player.maxStamina)}`,
-      `C: текущая цена за удар - ${Game.formatDebugNumber(this.player.getStaminaCostPerHit())}`,
-      `K: шанс критического удара - ${Game.formatDebugNumber(this.player.getCriticalHitChance() * 100)}%`,
-    ]);
-  }
-
   private updateInfinityTowerCounters() {
     if (!this.infinityTowerController.isRunActive()) {
       this.setInfinityTowerCountersVisible(false);
@@ -1056,7 +1018,4 @@ export class Game extends Scene {
     );
   }
 
-  private static formatDebugNumber(value: number) {
-    return Number.isInteger(value) ? String(value) : value.toFixed(2);
-  }
 }
