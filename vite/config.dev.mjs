@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: "/BoxingClicker/",
+  base: "./",
   resolve: {
     alias: {
       phaser: fileURLToPath(new URL("../src/game/phaser.ts", import.meta.url)),

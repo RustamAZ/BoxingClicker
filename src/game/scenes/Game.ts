@@ -37,6 +37,7 @@ import { InfiniteModeModal } from "../ui/InfiniteModeModal";
 import { InfinityTowerConsumableModal } from "../ui/InfinityTowerConsumableModal";
 import { CampaignVictoryModal } from "../ui/CampaignVictoryModal";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { LobbyAdCountdownOverlay } from "../ui/LobbyAdCountdownOverlay";
 import { NotificationController } from "../ui/NotificationController";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
@@ -46,6 +47,7 @@ import { languageController } from "../localization/LanguageController";
 import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 import { FullscreenController } from "../utils/FullscreenController";
+import { getGamePlatform } from "../platform/yandex";
 import {
   getInfinityTowerConsumableConfig,
   infinityTowerConsumableIds,
@@ -95,6 +97,7 @@ export class Game extends Scene {
   private trainingModal: TrainingModal;
   private infiniteModeModal: InfiniteModeModal;
   private infinityTowerConsumableModal: InfinityTowerConsumableModal;
+  private lobbyAdCountdownOverlay: LobbyAdCountdownOverlay;
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private campaignVictoryModal: CampaignVictoryModal;
@@ -117,10 +120,13 @@ export class Game extends Scene {
   private fullscreenController?: FullscreenController;
   private previousGameLevel: number;
   private isDeathAdContinueUsedInRun = false;
+  private isDeathAdContinuePending = false;
   private isDeathEmeraldContinueUsedInRun = false;
   private isCampaignVictoryFlowActive = false;
   private isInfinityTowerRunLoading = false;
   private isDailyRewardAutoOpenedForCurrentLobbyVisit = false;
+  private isLobbyAutoAdCheckedForCurrentVisit = false;
+  private isLobbyAutoAdInProgress = false;
 
   constructor() {
     super("Game");
@@ -204,6 +210,7 @@ export class Game extends Scene {
       (amount, from) => {
         this.playModalEmeraldReward(amount, from);
       },
+      () => getGamePlatform().showRewardedAd(),
     );
 
     this.cameras.main.setBackgroundColor(0x1f1f1f);
@@ -352,6 +359,7 @@ export class Game extends Scene {
       this,
       this.pauseController,
     );
+    this.lobbyAdCountdownOverlay = new LobbyAdCountdownOverlay(this);
     this.statusBar = new StatusBar(this);
     this.notificationController = new NotificationController(this);
     this.updateShopModalVisibility();
@@ -380,7 +388,9 @@ export class Game extends Scene {
     this.unsubscribeLanguageChange = languageController.onChange(() => {
       this.refreshLocalizedTexts();
     });
+    void getGamePlatform().showStickyBanner();
     AppLoadingScreen.hide();
+    getGamePlatform().loadingReady();
 
     this.events.on(
       fiveDifficultyBossAttackEvent,
@@ -397,6 +407,8 @@ export class Game extends Scene {
       window.removeEventListener("keydown", this.handleGlobalKeyDown);
       this.unsubscribeLanguageChange?.();
       this.unsubscribeInfinityTowerRewardUnlocked?.();
+      void getGamePlatform().hideStickyBanner();
+      this.lobbyAdCountdownOverlay.destroy();
       this.notificationController.destroy();
       this.fullscreenController?.destroy();
     });
@@ -422,6 +434,12 @@ export class Game extends Scene {
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
+    this.updateLobbyAutoAd();
+
+    if (this.pauseController.isPaused) {
+      return;
+    }
+
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
@@ -593,11 +611,10 @@ export class Game extends Scene {
     if (!this.isDeathAdContinueUsedInRun) {
       return {
         label: languageController.t("death.continueForAd"),
-        isEnabled: true,
+        isEnabled: !this.isDeathAdContinuePending,
         showAdPrice: true,
         onContinue: () => {
-          this.isDeathAdContinueUsedInRun = true;
-          this.restorePlayerAfterDeath();
+          void this.continueAfterRewardedAd();
         },
       };
     }
@@ -633,6 +650,29 @@ export class Game extends Scene {
     this.playerDeathModal.hide();
   }
 
+  private async continueAfterRewardedAd() {
+    if (this.isDeathAdContinueUsedInRun) {
+      return;
+    }
+
+    this.isDeathAdContinuePending = true;
+    this.playerDeathModal.show(this.getPlayerDeathContinueOption());
+
+    const isRewarded = await getGamePlatform()
+      .showRewardedAd()
+      .catch(() => false);
+
+    this.isDeathAdContinuePending = false;
+
+    if (!isRewarded) {
+      this.playerDeathModal.show(this.getPlayerDeathContinueOption());
+      return;
+    }
+
+    this.isDeathAdContinueUsedInRun = true;
+    this.restorePlayerAfterDeath();
+  }
+
   private updateTrainingModalVisibility() {
     const isVisible =
       this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel;
@@ -654,6 +694,58 @@ export class Game extends Scene {
     if (!isVisible) {
       this.infiniteModeModal.close();
     }
+  }
+
+  private updateLobbyAutoAd() {
+    if (!this.isInLobby()) {
+      this.isLobbyAutoAdCheckedForCurrentVisit = false;
+      return;
+    }
+
+    if (
+      this.isLobbyAutoAdCheckedForCurrentVisit ||
+      this.isLobbyAutoAdInProgress ||
+      !this.isLobbySafeForAutoAd()
+    ) {
+      return;
+    }
+
+    this.isLobbyAutoAdCheckedForCurrentVisit = true;
+
+    if (!getGamePlatform().canShowLobbyAutoAd()) {
+      return;
+    }
+
+    this.isLobbyAutoAdInProgress = true;
+    this.pauseController.pause("auto-ad");
+    this.lobbyAdCountdownOverlay.show(() => {
+      void this.showLobbyAutoAd();
+    });
+  }
+
+  private async showLobbyAutoAd() {
+    try {
+      await getGamePlatform().showFullscreenAd({ lobbyAuto: true });
+    } finally {
+      this.pauseController.resume("auto-ad");
+      this.isLobbyAutoAdInProgress = false;
+    }
+  }
+
+  private isInLobby() {
+    return (
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
+      !this.levelController.isInfiniteRun()
+    );
+  }
+
+  private isLobbySafeForAutoAd() {
+    return (
+      !this.pauseController.isPaused &&
+      !this.isInfinityTowerRunLoading &&
+      !this.isCampaignVictoryFlowActive &&
+      this.player.isAlive()
+    );
   }
 
   private requestStartInfiniteRun() {
@@ -766,6 +858,7 @@ export class Game extends Scene {
 
   private resetDeathContinuesForNewRun() {
     this.isDeathAdContinueUsedInRun = false;
+    this.isDeathAdContinuePending = false;
     this.isDeathEmeraldContinueUsedInRun = false;
   }
 

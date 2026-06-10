@@ -10,6 +10,7 @@ import {
   type InfinityTowerConsumables,
 } from "../../configs/infinityTowerConsumables";
 import { gameLevelStartPlayerLevels } from "../../configs/gameLevelsConfig";
+import { getGamePlatform } from "../../platform/yandex";
 
 export type InfinityTowerProfile = {
   isAvailable: boolean;
@@ -24,6 +25,7 @@ export type DailyRewardsProfile = {
 
 export type PlayerProfileSnapshot = {
   id: string;
+  updatedAt: number;
   emeralds: number;
   rewiveCount: number;
   purchasedItemIds: string[];
@@ -36,8 +38,9 @@ export type PlayerProfileSnapshot = {
   dailyRewards: DailyRewardsProfile;
 };
 
-type StoredPlayerProfile = {
+export type StoredPlayerProfile = {
   id?: string;
+  updatedAt?: number;
   emeralds?: number;
   rewiveCount?: number;
   purchasedItemIds?: string[];
@@ -106,8 +109,10 @@ export class PlayerProfile {
   };
   private static readonly mockProfile: StoredPlayerProfile | undefined =
     undefined;
+  private static bootstrapProfile: StoredPlayerProfile | undefined;
 
   private id: string;
+  private updatedAt: number;
   private emeralds: number;
   private rewiveCount: number;
   private purchasedItemIds: string[];
@@ -121,12 +126,10 @@ export class PlayerProfile {
 
   static getStoredEquippedItemId() {
     try {
-      const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
       const profile =
         PlayerProfile.mockProfile ??
-        (rawProfile
-          ? (JSON.parse(rawProfile) as StoredPlayerProfile)
-          : undefined);
+        PlayerProfile.bootstrapProfile ??
+        PlayerProfile.getStoredProfile();
 
       if (!profile) {
         return PlayerProfile.defaultEquippedItemId;
@@ -140,10 +143,47 @@ export class PlayerProfile {
     }
   }
 
+  static getStoredProfile(): StoredPlayerProfile | undefined {
+    try {
+      const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
+
+      return rawProfile
+        ? (JSON.parse(rawProfile) as StoredPlayerProfile)
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  static setBootstrapProfile(profile: StoredPlayerProfile | undefined) {
+    PlayerProfile.bootstrapProfile = profile;
+  }
+
+  static selectNewestProfile(
+    localProfile: StoredPlayerProfile | undefined,
+    cloudProfile: unknown,
+  ) {
+    const safeCloudProfile = PlayerProfile.toStoredProfile(cloudProfile);
+
+    if (!localProfile) {
+      return safeCloudProfile;
+    }
+
+    if (!safeCloudProfile) {
+      return localProfile;
+    }
+
+    return PlayerProfile.getProfileUpdatedAt(safeCloudProfile) >
+      PlayerProfile.getProfileUpdatedAt(localProfile)
+      ? safeCloudProfile
+      : localProfile;
+  }
+
   constructor() {
     const profile = this.loadProfile();
 
     this.id = profile.id;
+    this.updatedAt = profile.updatedAt;
     this.emeralds = profile.emeralds;
     this.rewiveCount = profile.rewiveCount;
     this.purchasedItemIds = profile.purchasedItemIds;
@@ -248,7 +288,7 @@ export class PlayerProfile {
     }
 
     this.purchasedItemIds.push(itemId);
-    this.save();
+    this.save({ flush: true });
 
     return true;
   }
@@ -267,7 +307,7 @@ export class PlayerProfile {
     }
 
     this.discoveredItemIds.push(itemId);
-    this.save();
+    this.save({ flush: true });
 
     return true;
   }
@@ -282,7 +322,7 @@ export class PlayerProfile {
     }
 
     this.equippedItemId = itemId;
-    this.save();
+    this.save({ flush: true });
 
     return true;
   }
@@ -299,7 +339,7 @@ export class PlayerProfile {
     }
 
     this.globalLevel = safeLevel;
-    this.save();
+    this.save({ flush: true });
 
     return this.globalLevel;
   }
@@ -321,7 +361,7 @@ export class PlayerProfile {
       ...this.InfinityTower,
       isAvailable,
     };
-    this.save();
+    this.save({ flush: true });
 
     return this.InfinityTower.isAvailable;
   }
@@ -341,7 +381,7 @@ export class PlayerProfile {
       ...this.InfinityTower,
       currentLevel: safeLevel,
     };
-    this.save();
+    this.save({ flush: true });
 
     return this.InfinityTower.currentLevel;
   }
@@ -359,7 +399,7 @@ export class PlayerProfile {
       ...this.InfinityTower,
       claimedRewardIds: [...this.InfinityTower.claimedRewardIds, rewardId],
     };
-    this.save();
+    this.save({ flush: true });
 
     return true;
   }
@@ -383,7 +423,7 @@ export class PlayerProfile {
       ...this.towerConsumables,
       [consumableId]: this.getTowerConsumableCount(consumableId) + safeAmount,
     };
-    this.save();
+    this.save({ flush: true });
 
     return this.getTowerConsumableCount(consumableId);
   }
@@ -399,7 +439,7 @@ export class PlayerProfile {
       ...this.towerConsumables,
       [consumableId]: currentCount - 1,
     };
-    this.save();
+    this.save({ flush: true });
 
     return true;
   }
@@ -417,13 +457,13 @@ export class PlayerProfile {
 
     if (safeLevel <= 0) {
       delete this.trainingLevels[itemId];
-      this.save();
+      this.save({ flush: true });
 
       return 0;
     }
 
     this.trainingLevels[itemId] = safeLevel;
-    this.save();
+    this.save({ flush: true });
 
     return safeLevel;
   }
@@ -456,12 +496,13 @@ export class PlayerProfile {
         ? [...this.dailyRewards.claimedRewards]
         : [...this.dailyRewards.claimedRewards, safeIndex],
     };
-    this.save();
+    this.save({ flush: true });
   }
 
   getSnapshot(): PlayerProfileSnapshot {
     return {
       id: this.id,
+      updatedAt: this.updatedAt,
       emeralds: this.emeralds,
       rewiveCount: this.rewiveCount,
       purchasedItemIds: this.getPurchasedItemIds(),
@@ -477,12 +518,10 @@ export class PlayerProfile {
 
   private loadProfile(): PlayerProfileSnapshot {
     try {
-      const rawProfile = localStorage.getItem(PlayerProfile.storageKey);
       const profile =
         PlayerProfile.mockProfile ??
-        (rawProfile
-          ? (JSON.parse(rawProfile) as StoredPlayerProfile)
-          : undefined);
+        PlayerProfile.bootstrapProfile ??
+        PlayerProfile.getStoredProfile();
 
       if (!profile) {
         return this.getDefaultProfile();
@@ -490,6 +529,7 @@ export class PlayerProfile {
 
       return {
         id: typeof profile.id === "string" ? profile.id : this.createId(),
+        updatedAt: PlayerProfile.getProfileUpdatedAt(profile),
         emeralds:
           typeof profile.emeralds === "number"
             ? Math.max(0, Math.floor(profile.emeralds))
@@ -528,6 +568,7 @@ export class PlayerProfile {
   private getDefaultProfile(): PlayerProfileSnapshot {
     return {
       id: this.createId(),
+      updatedAt: Date.now(),
       emeralds: this.loadLegacyEmeralds(),
       rewiveCount: 0,
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],
@@ -705,14 +746,33 @@ export class PlayerProfile {
     };
   }
 
-  private save() {
+  private save(options: { flush?: boolean } = {}) {
+    this.updatedAt = Date.now();
+    const snapshot = this.getSnapshot();
+
     try {
       localStorage.setItem(
         PlayerProfile.storageKey,
-        JSON.stringify(this.getSnapshot()),
+        JSON.stringify(snapshot),
       );
     } catch {
       // Profile persistence is optional for local play.
     }
+
+    getGamePlatform().saveProfile(snapshot, options);
+  }
+
+  private static toStoredProfile(value: unknown): StoredPlayerProfile | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value as StoredPlayerProfile;
+  }
+
+  private static getProfileUpdatedAt(profile: StoredPlayerProfile) {
+    return typeof profile.updatedAt === "number" && profile.updatedAt > 0
+      ? Math.floor(profile.updatedAt)
+      : 0;
   }
 }

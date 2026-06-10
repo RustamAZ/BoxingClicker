@@ -18,7 +18,7 @@ const phasermsg = () => {
 }   
 
 export default defineConfig({
-  base: "/BoxingClicker/",
+  base: "./",
   logLevel: "warning",
   resolve: {
     alias: {

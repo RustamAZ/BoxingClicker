@@ -1,7 +1,8 @@
+import { languageController } from "../localization/LanguageController";
+
 export class AppLoadingScreen {
   private static readonly rootId = "app-loading-screen";
   private static readonly hiddenClassName = "app-loading-screen--hidden";
-  private static readonly loadingText = "Генерируем локацию...";
 
   private static root?: HTMLElement;
 
@@ -9,6 +10,7 @@ export class AppLoadingScreen {
     const root = AppLoadingScreen.getOrCreateRoot();
 
     AppLoadingScreen.setProgress(0);
+    AppLoadingScreen.refreshTexts();
     root.classList.remove(AppLoadingScreen.hiddenClassName);
     root.setAttribute("aria-hidden", "false");
   }
@@ -32,6 +34,22 @@ export class AppLoadingScreen {
     const safeProgress = Math.max(0, Math.min(1, progress));
 
     root.style.setProperty("--app-loading-progress", String(safeProgress));
+  }
+
+  static refreshTexts() {
+    const root = AppLoadingScreen.root ?? document.getElementById(
+      AppLoadingScreen.rootId,
+    );
+
+    if (!root) {
+      return;
+    }
+
+    const text = root.querySelector(".app-loading-screen__text");
+
+    if (text) {
+      text.textContent = languageController.t("loading.generatingLocation");
+    }
   }
 
   private static getOrCreateRoot() {
@@ -68,7 +86,7 @@ export class AppLoadingScreen {
       const text = document.createElement("p");
 
       text.className = "app-loading-screen__text";
-      text.textContent = AppLoadingScreen.loadingText;
+      text.textContent = languageController.t("loading.generatingLocation");
       root.appendChild(text);
     }
 

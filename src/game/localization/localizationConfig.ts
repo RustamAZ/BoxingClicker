@@ -3,6 +3,8 @@ import type { Language, LocalizationDictionary } from "./types";
 export const localizationConfig: Record<Language, LocalizationDictionary> = {
   ru: {
     "common.free": "FREE",
+    "loading.generatingLocation": "Генерируем локацию...",
+    "ads.countdown": "До рекламы {seconds}",
     "settings.title": "Настройки",
     "settings.continue": "Продолжить",
     "settings.restart": "Начать заново",
@@ -136,6 +138,8 @@ export const localizationConfig: Record<Language, LocalizationDictionary> = {
   },
   en: {
     "common.free": "FREE",
+    "loading.generatingLocation": "Generating location...",
+    "ads.countdown": "Ad in {seconds}",
     "settings.title": "Settings",
     "settings.continue": "Continue",
     "settings.restart": "Restart",

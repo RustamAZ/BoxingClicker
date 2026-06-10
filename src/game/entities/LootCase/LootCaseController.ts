@@ -21,6 +21,7 @@ export class LootCaseController {
   private currentRewards: LootReward[] = [];
   private hasPendingOpening = false;
   private isOpen = false;
+  private isExtraRewardAdPending = false;
 
   static preload(scene: Scene) {
     LootCaseModal.preload(scene);
@@ -74,6 +75,7 @@ export class LootCaseController {
       amount: number,
       from: { x: number; y: number },
     ) => void,
+    private readonly showRewardedAd: () => Promise<boolean> = async () => true,
   ) {
   }
 
@@ -91,6 +93,7 @@ export class LootCaseController {
     this.hasPendingOpening = false;
     this.currentRewards = [];
     this.isOpen = false;
+    this.isExtraRewardAdPending = false;
     this.modal?.hide();
     this.pauseController.resume("loot-case");
   }
@@ -147,6 +150,26 @@ export class LootCaseController {
     this.modal?.roll(this.getModalConfig());
   }
 
+  private async rollExtraRewardAfterAd() {
+    if (
+      this.isExtraRewardAdPending ||
+      this.currentRewards.length >= LootCaseController.maxRewardsPerCase
+    ) {
+      return;
+    }
+
+    this.isExtraRewardAdPending = true;
+    const isRewarded = await this.showRewardedAd().catch(() => false);
+    this.isExtraRewardAdPending = false;
+
+    if (!isRewarded) {
+      this.modal?.unlockActions();
+      return;
+    }
+
+    this.rollExtraReward();
+  }
+
   private claimRewards() {
     this.applyRewards(
       this.currentRewards,
@@ -157,6 +180,7 @@ export class LootCaseController {
     );
     this.currentRewards = [];
     this.isOpen = false;
+    this.isExtraRewardAdPending = false;
     this.modal?.hide();
     this.pauseController.resume("loot-case");
   }
@@ -179,7 +203,7 @@ export class LootCaseController {
         this.claimRewards();
       },
       onExtra: () => {
-        this.rollExtraReward();
+        void this.rollExtraRewardAfterAd();
       },
     };
   }

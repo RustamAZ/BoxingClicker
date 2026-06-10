@@ -9,7 +9,8 @@ export type PauseReason =
   | "training"
   | "daily-reward"
   | "infinite-mode"
-  | "campaign-victory";
+  | "campaign-victory"
+  | "auto-ad";
 type PauseChangeCallback = (isPaused: boolean) => void;
 
 export class PauseController {

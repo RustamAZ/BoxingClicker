@@ -360,6 +360,10 @@ export class LootCaseModal {
     };
   }
 
+  unlockActions() {
+    this.isActionLocked = false;
+  }
+
   private createButton(
     x: number,
     y: number,
