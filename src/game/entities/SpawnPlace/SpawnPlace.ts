@@ -22,6 +22,7 @@ type EnemyDefeatedCallback = (
   position: { x: number; y: number },
 ) => void;
 
+type EnemySpawnedCallback = (enemy: Enemy) => void;
 type BossEncounteredCallback = (bossId: string) => void;
 type BossDefeatedCallback = (bossId: string) => boolean | void;
 
@@ -49,6 +50,7 @@ export class SpawnPlace {
     private readonly enemyAttackSoundPlayer: EnemyAttackSoundPlayer,
     private readonly enemyDeathSoundPlayer: EnemyDeathSoundPlayer,
     private readonly onEnemyDefeated?: EnemyDefeatedCallback,
+    private readonly onEnemySpawned?: EnemySpawnedCallback,
     private readonly onBossEncountered?: BossEncounteredCallback,
     private readonly onBossDefeated?: BossDefeatedCallback,
     private readonly infinityTowerController?: InfinityTowerController,
@@ -107,6 +109,7 @@ export class SpawnPlace {
     enemy.onSelfDefeated(() => {
       this.handleEnemySelfDefeated(enemy);
     });
+    this.onEnemySpawned?.(enemy);
 
     return this.currentEnemyValue;
   }
@@ -182,7 +185,7 @@ export class SpawnPlace {
           !defeatedBossId &&
           !EnemyRegistry.isTraining(defeatedEnemySpawnKind)
         ) {
-          this.enemyDeathSoundPlayer.play();
+          this.enemyDeathSoundPlayer.play(enemy.deathSound);
         }
 
         this.player.gainXp(enemy.xpReward);

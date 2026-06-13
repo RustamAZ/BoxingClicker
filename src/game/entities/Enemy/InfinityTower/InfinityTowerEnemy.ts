@@ -8,7 +8,10 @@ import {
 } from "../../../configs/infinityTowerEnemies";
 import type { Player } from "../../Player/Player";
 import { Enemy } from "../Enemy";
-import type { EnemySpawnSlot } from "../types";
+import {
+  preloadEnemyVariants,
+  type EnemySpawnSlot,
+} from "../types";
 
 export class InfinityTowerEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -18,6 +21,7 @@ export class InfinityTowerEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
+  private static readonly displayWidthMultiplier = 0.85;
 
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -34,18 +38,14 @@ export class InfinityTowerEnemy extends Enemy {
     scene: Scene,
     packs: readonly InfinityTowerEnemyPackConfig[],
   ) {
+    preloadEnemyVariants(
+      scene,
+      packs.flatMap((pack) => pack.variants),
+    );
     const loadedProjectileKeys = new Set<string>();
 
     packs.forEach((pack) => {
       pack.variants.forEach((variant) => {
-        if (!scene.textures.exists(variant.alive.key)) {
-          scene.load.image(variant.alive.key, variant.alive.path);
-        }
-
-        if (!scene.textures.exists(variant.dead.key)) {
-          scene.load.image(variant.dead.key, variant.dead.path);
-        }
-
         if (
           variant.projectile &&
           !scene.textures.exists(variant.projectile.texture.key) &&
@@ -77,6 +77,7 @@ export class InfinityTowerEnemy extends Enemy {
       damagePerHit: stats.damagePerHit,
       attackCooldownSeconds: stats.attackCooldownSeconds,
       initialAttackDelaySeconds: stats.initialAttackDelaySeconds,
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
@@ -84,7 +85,7 @@ export class InfinityTowerEnemy extends Enemy {
     this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
       .image(slot.x, slot.y, variant.alive.key)
-      .setDisplaySize(slot.width, slot.height)
+      .setDisplaySize(this.getDisplayWidth(), slot.height)
       .setInteractive({ useHandCursor: true });
   }
 
@@ -128,7 +129,7 @@ export class InfinityTowerEnemy extends Enemy {
     this.destroyProjectiles();
     this.body.disableInteractive();
     this.body.setTexture(this.deathSpriteKey);
-    this.body.setDisplaySize(this.slot.width, this.slot.height);
+    this.body.setDisplaySize(this.getDisplayWidth(), this.slot.height);
 
     const direction = Math.random() < 0.5 ? -1 : 1;
 
@@ -194,5 +195,9 @@ export class InfinityTowerEnemy extends Enemy {
       this.body.scene.tweens.killTweensOf(projectile);
       projectile.destroy();
     });
+  }
+
+  private getDisplayWidth() {
+    return this.slot.width * InfinityTowerEnemy.displayWidthMultiplier;
   }
 }

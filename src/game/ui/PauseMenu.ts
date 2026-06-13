@@ -23,6 +23,7 @@ type VolumeSlider = {
 
 export class PauseMenu {
   private static readonly depth = 1000;
+  private static readonly modalDepth = 1700;
   private static readonly volumeSliderWidth = 260;
   private static readonly settingsIconTextureKey = "settings-icon";
   private static readonly settingsIconPath =
@@ -77,7 +78,7 @@ export class PauseMenu {
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
     private readonly gameSettings: GameSettings,
-    private readonly onRestart: () => void,
+    private readonly onReturnToLobby: () => void,
   ) {
     this.settingsButton = this.createSettingsButton(976, 68, () => {
       this.open();
@@ -86,14 +87,14 @@ export class PauseMenu {
 
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.58)
-      .setDepth(PauseMenu.depth + 10)
+      .setDepth(PauseMenu.modalDepth)
       .setInteractive()
       .setVisible(false);
 
     this.panel = this.scene.add
       .image(512, 384, PauseMenu.settingsMenuBackgroundTextureKey)
       .setDisplaySize(PauseMenu.menuPanelWidth, PauseMenu.menuPanelHeight)
-      .setDepth(PauseMenu.depth + 11)
+      .setDepth(PauseMenu.modalDepth + 1)
       .setVisible(false);
 
     this.title = this.scene.add
@@ -104,7 +105,7 @@ export class PauseMenu {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(PauseMenu.depth + 12)
+      .setDepth(PauseMenu.modalDepth + 2)
       .setVisible(false);
 
     this.volumeSlider = this.createVolumeSlider(512, 340);
@@ -126,7 +127,7 @@ export class PauseMenu {
       languageController.t("settings.restart"),
       () => {
         this.close();
-        this.onRestart();
+        this.onReturnToLobby();
       },
     );
     this.languageButton = this.createButton(
@@ -267,11 +268,11 @@ export class PauseMenu {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(PauseMenu.depth + 13);
+      .setDepth(PauseMenu.modalDepth + 3);
 
     const track = this.scene.add
       .rectangle(x, y, PauseMenu.volumeSliderWidth, 8, 0x555555, 1)
-      .setDepth(PauseMenu.depth + 12)
+      .setDepth(PauseMenu.modalDepth + 2)
       .setInteractive({ useHandCursor: true });
 
     const fill = this.scene.add
@@ -284,12 +285,12 @@ export class PauseMenu {
         0.9,
       )
       .setOrigin(0, 0.5)
-      .setDepth(PauseMenu.depth + 13)
+      .setDepth(PauseMenu.modalDepth + 3)
       .setInteractive({ useHandCursor: true });
 
     const knob = this.scene.add
       .rectangle(x, y, 22, 22, 0xffffff, 1)
-      .setDepth(PauseMenu.depth + 14)
+      .setDepth(PauseMenu.modalDepth + 4)
       .setStrokeStyle(2, 0x1f1f1f, 0.9)
       .setInteractive({ useHandCursor: true });
 
@@ -378,7 +379,7 @@ export class PauseMenu {
     const background = this.scene.add
       .image(x, y, PauseMenu.settingsButtonBackgroundTextureKey)
       .setDisplaySize(width, height)
-      .setDepth(PauseMenu.depth + 12)
+      .setDepth(PauseMenu.modalDepth + 2)
       .setInteractive({ useHandCursor: true });
     const label = this.scene.add
       .text(x, y, text, {
@@ -388,7 +389,7 @@ export class PauseMenu {
       })
       .setOrigin(0.5)
       .setResolution(2)
-      .setDepth(PauseMenu.depth + 13);
+      .setDepth(PauseMenu.modalDepth + 3);
 
     background.on("pointerdown", () => {
       UiSoundPlayer.playClick(this.scene);

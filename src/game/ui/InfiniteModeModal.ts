@@ -196,6 +196,7 @@ export class InfiniteModeModal {
   private rewardsScrollView?: InfinityTowerRewardsScrollView;
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
+  private isOpenButtonEnabled = true;
   private isOpenButtonIconPulsing = false;
 
   static preload(scene: Scene) {
@@ -251,10 +252,18 @@ export class InfiniteModeModal {
     this.rewardController = new InfinityTowerRewardController(this.profile);
 
     this.openButtonHitArea.on("pointerdown", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       UiSoundPlayer.playClick(this.scene);
       this.open();
     });
     this.openButtonHitArea.on("pointerover", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       this.setOpenButtonSize(InfiniteModeModal.openButtonHoverSize);
       if (this.isOpenButtonIconPulsing) {
         return;
@@ -293,7 +302,7 @@ export class InfiniteModeModal {
     this.openButtonIcon.setVisible(visible);
     this.openButtonHitArea.setVisible(visible);
 
-    if (visible) {
+    if (visible && this.isOpenButtonEnabled) {
       this.openButtonHitArea.setInteractive({ useHandCursor: true });
     } else {
       this.openButtonHitArea.disableInteractive();
@@ -305,6 +314,15 @@ export class InfiniteModeModal {
     }
 
     this.updateOpenButtonPulse();
+  }
+
+  setButtonEnabled(enabled: boolean) {
+    if (this.isOpenButtonEnabled === enabled) {
+      return;
+    }
+
+    this.isOpenButtonEnabled = enabled;
+    this.setButtonVisible(this.openButtonIcon.visible);
   }
 
   open() {
@@ -1300,6 +1318,7 @@ export class InfiniteModeModal {
 
   private updateOpenButtonPulse() {
     const shouldPulse =
+      this.isOpenButtonEnabled &&
       this.openButtonIcon.visible &&
       this.profile.isInfinityTowerAvailable() &&
       this.hasClaimableReward();

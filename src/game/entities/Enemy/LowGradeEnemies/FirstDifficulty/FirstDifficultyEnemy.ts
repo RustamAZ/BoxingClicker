@@ -4,20 +4,14 @@ import {
   toEnemyStatRange,
 } from "../../../../configs/enemies";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyVariants,
+  type EnemySpawnSlot,
+  type EnemyVariantConfig,
+} from "../../types";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
 import { randomItem } from "../../../../utils/randomItem";
-
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
-  dead: EnemySpriteConfig,
-];
 
 export class FirstDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -27,29 +21,29 @@ export class FirstDifficultyEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
+  private static readonly variants: EnemyVariantConfig[] = [
+    {
+      displayName: "Village Farmer",
+      alive: {
         key: "first-difficulty-human-1",
         path: "assets/images/enemies/first-difficulty/human-v1.png",
-        displayName: "Village Farmer",
       },
-      {
+      dead: {
         key: "first-difficulty-human-1-dead",
         path: "assets/images/enemies/first-difficulty/human-v1-die.png",
       },
-    ],
-    [
-      {
+    },
+    {
+      displayName: "Village Guard",
+      alive: {
         key: "first-difficulty-human-2",
         path: "assets/images/enemies/first-difficulty/human-v2.png",
-        displayName: "Village Guard",
       },
-      {
+      dead: {
         key: "first-difficulty-human-2-dead",
         path: "assets/images/enemies/first-difficulty/human-v2-die.png",
       },
-    ],
+    },
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -57,19 +51,14 @@ export class FirstDifficultyEnemy extends Enemy {
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    FirstDifficultyEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
-    });
+    preloadEnemyVariants(scene, FirstDifficultyEnemy.variants);
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = randomItem(
-      FirstDifficultyEnemy.sprites,
-    );
+    const variant = randomItem(FirstDifficultyEnemy.variants);
 
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: randomInt(
         toEnemyStatRange(firstEnemyConfig.health_range),
       ),
@@ -86,12 +75,13 @@ export class FirstDifficultyEnemy extends Enemy {
       initialAttackDelaySeconds: randomFloat(
         toEnemyStatRange(firstEnemyConfig.initial_attack_delay_range),
       ),
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
-    this.deathSpriteKey = deadSprite.key;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }

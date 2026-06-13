@@ -3,21 +3,16 @@ import {
   thirdEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
+import { enemyDeathSounds } from "../../../../configs/enemyDeathSounds";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyVariants,
+  type EnemySpawnSlot,
+  type EnemyVariantConfig,
+} from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
-
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
-  dead: EnemySpriteConfig,
-];
 
 export class ThirdDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -27,40 +22,43 @@ export class ThirdDifficultyEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
+  private static readonly variants: EnemyVariantConfig[] = [
+    {
+      displayName: "Spider",
+      alive: {
         key: "third-difficulty-spider-1",
         path: "assets/images/enemies/third-difficulty/spider-v1.png",
-        displayName: "Spider",
       },
-      {
+      dead: {
         key: "third-difficulty-spider-1-dead",
         path: "assets/images/enemies/third-difficulty/spider-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.spider,
+    },
+    {
+      displayName: "Golden Zombie",
+      alive: {
         key: "third-difficulty-golden-zombie-1",
         path: "assets/images/enemies/third-difficulty/golden-zombie-v1.png",
-        displayName: "Golden Zombie",
       },
-      {
+      dead: {
         key: "third-difficulty-golden-zombie-1-dead",
         path: "assets/images/enemies/third-difficulty/golden-zombie-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.zombie,
+    },
+    {
+      displayName: "Skeleton",
+      alive: {
         key: "third-difficulty-skeleton-with-axe-1",
         path: "assets/images/enemies/third-difficulty/skeleton-with-axe-v1.png",
-        displayName: "Skeleton",
       },
-      {
+      dead: {
         key: "third-difficulty-skeleton-with-axe-1-dead",
         path: "assets/images/enemies/third-difficulty/skeleton-with-axe-v1-die.png",
       },
-    ],
+      deathSound: enemyDeathSounds.skeleton,
+    },
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -68,17 +66,14 @@ export class ThirdDifficultyEnemy extends Enemy {
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    ThirdDifficultyEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
-    });
+    preloadEnemyVariants(scene, ThirdDifficultyEnemy.variants);
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = randomItem(ThirdDifficultyEnemy.sprites);
+    const variant = randomItem(ThirdDifficultyEnemy.variants);
 
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: randomInt(toEnemyStatRange(thirdEnemyConfig.health_range)),
       xpReward: thirdEnemyConfig.xp_reward,
       diamondsReward: thirdEnemyConfig.buff_container_reward,
@@ -91,12 +86,13 @@ export class ThirdDifficultyEnemy extends Enemy {
       initialAttackDelaySeconds: randomFloat(
         toEnemyStatRange(thirdEnemyConfig.initial_attack_delay_range),
       ),
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
-    this.deathSpriteKey = deadSprite.key;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }

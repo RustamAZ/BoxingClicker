@@ -39,6 +39,8 @@ import { CampaignVictoryModal } from "../ui/CampaignVictoryModal";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { LobbyAdCountdownOverlay } from "../ui/LobbyAdCountdownOverlay";
 import { NotificationController } from "../ui/NotificationController";
+import { OnboardingPrompt } from "../ui/OnboardingPrompt";
+import { HeroMessageController } from "../ui/HeroMessageController";
 import { ScreenFilterController } from "../effects/ScreenFilterController";
 import { fiveDifficultyBossAttackEvent } from "../entities/Enemy/LowGradeEnemies/FiveDifficulty/FiveDifficultyBoss";
 import { ShopCatalog } from "../shop/ShopCatalog";
@@ -98,6 +100,8 @@ export class Game extends Scene {
   private infiniteModeModal: InfiniteModeModal;
   private infinityTowerConsumableModal: InfinityTowerConsumableModal;
   private lobbyAdCountdownOverlay: LobbyAdCountdownOverlay;
+  private onboardingPrompt: OnboardingPrompt;
+  private heroMessageController: HeroMessageController;
   private statusBar: StatusBar;
   private playerDeathModal: PlayerDeathModal;
   private campaignVictoryModal: CampaignVictoryModal;
@@ -158,6 +162,7 @@ export class Game extends Scene {
     PauseMenu.preload(this);
     ShopModal.preload(this);
     DailyRewardModal.preload(this);
+    OnboardingPrompt.preload(this);
     StatusBar.preload(this);
     NotificationController.preload(this);
     PlayerDeathModal.preload(this);
@@ -196,6 +201,7 @@ export class Game extends Scene {
     this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
+    this.heroMessageController = new HeroMessageController(this);
     this.screenFilterController = new ScreenFilterController(this);
     this.gameSettings = new GameSettings(this);
     this.pauseController.onPauseChange((isPaused) => {
@@ -280,6 +286,10 @@ export class Game extends Scene {
       this.enemyDeathSoundPlayer,
       (enemy, position) => {
         this.handleEnemyRewards(enemy, position);
+        this.handleEnemyDefeatedMessage(enemy);
+      },
+      (enemy) => {
+        this.handleEnemySpawnedMessage(enemy);
       },
       (bossId) => {
         this.handleBossEncountered(bossId);
@@ -302,9 +312,14 @@ export class Game extends Scene {
       this.player,
       this.pauseController,
     );
-    this.pauseMenu = new PauseMenu(this, this.pauseController, this.gameSettings, () => {
-      this.scene.restart();
-    });
+    this.pauseMenu = new PauseMenu(
+      this,
+      this.pauseController,
+      this.gameSettings,
+      () => {
+        this.returnToLobby();
+      },
+    );
     this.shopModal = new ShopModal(
       this,
       this.pauseController,
@@ -360,9 +375,11 @@ export class Game extends Scene {
       this.pauseController,
     );
     this.lobbyAdCountdownOverlay = new LobbyAdCountdownOverlay(this);
+    this.onboardingPrompt = new OnboardingPrompt(this);
     this.statusBar = new StatusBar(this);
     this.notificationController = new NotificationController(this);
     this.updateShopModalVisibility();
+    this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
@@ -370,14 +387,14 @@ export class Game extends Scene {
       this,
       this.pauseController,
       () => {
-        this.scene.restart();
-      }
+        this.returnToLobby();
+      },
     );
     this.campaignVictoryModal = new CampaignVictoryModal(
       this,
       this.pauseController,
       () => {
-        this.returnToLobbyAfterCampaignVictory();
+        this.returnToLobby();
       },
     );
     this.locationAssetPreloader.prefetchNextGameLevel(
@@ -409,6 +426,8 @@ export class Game extends Scene {
       this.unsubscribeInfinityTowerRewardUnlocked?.();
       void getGamePlatform().hideStickyBanner();
       this.lobbyAdCountdownOverlay.destroy();
+      this.onboardingPrompt.destroy();
+      this.heroMessageController.destroy();
       this.notificationController.destroy();
       this.fullscreenController?.destroy();
     });
@@ -431,15 +450,18 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
+    this.updateHeroMessageActivity();
     this.updateLobbyAutoAd();
 
     if (this.pauseController.isPaused) {
       return;
     }
 
+    this.heroMessageController.update(delta);
     this.emeraldContainer.update();
     this.gloves.update(deltaSeconds);
     this.player.regenerateStamina(deltaSeconds);
@@ -578,6 +600,7 @@ export class Game extends Scene {
     }
 
     if (
+      !this.player.profile.hasCompletedOnboarding() ||
       this.isDailyRewardAutoOpenedForCurrentLobbyVisit ||
       !this.dailyRewardModal.hasAvailableReward() ||
       this.pauseController.isPaused
@@ -587,6 +610,36 @@ export class Game extends Scene {
 
     this.isDailyRewardAutoOpenedForCurrentLobbyVisit = true;
     this.dailyRewardModal.open();
+  }
+
+  private updateOnboardingVisibility() {
+    const shouldShow =
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
+      !this.levelController.isInfiniteRun() &&
+      !this.player.profile.hasCompletedOnboarding();
+
+    this.setLobbyIconsEnabled(!shouldShow);
+
+    if (shouldShow) {
+      this.onboardingPrompt.show();
+      return;
+    }
+
+    this.onboardingPrompt.hide();
+  }
+
+  private updateHeroMessageActivity() {
+    this.heroMessageController.setActive(
+      this.player.profile.hasCompletedOnboarding() &&
+        !this.levelController.isTrainingLevel(),
+    );
+  }
+
+  private setLobbyIconsEnabled(enabled: boolean) {
+    this.shopModal.setButtonEnabled(enabled);
+    this.dailyRewardModal.setButtonEnabled(enabled);
+    this.trainingModal.setButtonEnabled(enabled);
+    this.infiniteModeModal.setButtonEnabled(enabled);
   }
 
   private getPlayerDeathContinueOption() {
@@ -744,8 +797,13 @@ export class Game extends Scene {
       !this.pauseController.isPaused &&
       !this.isInfinityTowerRunLoading &&
       !this.isCampaignVictoryFlowActive &&
+      this.hasProgressForLobbyAutoAd() &&
       this.player.isAlive()
     );
+  }
+
+  private hasProgressForLobbyAutoAd() {
+    return this.player.profile.getTrainingLevel("punch-power") > 0;
   }
 
   private requestStartInfiniteRun() {
@@ -845,6 +903,8 @@ export class Game extends Scene {
       this.previousGameLevel === Game.lobbyGameLevel &&
       currentGameLevel === Game.villageGameLevel
     ) {
+      this.player.profile.completeOnboarding();
+      this.onboardingPrompt.hide();
       this.resetDeathContinuesForNewRun();
       this.player.restoreStamina();
     }
@@ -922,6 +982,9 @@ export class Game extends Scene {
   };
 
   private handleBossEncountered(bossId: string) {
+    this.updateHeroMessageActivity();
+    this.heroMessageController.showBossMessage();
+
     if (bossId === "five-difficulty-boss") {
       this.campaignVictoryModal.preloadAssets();
     }
@@ -951,7 +1014,9 @@ export class Game extends Scene {
     return false;
   }
 
-  private returnToLobbyAfterCampaignVictory() {
+  private returnToLobby() {
+    this.player.profile.saveNow();
+    this.heroMessageController.setActive(false);
     this.infinityTowerController.stopRun();
     this.player.setPermanentStatEffects("infinity-tower-consumable", []);
     this.levelController.returnToCampaign();
@@ -963,13 +1028,33 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
     this.updateInfiniteModeModalVisibility();
     this.enemySpawnPlace.spawnNextEnemy();
     this.backgroundMusicController.resume();
     this.hud.update(this.player, this.enemySpawnPlace.currentEnemy);
+    this.emeraldContainer.update();
     this.updateInfinityTowerCounters();
+  }
+
+  private handleEnemySpawnedMessage(enemy: Enemy) {
+    if (enemy.isBoss || this.levelController.isTrainingLevel()) {
+      return;
+    }
+
+    this.updateHeroMessageActivity();
+    this.heroMessageController.notifyEnemySpawned();
+  }
+
+  private handleEnemyDefeatedMessage(enemy: Enemy) {
+    if (enemy.isBoss || this.levelController.isTrainingLevel()) {
+      return;
+    }
+
+    this.updateHeroMessageActivity();
+    this.heroMessageController.notifyEnemyDefeated();
   }
 
   private resetPendingRunRewards() {

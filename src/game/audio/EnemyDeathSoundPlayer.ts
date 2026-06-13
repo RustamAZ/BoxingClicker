@@ -1,4 +1,5 @@
 import { Scene } from "phaser";
+import type { EnemyDeathSoundConfig } from "../entities/Enemy/types";
 
 export class EnemyDeathSoundPlayer {
   private static readonly soundKey = "enemy-death";
@@ -14,9 +15,17 @@ export class EnemyDeathSoundPlayer {
 
   constructor(private readonly scene: Scene) {}
 
-  play() {
-    this.scene.sound.play(EnemyDeathSoundPlayer.soundKey, {
-      volume: EnemyDeathSoundPlayer.volume,
-    });
+  play(deathSound?: EnemyDeathSoundConfig) {
+    const selectedSound =
+      deathSound && this.scene.cache.audio.exists(deathSound.key)
+        ? deathSound
+        : undefined;
+
+    this.scene.sound.play(
+      selectedSound?.key ?? EnemyDeathSoundPlayer.soundKey,
+      {
+        volume: selectedSound?.volume ?? EnemyDeathSoundPlayer.volume,
+      },
+    );
   }
 }

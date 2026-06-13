@@ -1,12 +1,13 @@
+import type {
+  EnemyAssetConfig,
+  EnemyVariantConfig,
+} from "../entities/Enemy/types";
+import { enemyDeathSounds } from "./enemyDeathSounds";
+
 export type InfinityTowerEnemyAttackType = "melee" | "ranged";
 
-export type InfinityTowerEnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
 export type InfinityTowerEnemyProjectileConfig = {
-  texture: InfinityTowerEnemySpriteConfig;
+  texture: EnemyAssetConfig;
   animationDurationMs: number;
   startScale: number;
   endScale: number;
@@ -15,12 +16,9 @@ export type InfinityTowerEnemyProjectileConfig = {
   burnDurationSeconds: number;
 };
 
-export type InfinityTowerEnemyVariantConfig = {
+export type InfinityTowerEnemyVariantConfig = EnemyVariantConfig & {
   id: string;
-  displayName: string;
   attackType: InfinityTowerEnemyAttackType;
-  alive: InfinityTowerEnemySpriteConfig;
-  dead: InfinityTowerEnemySpriteConfig;
   projectile?: InfinityTowerEnemyProjectileConfig;
 };
 
@@ -60,6 +58,7 @@ export const infinityTowerEnemyPacks: InfinityTowerEnemyPackConfig[] = [
           key: "infinity-tower-humans-bower-dead",
           path: "assets/images/enemies/infinityTower/humans/infinity-bower-die.png",
         },
+        deathSound: enemyDeathSounds.skeleton,
         projectile: fireballProjectile,
       },
       {
@@ -124,6 +123,7 @@ export const infinityTowerEnemyPacks: InfinityTowerEnemyPackConfig[] = [
           key: "infinity-tower-skeletons-mage-1-dead",
           path: "assets/images/enemies/infinityTower/skeletons/infinity-mage-v1-die.png",
         },
+        deathSound: enemyDeathSounds.skeleton,
         projectile: fireballProjectile,
       },
       {
@@ -138,6 +138,7 @@ export const infinityTowerEnemyPacks: InfinityTowerEnemyPackConfig[] = [
           key: "infinity-tower-skeletons-mage-3-dead",
           path: "assets/images/enemies/infinityTower/skeletons/infinity-mage-v3-die.png",
         },
+        deathSound: enemyDeathSounds.skeleton,
         projectile: fireballProjectile,
       },
       {
@@ -152,6 +153,7 @@ export const infinityTowerEnemyPacks: InfinityTowerEnemyPackConfig[] = [
           key: "infinity-tower-skeletons-warrior-dead",
           path: "assets/images/enemies/infinityTower/skeletons/infinity-skeleton-die.png",
         },
+        deathSound: enemyDeathSounds.skeleton,
       },
     ],
   },

@@ -4,6 +4,78 @@ export const localizationConfig: Record<Language, LocalizationDictionary> = {
   ru: {
     "common.free": "FREE",
     "loading.generatingLocation": "Генерируем локацию...",
+    "onboarding.welcome":
+      "О нет, кажется, я попал в мир Майна! Нужно выбираться отсюда, но сначала потренируюсь. Нужно побить грушу!",
+    "heroMessage.enemySpawn.1":
+      "Ну здравствуй, кубический уродец. Сейчас я из тебя пиксели вытрясу.",
+    "heroMessage.enemySpawn.2":
+      "Опа! А ты, кажется, думал, что страшный? Миленько.",
+    "heroMessage.enemySpawn.3":
+      "Вот это я понимаю — мясо само пришло на тренировку.",
+    "heroMessage.enemySpawn.4":
+      "О нет, враг! Как неожиданно. Ладно, бей первым… ой, уже поздно.",
+    "heroMessage.enemySpawn.5":
+      "Ну давай, подходи. Я как раз разминался на твоих друзьях.",
+    "heroMessage.enemySpawn.6":
+      "Если это была засада, то у вас тут хреновый отдел планирования.",
+    "heroMessage.enemySpawn.7":
+      "Так, кто там ещё шуршит? У меня кулаки скучают.",
+    "heroMessage.enemySpawn.8":
+      "Ну что, кто следующий хочет стать красивой кучкой ресурсов?",
+    "heroMessage.enemySpawn.9":
+      "Смотри-ка, ещё один герой нарисовался.",
+    "heroMessage.enemySpawn.10":
+      "Отлично. А я как раз искал, на ком проверить новый удар.",
+    "heroMessage.enemySpawn.11": "О, мясо пришло само.",
+    "heroMessage.enemySpawn.12": "Ну здравствуй, уродец.",
+    "heroMessage.enemySpawn.13": "А вот и проблема на ножках.",
+    "heroMessage.enemySpawn.14":
+      "Ты заблудился или умереть пришёл?",
+    "heroMessage.enemySpawn.15": "Смотри-ка, ещё один герой.",
+    "heroMessage.enemySpawn.16": "Ну давай, удиви меня.",
+    "heroMessage.enemySpawn.17": "Опа, свежий мешок лута.",
+    "heroMessage.enemySpawn.18": "Кто тебя сюда пустил?",
+    "heroMessage.enemySpawn.19": "Отлично, кулаки заскучали.",
+    "heroMessage.enemySpawn.20": "Так, это ещё что за чудо?",
+    "heroMessage.enemyDeath.1":
+      "Лежи спокойно, дружок. Твои блоки теперь мои.",
+    "heroMessage.enemyDeath.2":
+      "Ха! Минус один идиот в этом квадратном дурдоме.",
+    "heroMessage.enemyDeath.3":
+      "Да ты посмотри, он ещё и лут уронил. Обожаю воспитанных мерзавцев.",
+    "heroMessage.enemyDeath.4":
+      "Это было так приятно, что я почти почувствовал себя героем.",
+    "heroMessage.enemyDeath.5":
+      "Вот так-то, мелкий гад. Не стоило моргать своими пиксельными глазами.",
+    "heroMessage.enemyDeath.6":
+      "Я пришёл, увидел и врезал. Классика.",
+    "heroMessage.enemyDeath.7":
+      "Ой, извини, я случайно… А нет, специально.",
+    "heroMessage.enemyDeath.8":
+      "Ха-ха! Вот это удар! Даже груша бы зауважала.",
+    "heroMessage.enemyDeath.9":
+      "Ты хотел меня остановить? Милый, ты даже паузу не нажал.",
+    "heroMessage.enemyDeath.10":
+      "Мир из кубов, враги из картона, а удовольствие настоящее.",
+    "heroMessage.enemyDeath.11": "Минус один.",
+    "heroMessage.enemyDeath.12": "Лежи красиво.",
+    "heroMessage.enemyDeath.13": "Вот и весь твой план.",
+    "heroMessage.enemyDeath.14": "Упал, как мешок блоков.",
+    "heroMessage.enemyDeath.15": "Следующий!",
+    "heroMessage.enemyDeath.16": "Красиво разлетелся.",
+    "heroMessage.enemyDeath.17": "Спасибо за лут.",
+    "heroMessage.enemyDeath.18": "Даже не вспотел.",
+    "heroMessage.enemyDeath.19": "Пиксели к пикселям.",
+    "heroMessage.bossSpawn.1":
+      "О, здоровяк вышел. Наконец-то кто-то, кого не стыдно ударить два раза.",
+    "heroMessage.bossSpawn.2":
+      "Ты тут главный? Отлично. Я как раз люблю начинать уборку с самой большой грязи.",
+    "heroMessage.bossSpawn.3":
+      "Смотри-ка, босс с полоской здоровья. Как мило — даже смерть с интерфейсом.",
+    "heroMessage.bossSpawn.4":
+      "Ну давай, покажи свой страшный приём. Я потом покажу свой: кулак в лицо.",
+    "heroMessage.bossSpawn.5":
+      "Вот это размер! Жаль, мозгов тебе всё равно не докинули.",
     "ads.countdown": "До рекламы {seconds}",
     "settings.title": "Настройки",
     "settings.continue": "Продолжить",
@@ -139,6 +211,77 @@ export const localizationConfig: Record<Language, LocalizationDictionary> = {
   en: {
     "common.free": "FREE",
     "loading.generatingLocation": "Generating location...",
+    "onboarding.welcome":
+      "Oh no, it looks like I ended up in the world of Mine! I need to get out, but first I should train. Time to hit the punching bag!",
+    "heroMessage.enemySpawn.1":
+      "Well hello, you blocky freak. Time to shake the pixels out of you.",
+    "heroMessage.enemySpawn.2":
+      "Oh! You actually thought you looked scary? That's adorable.",
+    "heroMessage.enemySpawn.3":
+      "Now that's service — the punching meat came to training by itself.",
+    "heroMessage.enemySpawn.4":
+      "Oh no, an enemy! What a surprise. Fine, hit first... oops, too late.",
+    "heroMessage.enemySpawn.5":
+      "Come on, step closer. I was just warming up on your friends.",
+    "heroMessage.enemySpawn.6":
+      "If this was an ambush, your planning department really sucks.",
+    "heroMessage.enemySpawn.7":
+      "Who's making noise over there? My fists are getting bored.",
+    "heroMessage.enemySpawn.8":
+      "All right, who wants to become a nice little pile of resources next?",
+    "heroMessage.enemySpawn.9":
+      "Look at that, another hero just showed up.",
+    "heroMessage.enemySpawn.10":
+      "Perfect. I was looking for someone to test my new punch on.",
+    "heroMessage.enemySpawn.11": "Oh, the punching meat came by itself.",
+    "heroMessage.enemySpawn.12": "Well hello, ugly.",
+    "heroMessage.enemySpawn.13": "And here's trouble on two legs.",
+    "heroMessage.enemySpawn.14": "Are you lost, or did you come here to die?",
+    "heroMessage.enemySpawn.15": "Look at that, another hero.",
+    "heroMessage.enemySpawn.16": "Come on, surprise me.",
+    "heroMessage.enemySpawn.17": "Oh, a fresh bag of loot.",
+    "heroMessage.enemySpawn.18": "Who let you in here?",
+    "heroMessage.enemySpawn.19": "Perfect, my fists were getting bored.",
+    "heroMessage.enemySpawn.20": "All right, what kind of freak is this?",
+    "heroMessage.enemyDeath.1":
+      "Lie still, buddy. Your blocks belong to me now.",
+    "heroMessage.enemyDeath.2":
+      "Ha! One less idiot in this square madhouse.",
+    "heroMessage.enemyDeath.3":
+      "Look at that, it even dropped loot. I love well-mannered scumbags.",
+    "heroMessage.enemyDeath.4":
+      "That felt so good I almost felt like a hero.",
+    "heroMessage.enemyDeath.5":
+      "That's what you get, little creep. Shouldn't have blinked those pixel eyes.",
+    "heroMessage.enemyDeath.6":
+      "I came, I saw, I punched. Classic.",
+    "heroMessage.enemyDeath.7":
+      "Oops, sorry, that was an accident... Nope, totally on purpose.",
+    "heroMessage.enemyDeath.8":
+      "Ha-ha! What a punch! Even the training bag would respect that.",
+    "heroMessage.enemyDeath.9":
+      "You wanted to stop me? Sweetie, you couldn't even hit pause.",
+    "heroMessage.enemyDeath.10":
+      "A world of blocks, enemies made of cardboard, and the fun is real.",
+    "heroMessage.enemyDeath.11": "That's one less.",
+    "heroMessage.enemyDeath.12": "Try to look pretty lying there.",
+    "heroMessage.enemyDeath.13": "So that was your whole plan.",
+    "heroMessage.enemyDeath.14": "Dropped like a sack of blocks.",
+    "heroMessage.enemyDeath.15": "Next!",
+    "heroMessage.enemyDeath.16": "That was a beautiful explosion.",
+    "heroMessage.enemyDeath.17": "Thanks for the loot.",
+    "heroMessage.enemyDeath.18": "Didn't even break a sweat.",
+    "heroMessage.enemyDeath.19": "Pixel by pixel.",
+    "heroMessage.bossSpawn.1":
+      "Oh, the big guy is here. Finally, someone worth punching twice.",
+    "heroMessage.bossSpawn.2":
+      "You're the boss here? Great. I like to start cleaning with the biggest mess.",
+    "heroMessage.bossSpawn.3":
+      "Look at that, a boss with a health bar. Cute — even death has an interface.",
+    "heroMessage.bossSpawn.4":
+      "Come on, show me your scary move. Then I'll show you mine: fist to the face.",
+    "heroMessage.bossSpawn.5":
+      "Look at that size! Too bad they still forgot to give you brains.",
     "ads.countdown": "Ad in {seconds}",
     "settings.title": "Settings",
     "settings.continue": "Continue",

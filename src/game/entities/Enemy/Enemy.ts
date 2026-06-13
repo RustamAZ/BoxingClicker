@@ -1,4 +1,5 @@
 import type { Player } from '../Player/Player';
+import type { EnemyDeathSoundConfig } from "./types";
 
 export type EnemyConfig = {
     displayName: string;
@@ -12,6 +13,7 @@ export type EnemyConfig = {
     damagePerHit: number;
     attackCooldownSeconds: number;
     initialAttackDelaySeconds?: number;
+    deathSound?: EnemyDeathSoundConfig;
 };
 
 export abstract class Enemy
@@ -29,6 +31,7 @@ export abstract class Enemy
     readonly emeraldDropAmount: number;
     readonly damagePerHit: number;
     readonly attackCooldownSeconds: number;
+    readonly deathSound?: EnemyDeathSoundConfig;
 
     health: number;
 
@@ -49,6 +52,7 @@ export abstract class Enemy
         this.emeraldDropAmount = Math.max(0, Math.floor(config.emeraldDropAmount ?? 1));
         this.damagePerHit = config.damagePerHit;
         this.attackCooldownSeconds = config.attackCooldownSeconds;
+        this.deathSound = config.deathSound;
         this.attackCooldownRemaining =
             config.initialAttackDelaySeconds ?? config.attackCooldownSeconds;
     }

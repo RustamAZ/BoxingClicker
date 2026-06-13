@@ -26,6 +26,7 @@ export type DailyRewardsProfile = {
 export type PlayerProfileSnapshot = {
   id: string;
   updatedAt: number;
+  onboardingCompleted: boolean;
   emeralds: number;
   rewiveCount: number;
   purchasedItemIds: string[];
@@ -41,6 +42,7 @@ export type PlayerProfileSnapshot = {
 export type StoredPlayerProfile = {
   id?: string;
   updatedAt?: number;
+  onboardingCompleted?: boolean;
   emeralds?: number;
   rewiveCount?: number;
   purchasedItemIds?: string[];
@@ -76,6 +78,7 @@ const mockInfinityTowerStartTrainingLevels = Object.fromEntries(
 
 const mockInfinityTowerStartProfile: StoredPlayerProfile = {
   id: "mock-player",
+  onboardingCompleted: true,
   emeralds: 0,
   rewiveCount: 0,
   purchasedItemIds: [...mockStoryGlovesItemIds],
@@ -113,6 +116,7 @@ export class PlayerProfile {
 
   private id: string;
   private updatedAt: number;
+  private onboardingCompleted: boolean;
   private emeralds: number;
   private rewiveCount: number;
   private purchasedItemIds: string[];
@@ -184,6 +188,7 @@ export class PlayerProfile {
 
     this.id = profile.id;
     this.updatedAt = profile.updatedAt;
+    this.onboardingCompleted = profile.onboardingCompleted;
     this.emeralds = profile.emeralds;
     this.rewiveCount = profile.rewiveCount;
     this.purchasedItemIds = profile.purchasedItemIds;
@@ -200,6 +205,19 @@ export class PlayerProfile {
 
   getId() {
     return this.id;
+  }
+
+  hasCompletedOnboarding() {
+    return this.onboardingCompleted;
+  }
+
+  completeOnboarding() {
+    if (this.onboardingCompleted) {
+      return;
+    }
+
+    this.onboardingCompleted = true;
+    this.save({ flush: true });
   }
 
   getEmeralds() {
@@ -503,6 +521,7 @@ export class PlayerProfile {
     return {
       id: this.id,
       updatedAt: this.updatedAt,
+      onboardingCompleted: this.onboardingCompleted,
       emeralds: this.emeralds,
       rewiveCount: this.rewiveCount,
       purchasedItemIds: this.getPurchasedItemIds(),
@@ -514,6 +533,10 @@ export class PlayerProfile {
       trainingLevels: this.getTrainingLevels(),
       dailyRewards: this.getDailyRewards(),
     };
+  }
+
+  saveNow() {
+    this.save({ flush: true });
   }
 
   private loadProfile(): PlayerProfileSnapshot {
@@ -530,6 +553,10 @@ export class PlayerProfile {
       return {
         id: typeof profile.id === "string" ? profile.id : this.createId(),
         updatedAt: PlayerProfile.getProfileUpdatedAt(profile),
+        onboardingCompleted:
+          typeof profile.onboardingCompleted === "boolean"
+            ? profile.onboardingCompleted
+            : this.getStoredGlobalLevel(profile) > 1,
         emeralds:
           typeof profile.emeralds === "number"
             ? Math.max(0, Math.floor(profile.emeralds))
@@ -569,6 +596,7 @@ export class PlayerProfile {
     return {
       id: this.createId(),
       updatedAt: Date.now(),
+      onboardingCompleted: false,
       emeralds: this.loadLegacyEmeralds(),
       rewiveCount: 0,
       purchasedItemIds: [...PlayerProfile.defaultPurchasedItemIds],

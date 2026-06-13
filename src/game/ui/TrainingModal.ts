@@ -159,6 +159,7 @@ export class TrainingModal {
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
   private isActionLocked = false;
+  private isOpenButtonEnabled = true;
   private scrollOffsetY = 0;
   private maxScrollOffsetY = 0;
   private isDraggingScroll = false;
@@ -207,7 +208,7 @@ export class TrainingModal {
     this.openButton.label.setVisible(false);
     this.openButton.hitArea.setVisible(visible);
 
-    if (visible) {
+    if (visible && this.isOpenButtonEnabled) {
       this.openButton.hitArea.setInteractive({ useHandCursor: true });
     } else {
       this.openButton.hitArea.disableInteractive();
@@ -218,6 +219,15 @@ export class TrainingModal {
     }
 
     this.updateOpenButtonPulse();
+  }
+
+  setButtonEnabled(enabled: boolean) {
+    if (this.isOpenButtonEnabled === enabled) {
+      return;
+    }
+
+    this.isOpenButtonEnabled = enabled;
+    this.setButtonVisible(this.openButton.icon?.visible === true);
   }
 
   open() {
@@ -423,11 +433,15 @@ export class TrainingModal {
       .setInteractive({ useHandCursor: true });
 
     hitArea.on("pointerdown", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       UiSoundPlayer.playClick(this.scene);
       this.open();
     });
     hitArea.on("pointerover", () => {
-      if (this.isOpenButtonIconPulsing) {
+      if (!this.isOpenButtonEnabled || this.isOpenButtonIconPulsing) {
         return;
       }
 
@@ -1029,6 +1043,7 @@ export class TrainingModal {
 
   private updateOpenButtonPulse() {
     const shouldPulse =
+      this.isOpenButtonEnabled &&
       this.openButton.icon?.visible === true &&
       this.trainingController.getItemStates().some((state) => state.canBuy);
 

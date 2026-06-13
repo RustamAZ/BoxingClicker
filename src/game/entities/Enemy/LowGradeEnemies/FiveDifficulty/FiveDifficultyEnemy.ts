@@ -3,27 +3,24 @@ import {
   fifthEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
+import { enemyDeathSounds } from "../../../../configs/enemyDeathSounds";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyVariants,
+  type EnemyAssetConfig,
+  type EnemySpawnSlot,
+  type EnemyVariantConfig,
+} from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
 import type { Player } from "../../../Player/Player";
 
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
 type EnemyAttackEffect = "fireball";
 
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & {
-    displayName: string;
-    attackEffect?: EnemyAttackEffect;
-  },
-  dead: EnemySpriteConfig,
-];
+type FiveDifficultyEnemyVariantConfig = EnemyVariantConfig & {
+  attackEffect?: EnemyAttackEffect;
+};
 
 export class FiveDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -39,56 +36,58 @@ export class FiveDifficultyEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly fireballSprite: EnemySpriteConfig = {
+  private static readonly fireballSprite: EnemyAssetConfig = {
     key: "five-difficulty-fire-ball",
     path: "assets/images/enemies/five-difficulty/fire-ball.png",
   };
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
+  private static readonly variants: FiveDifficultyEnemyVariantConfig[] = [
+    {
+      displayName: "Pig Zombie",
+      alive: {
         key: "five-difficulty-pig-zombie-1",
         path: "assets/images/enemies/five-difficulty/pig-zombie-v1.png",
-        displayName: "Pig Zombie",
       },
-      {
+      dead: {
         key: "five-difficulty-pig-zombie-1-dead",
         path: "assets/images/enemies/five-difficulty/pig-zombie-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.zombie,
+    },
+    {
+      displayName: "Myth Bower",
+      alive: {
         key: "five-difficulty-myth-bower-1",
         path: "assets/images/enemies/five-difficulty/myth-bower-v1.png",
-        displayName: "Myth Bower",
       },
-      {
+      dead: {
         key: "five-difficulty-myth-bower-1-dead",
         path: "assets/images/enemies/five-difficulty/myth-bower-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.skeleton,
+    },
+    {
+      displayName: "Hell Pig",
+      alive: {
         key: "five-difficulty-hell-pig-1",
         path: "assets/images/enemies/five-difficulty/hell-pig-v1.png",
-        displayName: "Hell Pig",
       },
-      {
+      dead: {
         key: "five-difficulty-hell-pig-1-dead",
         path: "assets/images/enemies/five-difficulty/hell-pig-v1-die.png",
       },
-    ],
-    [
-      {
+    },
+    {
+      displayName: "Hell Ghast",
+      alive: {
         key: "five-difficulty-hell-ghast-1",
         path: "assets/images/enemies/five-difficulty/hell-ghast-v1.png",
-        displayName: "Hell Ghast",
-        attackEffect: "fireball",
       },
-      {
+      dead: {
         key: "five-difficulty-hell-ghast-1-dead",
         path: "assets/images/enemies/five-difficulty/hell-ghast-v1-die.png",
       },
-    ],
+      attackEffect: "fireball",
+    },
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -98,10 +97,7 @@ export class FiveDifficultyEnemy extends Enemy {
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    FiveDifficultyEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
-    });
+    preloadEnemyVariants(scene, FiveDifficultyEnemy.variants);
     scene.load.image(
       FiveDifficultyEnemy.fireballSprite.key,
       FiveDifficultyEnemy.fireballSprite.path,
@@ -109,10 +105,10 @@ export class FiveDifficultyEnemy extends Enemy {
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = randomItem(FiveDifficultyEnemy.sprites);
+    const variant = randomItem(FiveDifficultyEnemy.variants);
 
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: randomInt(toEnemyStatRange(fifthEnemyConfig.health_range)),
       xpReward: fifthEnemyConfig.xp_reward,
       diamondsReward: fifthEnemyConfig.buff_container_reward,
@@ -125,13 +121,14 @@ export class FiveDifficultyEnemy extends Enemy {
       initialAttackDelaySeconds: randomFloat(
         toEnemyStatRange(fifthEnemyConfig.initial_attack_delay_range),
       ),
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
-    this.attackEffect = aliveSprite.attackEffect;
-    this.deathSpriteKey = deadSprite.key;
+    this.attackEffect = variant.attackEffect;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }

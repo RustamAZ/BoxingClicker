@@ -3,21 +3,16 @@ import {
   secondEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
+import { enemyDeathSounds } from "../../../../configs/enemyDeathSounds";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyVariants,
+  type EnemySpawnSlot,
+  type EnemyVariantConfig,
+} from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
-
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
-  dead: EnemySpriteConfig,
-];
 
 export class SecondDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -27,51 +22,55 @@ export class SecondDifficultyEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
+  private static readonly variants: EnemyVariantConfig[] = [
+    {
+      displayName: "Zombie",
+      alive: {
         key: "second-difficulty-zombie-1",
         path: "assets/images/enemies/second-difficulty/zombie-v1.png",
-        displayName: "Zombie",
       },
-      {
+      dead: {
         key: "second-difficulty-zombie-1-dead",
         path: "assets/images/enemies/second-difficulty/zombie-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.zombie,
+    },
+    {
+      displayName: "Zombie",
+      alive: {
         key: "second-difficulty-zombie-2",
         path: "assets/images/enemies/second-difficulty/zombie-v2.png",
-        displayName: "Zombie",
       },
-      {
+      dead: {
         key: "second-difficulty-zombie-2-dead",
         path: "assets/images/enemies/second-difficulty/zombie-v2-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.zombie,
+    },
+    {
+      displayName: "Skeleton",
+      alive: {
         key: "second-difficulty-skeleton-1",
         path: "assets/images/enemies/second-difficulty/skeleton-v1.png",
-        displayName: "Skeleton",
       },
-      {
+      dead: {
         key: "second-difficulty-skeleton-1-dead",
         path: "assets/images/enemies/second-difficulty/skeleton-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.skeleton,
+    },
+    {
+      displayName: "Skeleton",
+      alive: {
         key: "second-difficulty-skeleton-2",
         path: "assets/images/enemies/second-difficulty/skeleton-v2.png",
-        displayName: "Skeleton",
       },
-      {
+      dead: {
         key: "second-difficulty-skeleton-2-dead",
         path: "assets/images/enemies/second-difficulty/skeleton-v2-die.png",
       },
-    ],
+      deathSound: enemyDeathSounds.skeleton,
+    },
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -79,19 +78,14 @@ export class SecondDifficultyEnemy extends Enemy {
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    SecondDifficultyEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
-    });
+    preloadEnemyVariants(scene, SecondDifficultyEnemy.variants);
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = randomItem(
-      SecondDifficultyEnemy.sprites,
-    );
+    const variant = randomItem(SecondDifficultyEnemy.variants);
 
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: randomInt(
         toEnemyStatRange(secondEnemyConfig.health_range),
       ),
@@ -108,12 +102,13 @@ export class SecondDifficultyEnemy extends Enemy {
       initialAttackDelaySeconds: randomFloat(
         toEnemyStatRange(secondEnemyConfig.initial_attack_delay_range),
       ),
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
-    this.deathSpriteKey = deadSprite.key;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }

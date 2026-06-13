@@ -81,7 +81,7 @@ export class PlayerDeathModal {
   constructor(
     private readonly scene: Scene,
     private readonly pauseController: PauseController,
-    private readonly onRestart: () => void,
+    private readonly onReturnToLobby: () => void,
   ) {
     this.overlay = this.scene.add
       .rectangle(512, 384, 1024, 768, 0x000000, 0.68)
@@ -122,7 +122,7 @@ export class PlayerDeathModal {
       280,
       48,
       languageController.t("death.restart"),
-      () => this.restart(),
+      () => this.returnToLobby(),
     );
     this.continueButton = this.createButton(
       512,
@@ -196,13 +196,14 @@ export class PlayerDeathModal {
     this.setVisible(false);
   }
 
-  private restart() {
+  private returnToLobby() {
     if (this.isActionLocked) {
       return;
     }
 
+    this.hide();
     this.pauseController.resume("player-death");
-    this.onRestart();
+    this.onReturnToLobby();
   }
 
   private createButton(

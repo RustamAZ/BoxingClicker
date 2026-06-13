@@ -125,7 +125,7 @@ export class InfinityTowerRewardsScrollView {
     amountTextOriginY: 0.5,
     amountTextWrapWidth: 128,
     amountTextFontSize: 22,
-    glovesTextFontSize: 20,
+    glovesTextFontSize: 17,
     claimButton: {
       offsetX: 0,
       offsetY: 15,

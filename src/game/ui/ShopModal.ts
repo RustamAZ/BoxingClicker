@@ -77,6 +77,8 @@ export class ShopModal {
   private static readonly buttonSize = 100;
   private static readonly iconSize = 86;
   private static readonly iconHoverSize = 92;
+  private static readonly iconPulseScale = 1.08;
+  private static readonly iconPulseDurationMs = 520;
   private static readonly actionLockDurationMs = 300;
   private static readonly normalCardWidth = 240;
   private static readonly normalCardHeight = 290;
@@ -125,6 +127,10 @@ export class ShopModal {
   private isActionLocked = false;
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
+  private isOpenButtonEnabled = true;
+  private shopButtonIconBaseScaleX = 1;
+  private shopButtonIconBaseScaleY = 1;
+  private isShopButtonIconPulsing = false;
   private scrollOffsetY = 0;
   private isDraggingScroll = false;
   private dragStartY = 0;
@@ -142,6 +148,8 @@ export class ShopModal {
     private readonly glovesEquipmentController: GlovesEquipmentController,
   ) {
     this.shopButton = this.createShopButton(734, 68);
+    this.shopButtonIconBaseScaleX = this.shopButton.icon.scaleX;
+    this.shopButtonIconBaseScaleY = this.shopButton.icon.scaleY;
     this.loaderSpinner = new LoadingSpinner(
       this.scene,
       this.scene.scale.width / 2,
@@ -154,6 +162,7 @@ export class ShopModal {
     });
     this.scene.events.once("shutdown", () => {
       this.unsubscribeLanguageChange();
+      this.setShopButtonIconPulsing(false);
       this.loaderSpinner.destroy();
       this.scene.input.keyboard?.off("keydown-ESC", this.handleEsc, this);
       this.scene.input.off("wheel", this.handleWheel, this);
@@ -200,12 +209,23 @@ export class ShopModal {
     this.shopButton.hitArea.setVisible(visible);
     this.shopButton.icon.setVisible(visible);
 
-    if (visible) {
+    if (visible && this.isOpenButtonEnabled) {
       this.shopButton.hitArea.setInteractive({ useHandCursor: true });
     } else {
       this.shopButton.icon.setDisplaySize(ShopModal.iconSize, ShopModal.iconSize);
       this.shopButton.hitArea.disableInteractive();
     }
+
+    this.updateShopButtonPulse();
+  }
+
+  setButtonEnabled(enabled: boolean) {
+    if (this.isOpenButtonEnabled === enabled) {
+      return;
+    }
+
+    this.isOpenButtonEnabled = enabled;
+    this.setButtonVisible(this.shopButton.icon.visible);
   }
 
   private show() {
@@ -327,6 +347,8 @@ export class ShopModal {
   }
 
   private refresh() {
+    this.updateShopButtonPulse();
+
     if (!this.panel || !this.balanceText) {
       return;
     }
@@ -502,13 +524,25 @@ export class ShopModal {
       .setDepth(1001);
 
     hitArea.on("pointerdown", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       UiSoundPlayer.playClick(this.scene);
       this.open();
     });
     hitArea.on("pointerover", () => {
+      if (!this.isOpenButtonEnabled || this.isShopButtonIconPulsing) {
+        return;
+      }
+
       icon.setDisplaySize(ShopModal.iconHoverSize, ShopModal.iconHoverSize);
     });
     hitArea.on("pointerout", () => {
+      if (this.isShopButtonIconPulsing) {
+        return;
+      }
+
       icon.setDisplaySize(ShopModal.iconSize, ShopModal.iconSize);
     });
 
@@ -516,6 +550,49 @@ export class ShopModal {
       hitArea,
       icon,
     };
+  }
+
+  private updateShopButtonPulse() {
+    const profile = this.wallet.getPlayer().profile;
+    const shouldPulse =
+      this.isOpenButtonEnabled &&
+      this.shopButton.icon.visible &&
+      ShopCatalog.getItemViews(profile).some(
+        (item) =>
+          item.status === "not-purchased" &&
+          this.wallet.canWithdraw(item.price),
+      );
+
+    this.setShopButtonIconPulsing(shouldPulse);
+  }
+
+  private setShopButtonIconPulsing(shouldPulse: boolean) {
+    if (this.isShopButtonIconPulsing === shouldPulse) {
+      return;
+    }
+
+    this.isShopButtonIconPulsing = shouldPulse;
+    this.scene.tweens.killTweensOf(this.shopButton.icon);
+    this.shopButton.icon.setScale(
+      this.shopButtonIconBaseScaleX,
+      this.shopButtonIconBaseScaleY,
+    );
+
+    if (!shouldPulse) {
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: this.shopButton.icon,
+      scaleX:
+        this.shopButtonIconBaseScaleX * ShopModal.iconPulseScale,
+      scaleY:
+        this.shopButtonIconBaseScaleY * ShopModal.iconPulseScale,
+      duration: ShopModal.iconPulseDurationMs,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 
   private createCloseButton(x: number, y: number): ShopCloseButton {

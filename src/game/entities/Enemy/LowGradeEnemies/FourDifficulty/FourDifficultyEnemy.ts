@@ -3,21 +3,16 @@ import {
   fourthEnemyConfig,
   toEnemyStatRange,
 } from "../../../../configs/enemies";
+import { enemyDeathSounds } from "../../../../configs/enemyDeathSounds";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyVariants,
+  type EnemySpawnSlot,
+  type EnemyVariantConfig,
+} from "../../types";
 import { randomItem } from "../../../../utils/randomItem";
 import { randomInt } from "../../../../utils/randomInt";
 import { randomFloat } from "../../../../utils/randomFloat";
-
-type EnemySpriteConfig = {
-  key: string;
-  path: string;
-};
-
-type EnemySpritePair = readonly [
-  alive: EnemySpriteConfig & { displayName: string },
-  dead: EnemySpriteConfig,
-];
 
 export class FourDifficultyEnemy extends Enemy {
   readonly isCanAttack = true;
@@ -27,40 +22,43 @@ export class FourDifficultyEnemy extends Enemy {
   private static readonly deathAnimationDurationMs = 500;
   private static readonly deathAnimationMoveOffsetX = 150;
   private static readonly deathAnimationMoveOffsetY = 120;
-  private static readonly sprites: EnemySpritePair[] = [
-    [
-      {
+  private static readonly variants: EnemyVariantConfig[] = [
+    {
+      displayName: "Black Skeleton",
+      alive: {
         key: "four-difficulty-black-skeleton-1",
         path: "assets/images/enemies/four-difficulty/black-skeleton-v1.png",
-        displayName: "Black Skeleton",
       },
-      {
+      dead: {
         key: "four-difficulty-black-skeleton-1-dead",
         path: "assets/images/enemies/four-difficulty/black-skeleton-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.skeleton,
+    },
+    {
+      displayName: "Myth Zombie",
+      alive: {
         key: "four-difficulty-myth-zombie-1",
         path: "assets/images/enemies/four-difficulty/myth-zombie-v1.png",
-        displayName: "Myth Zombie",
       },
-      {
+      dead: {
         key: "four-difficulty-myth-zombie-1-dead",
         path: "assets/images/enemies/four-difficulty/myth-zombie-v1-die.png",
       },
-    ],
-    [
-      {
+      deathSound: enemyDeathSounds.zombie,
+    },
+    {
+      displayName: "Frozen Bower",
+      alive: {
         key: "four-difficulty-frozen-bower-1",
         path: "assets/images/enemies/four-difficulty/frozen-bower-v1.png",
-        displayName: "Frozen Bower",
       },
-      {
+      dead: {
         key: "four-difficulty-frozen-bower-1-dead",
         path: "assets/images/enemies/four-difficulty/frozen-bower-v1-die.png",
       },
-    ],
+      deathSound: enemyDeathSounds.skeleton,
+    },
   ];
   readonly body: GameObjects.Image;
   readonly slot: EnemySpawnSlot;
@@ -68,17 +66,14 @@ export class FourDifficultyEnemy extends Enemy {
   private isDeathAnimationPlaying = false;
 
   static preload(scene: Scene) {
-    FourDifficultyEnemy.sprites.forEach(([aliveSprite, deadSprite]) => {
-      scene.load.image(aliveSprite.key, aliveSprite.path);
-      scene.load.image(deadSprite.key, deadSprite.path);
-    });
+    preloadEnemyVariants(scene, FourDifficultyEnemy.variants);
   }
 
   constructor(scene: Scene, slot: EnemySpawnSlot) {
-    const [aliveSprite, deadSprite] = randomItem(FourDifficultyEnemy.sprites);
+    const variant = randomItem(FourDifficultyEnemy.variants);
 
     super({
-      displayName: aliveSprite.displayName,
+      displayName: variant.displayName,
       maxHealth: randomInt(toEnemyStatRange(fourthEnemyConfig.health_range)),
       xpReward: fourthEnemyConfig.xp_reward,
       diamondsReward: fourthEnemyConfig.buff_container_reward,
@@ -91,12 +86,13 @@ export class FourDifficultyEnemy extends Enemy {
       initialAttackDelaySeconds: randomFloat(
         toEnemyStatRange(fourthEnemyConfig.initial_attack_delay_range),
       ),
+      deathSound: variant.deathSound,
     });
 
     this.slot = slot;
-    this.deathSpriteKey = deadSprite.key;
+    this.deathSpriteKey = variant.dead.key;
     this.body = scene.add
-      .image(slot.x, slot.y, aliveSprite.key)
+      .image(slot.x, slot.y, variant.alive.key)
       .setDisplaySize(slot.width, slot.height)
       .setInteractive({ useHandCursor: true });
   }

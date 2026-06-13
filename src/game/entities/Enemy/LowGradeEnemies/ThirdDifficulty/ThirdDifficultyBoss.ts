@@ -1,8 +1,12 @@
 import { GameObjects, Scene } from "phaser";
 import { thirdBossConfig } from "../../../../configs/bosses";
+import { enemyDeathSounds } from "../../../../configs/enemyDeathSounds";
 import type { Player } from "../../../Player/Player";
 import { Enemy } from "../../Enemy";
-import type { EnemySpawnSlot } from "../../types";
+import {
+  preloadEnemyDeathSound,
+  type EnemySpawnSlot,
+} from "../../types";
 
 type BossSpriteConfig = {
   key: string;
@@ -57,6 +61,7 @@ export class ThirdDifficultyBoss extends Enemy {
       ThirdDifficultyBoss.webShotSprite.key,
       ThirdDifficultyBoss.webShotSprite.path,
     );
+    preloadEnemyDeathSound(scene, enemyDeathSounds.spider);
   }
 
   constructor(
@@ -116,6 +121,9 @@ export class ThirdDifficultyBoss extends Enemy {
     this.body.setAngle(0);
     this.body.setTexture(ThirdDifficultyBoss.deadSprite.key);
     this.body.setDisplaySize(this.slot.width * 1.14, this.slot.height * 1.14);
+    this.scene.sound.play(enemyDeathSounds.spider.key, {
+      volume: enemyDeathSounds.spider.volume,
+    });
 
     const direction = Math.random() < 0.5 ? -1 : 1;
 

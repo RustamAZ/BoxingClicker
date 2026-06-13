@@ -6,6 +6,7 @@ type StoredAdState = {
 export class AdStateStorage {
   private static readonly storageKey = "boxing-clicker-yandex-ad-state";
   private static readonly lobbyAutoAdCooldownMs = 2 * 60 * 1000;
+  private static readonly lobbyAutoAdMaxAgeMs = 25 * 60 * 1000;
 
   canShowLobbyAutoAd() {
     const state = this.load();
@@ -21,7 +22,16 @@ export class AdStateStorage {
     const lastAdShownAt =
       typeof state.lastAdShownAt === "number" ? state.lastAdShownAt : 0;
 
-    return Date.now() - lastAdShownAt >= AdStateStorage.lobbyAutoAdCooldownMs;
+    if (lastAdShownAt <= 0) {
+      return false;
+    }
+
+    const timeSinceLastAdMs = Date.now() - lastAdShownAt;
+
+    return (
+      timeSinceLastAdMs >= AdStateStorage.lobbyAutoAdCooldownMs &&
+      timeSinceLastAdMs <= AdStateStorage.lobbyAutoAdMaxAgeMs
+    );
   }
 
   markAdShown(options: { lobbyAuto?: boolean } = {}) {

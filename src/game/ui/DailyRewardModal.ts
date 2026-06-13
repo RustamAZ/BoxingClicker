@@ -101,6 +101,7 @@ export class DailyRewardModal {
   private isAssetsLoaded = false;
   private isLoadingAssets = false;
   private isActionLocked = false;
+  private isOpenButtonEnabled = true;
   private unlockActionTimer?: Phaser.Time.TimerEvent;
   private unsubscribeLanguageChange?: () => void;
 
@@ -129,7 +130,7 @@ export class DailyRewardModal {
     this.openButton.icon.setVisible(visible);
     this.openButton.hitArea.setVisible(visible);
 
-    if (visible) {
+    if (visible && this.isOpenButtonEnabled) {
       this.openButton.hitArea.setInteractive({ useHandCursor: true });
     } else {
       this.openButton.hitArea.disableInteractive();
@@ -138,6 +139,15 @@ export class DailyRewardModal {
         DailyRewardModal.openButtonIconSize,
       );
     }
+  }
+
+  setButtonEnabled(enabled: boolean) {
+    if (this.isOpenButtonEnabled === enabled) {
+      return;
+    }
+
+    this.isOpenButtonEnabled = enabled;
+    this.setButtonVisible(this.openButton.icon.visible);
   }
 
   open() {
@@ -307,10 +317,18 @@ export class DailyRewardModal {
       .setVisible(false);
 
     hitArea.on("pointerdown", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       UiSoundPlayer.playClick(this.scene);
       this.open();
     });
     hitArea.on("pointerover", () => {
+      if (!this.isOpenButtonEnabled) {
+        return;
+      }
+
       icon.setDisplaySize(
         DailyRewardModal.openButtonIconHoverSize,
         DailyRewardModal.openButtonIconHoverSize,
