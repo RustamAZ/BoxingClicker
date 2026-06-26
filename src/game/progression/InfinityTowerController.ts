@@ -15,6 +15,7 @@ import { randomItem } from "../utils/randomItem";
 import { InfinityTowerRewardController } from "./InfinityTowerRewardController";
 
 type RewardUnlockedCallback = (floor: number) => void;
+type MaxFloorChangedCallback = (floor: number) => void;
 
 export class InfinityTowerController {
   private isActive = false;
@@ -23,6 +24,7 @@ export class InfinityTowerController {
   private currentEnemyPack: InfinityTowerEnemyPackConfig =
     infinityTowerEnemyPacks[0];
   private readonly rewardUnlockedCallbacks: RewardUnlockedCallback[] = [];
+  private readonly maxFloorChangedCallbacks: MaxFloorChangedCallback[] = [];
   private readonly rewardController: InfinityTowerRewardController;
 
   constructor(private readonly profile: PlayerProfile) {
@@ -111,9 +113,24 @@ export class InfinityTowerController {
     };
   }
 
+  onMaxFloorChanged(callback: MaxFloorChangedCallback) {
+    this.maxFloorChangedCallbacks.push(callback);
+
+    return () => {
+      const index = this.maxFloorChangedCallbacks.indexOf(callback);
+
+      if (index >= 0) {
+        this.maxFloorChangedCallbacks.splice(index, 1);
+      }
+    };
+  }
+
   private saveMaxFloor() {
     if (this.currentFloor > this.profile.getInfinityTowerCurrentLevel()) {
       this.profile.setInfinityTowerCurrentLevel(this.currentFloor);
+      this.maxFloorChangedCallbacks.forEach((callback) => {
+        callback(this.currentFloor);
+      });
     }
   }
 

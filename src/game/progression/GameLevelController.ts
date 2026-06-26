@@ -30,6 +30,7 @@ export class GameLevelController {
   returnToCampaign() {
     this.runMode = "campaign";
     this.activeBossId = undefined;
+    this.defeatedBossIds.clear();
   }
 
   isInfiniteRun() {

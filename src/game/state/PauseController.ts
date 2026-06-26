@@ -8,6 +8,7 @@ export type PauseReason =
   | "shop"
   | "training"
   | "daily-reward"
+  | "in-app-purchase"
   | "infinite-mode"
   | "campaign-victory"
   | "auto-ad";

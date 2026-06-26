@@ -23,6 +23,10 @@ export type DailyRewardsProfile = {
   claimedRewards: number[];
 };
 
+export type InAppPurchasesProfile = {
+  grantedPurchaseTokens: string[];
+};
+
 export type PlayerProfileSnapshot = {
   id: string;
   updatedAt: number;
@@ -37,6 +41,7 @@ export type PlayerProfileSnapshot = {
   towerConsumables: InfinityTowerConsumables;
   trainingLevels: TrainingLevels;
   dailyRewards: DailyRewardsProfile;
+  inAppPurchases: InAppPurchasesProfile;
 };
 
 export type StoredPlayerProfile = {
@@ -54,6 +59,7 @@ export type StoredPlayerProfile = {
   towerConsumables?: InfinityTowerConsumables;
   trainingLevels?: TrainingLevels;
   dailyRewards?: Partial<DailyRewardsProfile>;
+  inAppPurchases?: Partial<InAppPurchasesProfile>;
 };
 
 type StoredLegacyWallet = {
@@ -127,6 +133,7 @@ export class PlayerProfile {
   private towerConsumables: InfinityTowerConsumables;
   private trainingLevels: TrainingLevels;
   private dailyRewards: DailyRewardsProfile;
+  private inAppPurchases: InAppPurchasesProfile;
 
   static getStoredEquippedItemId() {
     try {
@@ -199,6 +206,7 @@ export class PlayerProfile {
     this.towerConsumables = profile.towerConsumables;
     this.trainingLevels = profile.trainingLevels;
     this.dailyRewards = profile.dailyRewards;
+    this.inAppPurchases = profile.inAppPurchases;
     this.normalizeProfile();
     this.save();
   }
@@ -269,6 +277,51 @@ export class PlayerProfile {
     this.save();
 
     return this.emeralds;
+  }
+
+  grantInAppPurchase(purchaseToken: string, emeraldsAmount: number) {
+    const safeToken = purchaseToken.trim();
+    const safeAmount = Math.max(0, Math.floor(emeraldsAmount));
+
+    if (!safeToken || safeAmount <= 0) {
+      return false;
+    }
+
+    if (this.hasGrantedInAppPurchase(safeToken)) {
+      return false;
+    }
+
+    this.emeralds += safeAmount;
+    this.inAppPurchases = {
+      grantedPurchaseTokens: [
+        ...this.inAppPurchases.grantedPurchaseTokens,
+        safeToken,
+      ],
+    };
+    this.save({ flush: true });
+
+    return true;
+  }
+
+  hasGrantedInAppPurchase(purchaseToken: string) {
+    return this.inAppPurchases.grantedPurchaseTokens.includes(
+      purchaseToken.trim(),
+    );
+  }
+
+  completeInAppPurchase(purchaseToken: string) {
+    const safeToken = purchaseToken.trim();
+
+    if (!safeToken || !this.hasGrantedInAppPurchase(safeToken)) {
+      return;
+    }
+
+    this.inAppPurchases = {
+      grantedPurchaseTokens: this.inAppPurchases.grantedPurchaseTokens.filter(
+        (grantedToken) => grantedToken !== safeToken,
+      ),
+    };
+    this.save({ flush: true });
   }
 
   canSpendEmeralds(amount: number) {
@@ -493,6 +546,14 @@ export class PlayerProfile {
     };
   }
 
+  getInAppPurchases(): InAppPurchasesProfile {
+    return {
+      grantedPurchaseTokens: [
+        ...this.inAppPurchases.grantedPurchaseTokens,
+      ],
+    };
+  }
+
   getDailyRewardLastClaimDate() {
     return this.dailyRewards.last_claim_date;
   }
@@ -532,6 +593,7 @@ export class PlayerProfile {
       towerConsumables: this.getTowerConsumables(),
       trainingLevels: this.getTrainingLevels(),
       dailyRewards: this.getDailyRewards(),
+      inAppPurchases: this.getInAppPurchases(),
     };
   }
 
@@ -586,6 +648,7 @@ export class PlayerProfile {
         ),
         trainingLevels: this.normalizeTrainingLevels(profile.trainingLevels),
         dailyRewards: this.normalizeDailyRewards(profile.dailyRewards),
+        inAppPurchases: this.normalizeInAppPurchases(profile.inAppPurchases),
       };
     } catch {
       return this.getDefaultProfile();
@@ -607,6 +670,7 @@ export class PlayerProfile {
       towerConsumables: {},
       trainingLevels: {},
       dailyRewards: PlayerProfile.getDefaultDailyRewards(),
+      inAppPurchases: PlayerProfile.getDefaultInAppPurchases(),
     };
   }
 
@@ -634,6 +698,7 @@ export class PlayerProfile {
       this.towerConsumables,
     );
     this.dailyRewards = this.normalizeDailyRewards(this.dailyRewards);
+    this.inAppPurchases = this.normalizeInAppPurchases(this.inAppPurchases);
   }
 
   private static normalizeItemId(itemId: string) {
@@ -771,6 +836,29 @@ export class PlayerProfile {
   private static getDefaultDailyRewards(): DailyRewardsProfile {
     return {
       claimedRewards: [],
+    };
+  }
+
+  private normalizeInAppPurchases(
+    inAppPurchases?: Partial<InAppPurchasesProfile>,
+  ): InAppPurchasesProfile {
+    const grantedPurchaseTokens = Array.isArray(
+      inAppPurchases?.grantedPurchaseTokens,
+    )
+      ? inAppPurchases.grantedPurchaseTokens.filter(
+          (purchaseToken): purchaseToken is string =>
+            typeof purchaseToken === "string" && purchaseToken.trim() !== "",
+        )
+      : [];
+
+    return {
+      grantedPurchaseTokens: [...new Set(grantedPurchaseTokens)],
+    };
+  }
+
+  private static getDefaultInAppPurchases(): InAppPurchasesProfile {
+    return {
+      grantedPurchaseTokens: [],
     };
   }
 

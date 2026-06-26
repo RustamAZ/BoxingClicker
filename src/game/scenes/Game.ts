@@ -6,6 +6,7 @@ import { PauseMenu } from "../ui/PauseMenu";
 import { ShopModal } from "../ui/ShopModal";
 import { DailyRewardController } from "../daily/DailyRewardController";
 import { DailyRewardModal } from "../ui/DailyRewardModal";
+import { InAppPurchaseModal } from "../ui/InAppPurchaseModal";
 import { StatusBar } from "../ui/StatusBar";
 import { HitSoundPlayer } from "../audio/HitSoundPlayer";
 import { EnemyAttackSoundPlayer } from "../audio/EnemyAttackSoundPlayer";
@@ -25,6 +26,7 @@ import { ResourceContainer } from "../entities/ResourceContainers/ResourceContai
 import { ResourceParticleFlow } from "../entities/ResourceContainers/ResourceParticleFlow";
 import { SpawnPlace } from "../entities/SpawnPlace/SpawnPlace";
 import { Wallet } from "../entities/Wallet/Wallet";
+import { InAppPurchaseController } from "../inApp/InAppPurchaseController";
 import { GameLevelController } from "../progression/GameLevelController";
 import { InfinityTowerController } from "../progression/InfinityTowerController";
 import { LocationAssetPreloader } from "../progression/LocationAssetPreloader";
@@ -50,6 +52,7 @@ import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 import { FullscreenController } from "../utils/FullscreenController";
 import { getGamePlatform } from "../platform/yandex";
+import type { InAppProduct } from "../platform/yandex/GamePlatform";
 import {
   getInfinityTowerConsumableConfig,
   infinityTowerConsumableIds,
@@ -76,6 +79,7 @@ export class Game extends Scene {
 
   private player: Player;
   private wallet: Wallet;
+  private inAppPurchaseController: InAppPurchaseController;
   private dailyRewardController: DailyRewardController;
   private trainingController: TrainingController;
   private levelController: GameLevelController;
@@ -96,6 +100,7 @@ export class Game extends Scene {
   private pauseMenu: PauseMenu;
   private shopModal: ShopModal;
   private dailyRewardModal: DailyRewardModal;
+  private inAppPurchaseModal: InAppPurchaseModal;
   private trainingModal: TrainingModal;
   private infiniteModeModal: InfiniteModeModal;
   private infinityTowerConsumableModal: InfinityTowerConsumableModal;
@@ -121,6 +126,7 @@ export class Game extends Scene {
   private infinityTowerRunLoader: LoadingSpinner;
   private unsubscribeLanguageChange?: () => void;
   private unsubscribeInfinityTowerRewardUnlocked?: () => void;
+  private unsubscribeInfinityTowerMaxFloorChanged?: () => void;
   private fullscreenController?: FullscreenController;
   private previousGameLevel: number;
   private isDeathAdContinueUsedInRun = false;
@@ -162,6 +168,7 @@ export class Game extends Scene {
     PauseMenu.preload(this);
     ShopModal.preload(this);
     DailyRewardModal.preload(this);
+    InAppPurchaseModal.preload(this);
     OnboardingPrompt.preload(this);
     StatusBar.preload(this);
     NotificationController.preload(this);
@@ -186,6 +193,13 @@ export class Game extends Scene {
     this.player = new Player();
     this.fullscreenController = new FullscreenController(this);
     this.wallet = new Wallet(this.player);
+    this.inAppPurchaseController = new InAppPurchaseController(
+      getGamePlatform(),
+      this.wallet,
+      () => {
+        this.emeraldContainer?.update();
+      },
+    );
     this.dailyRewardController = new DailyRewardController(this.player.profile);
     this.trainingController = new TrainingController(this.player, this.wallet);
     this.trainingController.completeBaseTrainingForInfinityTower();
@@ -198,6 +212,13 @@ export class Game extends Scene {
       this.infinityTowerController.onRewardUnlocked(() => {
         this.notificationController.show("notification.newReward");
       });
+    this.unsubscribeInfinityTowerMaxFloorChanged =
+      this.infinityTowerController.onMaxFloorChanged((floor) => {
+        getGamePlatform().submitInfinityTowerScore(floor);
+      });
+    getGamePlatform().submitInfinityTowerScore(
+      this.player.profile.getInfinityTowerCurrentLevel(),
+    );
     this.locationAssetPreloader = new LocationAssetPreloader(this);
     this.previousGameLevel = this.levelController.getCurrentGameLevel();
     this.pauseController = new PauseController(this);
@@ -253,6 +274,9 @@ export class Game extends Scene {
     this.emeraldContainer = new EmeraldContainer(this, this.wallet, {
       x: 18,
       y: 150,
+    });
+    void this.inAppPurchaseController.processPendingPurchases().then(() => {
+      this.emeraldContainer.update();
     });
     this.updateResourceContainersVisibility();
 
@@ -345,6 +369,12 @@ export class Game extends Scene {
         this.playModalEmeraldReward(amount, from);
       },
     );
+    this.inAppPurchaseModal = new InAppPurchaseModal(
+      this,
+      this.pauseController,
+      () => this.inAppPurchaseController.getProducts(),
+      (product) => this.handleInAppProductSelected(product),
+    );
     this.trainingModal = new TrainingModal(
       this,
       this.pauseController,
@@ -379,6 +409,7 @@ export class Game extends Scene {
     this.statusBar = new StatusBar(this);
     this.notificationController = new NotificationController(this);
     this.updateShopModalVisibility();
+    this.updateInAppPurchaseModalVisibility();
     this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
@@ -424,6 +455,7 @@ export class Game extends Scene {
       window.removeEventListener("keydown", this.handleGlobalKeyDown);
       this.unsubscribeLanguageChange?.();
       this.unsubscribeInfinityTowerRewardUnlocked?.();
+      this.unsubscribeInfinityTowerMaxFloorChanged?.();
       void getGamePlatform().hideStickyBanner();
       this.lobbyAdCountdownOverlay.destroy();
       this.onboardingPrompt.destroy();
@@ -450,6 +482,7 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateInAppPurchaseModalVisibility();
     this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();
@@ -612,6 +645,18 @@ export class Game extends Scene {
     this.dailyRewardModal.open();
   }
 
+  private updateInAppPurchaseModalVisibility() {
+    const isVisible =
+      this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
+      !this.levelController.isInfiniteRun();
+
+    this.inAppPurchaseModal.setButtonVisible(isVisible);
+
+    if (!isVisible) {
+      this.inAppPurchaseModal.close();
+    }
+  }
+
   private updateOnboardingVisibility() {
     const shouldShow =
       this.levelController.getCurrentGameLevel() === Game.lobbyGameLevel &&
@@ -638,6 +683,7 @@ export class Game extends Scene {
   private setLobbyIconsEnabled(enabled: boolean) {
     this.shopModal.setButtonEnabled(enabled);
     this.dailyRewardModal.setButtonEnabled(enabled);
+    this.inAppPurchaseModal.setButtonEnabled(enabled);
     this.trainingModal.setButtonEnabled(enabled);
     this.infiniteModeModal.setButtonEnabled(enabled);
   }
@@ -858,6 +904,7 @@ export class Game extends Scene {
       this.background.update();
       this.updateResourceContainersVisibility();
       this.updateShopModalVisibility();
+      this.updateInAppPurchaseModalVisibility();
       this.updateDailyRewardModalVisibility();
       this.updateTrainingModalVisibility();
       this.updateInfiniteModeModalVisibility();
@@ -940,6 +987,11 @@ export class Game extends Scene {
         return;
       }
 
+      if (this.pauseController.has("in-app-purchase")) {
+        this.inAppPurchaseModal.close();
+        return;
+      }
+
       if (this.pauseController.has("training")) {
         this.trainingModal.close();
         return;
@@ -1014,6 +1066,16 @@ export class Game extends Scene {
     return false;
   }
 
+  private async handleInAppProductSelected(product: InAppProduct) {
+    const result = await this.inAppPurchaseController.purchaseProduct(product);
+
+    if (!result?.wasGranted) {
+      return;
+    }
+
+    this.emeraldContainer.update();
+  }
+
   private returnToLobby() {
     this.player.profile.saveNow();
     this.heroMessageController.setActive(false);
@@ -1028,6 +1090,7 @@ export class Game extends Scene {
     this.background.update();
     this.updateResourceContainersVisibility();
     this.updateShopModalVisibility();
+    this.updateInAppPurchaseModalVisibility();
     this.updateOnboardingVisibility();
     this.updateDailyRewardModalVisibility();
     this.updateTrainingModalVisibility();

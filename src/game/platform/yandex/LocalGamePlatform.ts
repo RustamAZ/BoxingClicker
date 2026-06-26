@@ -1,4 +1,5 @@
 import type { PlayerProfileSnapshot } from "../../entities/Player/PlayerProfile";
+import { mockInAppProducts } from "../../configs/inAppProducts";
 import type { GamePlatform, ProfileSaveOptions } from "./GamePlatform";
 
 export class LocalGamePlatform implements GamePlatform {
@@ -39,5 +40,31 @@ export class LocalGamePlatform implements GamePlatform {
 
   canShowLobbyAutoAd() {
     return false;
+  }
+
+  submitInfinityTowerScore(_score: number) {
+    // Leaderboards are available only on Yandex Games.
+  }
+
+  async getInAppProducts() {
+    return mockInAppProducts.map((product) => ({
+      ...product,
+      priceCurrencyImage: { ...product.priceCurrencyImage },
+    }));
+  }
+
+  async getInAppPurchases() {
+    return [];
+  }
+
+  async purchaseInAppProduct(productId: string) {
+    return {
+      productId,
+      purchaseToken: `local-${productId}-${Date.now()}`,
+    };
+  }
+
+  async consumeInAppPurchase(_purchaseToken: string) {
+    return true;
   }
 }

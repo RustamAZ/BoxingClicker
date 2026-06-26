@@ -46,6 +46,16 @@ export class AdStateStorage {
     });
   }
 
+  markLobbyAutoAdAttempted() {
+    const state = this.load();
+
+    this.save({
+      ...state,
+      lastAdShownAt: Date.now(),
+      skipNextLobbyAutoAd: true,
+    });
+  }
+
   private load(): StoredAdState {
     try {
       const rawState = localStorage.getItem(AdStateStorage.storageKey);
