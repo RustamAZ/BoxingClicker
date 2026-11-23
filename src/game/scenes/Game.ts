@@ -16,6 +16,7 @@ import { BreathSoundPlayer } from "../audio/BreathSoundPlayer";
 import { BackgroundMusicController } from "../audio/BackgroundMusicController";
 import { GameBackground } from "../entities/Background/GameBackground";
 import type { Enemy } from "../entities/Enemy/Enemy";
+import { EnemyTextureController } from "../entities/Enemy/EnemyTextureController";
 import { Player } from "../entities/Player/Player";
 import { PlayerProfile } from "../entities/Player/PlayerProfile";
 import { LootCaseController } from "../entities/LootCase/LootCaseController";
@@ -145,6 +146,7 @@ export class Game extends Scene {
   }
 
   preload() {
+    new EnemyTextureController(this);
     this.load.setBaseURL(import.meta.env.BASE_URL);
     const updateLoadingProgress = (progress: number) => {
       AppLoadingScreen.setProgress(progress);
