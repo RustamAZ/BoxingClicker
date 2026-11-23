@@ -22,11 +22,11 @@ export class FiveDifficultyBoss extends Enemy {
   private static readonly deathAnimationMoveOffsetY = 110;
   private static readonly aliveSprite: BossAssetConfig = {
     key: "five-difficulty-warden-boss",
-    path: "assets/images/enemies/five-difficulty/warden-boss-die.png",
+    path: "assets/images/enemies/five-difficulty/warden-boss.png",
   };
   private static readonly deadSprite: BossAssetConfig = {
     key: "five-difficulty-warden-boss-dead",
-    path: "assets/images/enemies/five-difficulty/warden-boss.png",
+    path: "assets/images/enemies/five-difficulty/warden-boss-die.png",
   };
   private static readonly spawnSound: BossAssetConfig = {
     key: "five-difficulty-warden-boss-spawn-sound",

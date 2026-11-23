@@ -51,6 +51,7 @@ import { languageController } from "../localization/LanguageController";
 import { TrainingController } from "../training/TrainingController";
 import { AppLoadingScreen } from "../loading/AppLoadingScreen";
 import { FullscreenController } from "../utils/FullscreenController";
+import { ContextMenuController } from "../utils/ContextMenuController";
 import { getGamePlatform } from "../platform/yandex";
 import type { InAppProduct } from "../platform/yandex/GamePlatform";
 import {
@@ -128,6 +129,7 @@ export class Game extends Scene {
   private unsubscribeInfinityTowerRewardUnlocked?: () => void;
   private unsubscribeInfinityTowerMaxFloorChanged?: () => void;
   private fullscreenController?: FullscreenController;
+  private contextMenuController?: ContextMenuController;
   private previousGameLevel: number;
   private isDeathAdContinueUsedInRun = false;
   private isDeathAdContinuePending = false;
@@ -192,6 +194,7 @@ export class Game extends Scene {
   create() {
     this.player = new Player();
     this.fullscreenController = new FullscreenController(this);
+    this.contextMenuController = new ContextMenuController(this);
     this.wallet = new Wallet(this.player);
     this.inAppPurchaseController = new InAppPurchaseController(
       getGamePlatform(),
@@ -462,6 +465,7 @@ export class Game extends Scene {
       this.heroMessageController.destroy();
       this.notificationController.destroy();
       this.fullscreenController?.destroy();
+      this.contextMenuController?.destroy();
     });
   }
 
