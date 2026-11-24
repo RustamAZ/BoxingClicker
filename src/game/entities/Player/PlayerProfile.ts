@@ -9,8 +9,10 @@ import {
   type InfinityTowerConsumableId,
   type InfinityTowerConsumables,
 } from "../../configs/infinityTowerConsumables";
+import { dailyRewardsConfig } from "../../configs/dailyRewards";
 import { gameLevelStartPlayerLevels } from "../../configs/gameLevelsConfig";
 import { getGamePlatform } from "../../platform/yandex";
+import { ShopCatalog } from "../../shop/ShopCatalog";
 
 export type InfinityTowerProfile = {
   isAvailable: boolean;
@@ -66,40 +68,30 @@ type StoredLegacyWallet = {
   emeralds?: number;
 };
 
-const mockStoryGlovesItemIds = [
-  "basic-gloves",
-  "amogus-gloves",
-  "pepe-gloves",
-  "mechanic-gloves",
-  "infinity-gloves",
-  "six-seven-gloves",
-];
+export const useTrailerProfile = true;
 
-const mockInfinityTowerStartTrainingLevels = Object.fromEntries(
-  trainingConfig.items.map((item) => [
-    item.id,
-    item.id === "critical-hit" ? 0 : item.maxLevel,
-  ]),
-) as TrainingLevels;
+const trailerGloveItemIds = ShopCatalog.getItems().map((item) => item.id);
+const trailerTrainingLevel = 3;
 
-const mockInfinityTowerStartProfile: StoredPlayerProfile = {
-  id: "mock-player",
+const mockTrailerProfile: StoredPlayerProfile = {
+  id: "trailer-player",
   onboardingCompleted: true,
-  emeralds: 0,
-  rewiveCount: 0,
-  purchasedItemIds: [...mockStoryGlovesItemIds],
-  discoveredItemIds: [...mockStoryGlovesItemIds],
+  purchasedItemIds: trailerGloveItemIds,
+  discoveredItemIds: trailerGloveItemIds,
   equippedItemId: "six-seven-gloves",
   globalLevel: gameLevelStartPlayerLevels.infinite,
-  InfinityTower: {
-    isAvailable: true,
-    currentLevel: 0,
-    claimedRewardIds: [],
-  },
-  towerConsumables: {},
-  trainingLevels: mockInfinityTowerStartTrainingLevels,
+  InfinityTower: { isAvailable: true },
+  trainingLevels: Object.fromEntries(
+    trainingConfig.items.map((item) => [
+      item.id,
+      // The training menu displays tower levels above the completed base tier.
+      item.infinityTowerUpgrade
+        ? item.maxLevel + trailerTrainingLevel
+        : Math.min(item.maxLevel, trailerTrainingLevel),
+    ]),
+  ),
   dailyRewards: {
-    claimedRewards: [],
+    claimedRewards: dailyRewardsConfig.map((_, index) => index),
   },
 };
 
@@ -116,10 +108,9 @@ export class PlayerProfile {
   private static readonly legacyItemIdAliases: Record<string, string> = {
     "heavy-gloves": "mechanic-gloves",
   };
-  private static readonly mockProfile: StoredPlayerProfile | undefined =
-    undefined;
   private static bootstrapProfile: StoredPlayerProfile | undefined;
 
+  readonly isTrailerProfile = useTrailerProfile;
   private id: string;
   private updatedAt: number;
   private onboardingCompleted: boolean;
@@ -137,10 +128,7 @@ export class PlayerProfile {
 
   static getStoredEquippedItemId() {
     try {
-      const profile =
-        PlayerProfile.mockProfile ??
-        PlayerProfile.bootstrapProfile ??
-        PlayerProfile.getStoredProfile();
+      const profile = PlayerProfile.getCurrentProfile();
 
       if (!profile) {
         return PlayerProfile.defaultEquippedItemId;
@@ -601,12 +589,15 @@ export class PlayerProfile {
     this.save({ flush: true });
   }
 
+  private static getCurrentProfile() {
+    return useTrailerProfile
+      ? mockTrailerProfile
+      : (PlayerProfile.bootstrapProfile ?? PlayerProfile.getStoredProfile());
+  }
+
   private loadProfile(): PlayerProfileSnapshot {
     try {
-      const profile =
-        PlayerProfile.mockProfile ??
-        PlayerProfile.bootstrapProfile ??
-        PlayerProfile.getStoredProfile();
+      const profile = PlayerProfile.getCurrentProfile();
 
       if (!profile) {
         return this.getDefaultProfile();
@@ -864,6 +855,11 @@ export class PlayerProfile {
 
   private save(options: { flush?: boolean } = {}) {
     this.updatedAt = Date.now();
+
+    if (this.isTrailerProfile) {
+      return;
+    }
+
     const snapshot = this.getSnapshot();
 
     try {
