@@ -1,8 +1,8 @@
 import StartGame from './game/main';
 import { AppLoadingScreen } from './game/loading/AppLoadingScreen';
 import { languageController } from './game/localization/LanguageController';
-import { PlayerProfile, useTrailerProfile } from './game/entities/Player/PlayerProfile';
-import { getGamePlatform, initializeGamePlatform } from './game/platform/yandex';
+import { PlayerProfile } from './game/entities/Player/PlayerProfile';
+import { initializeGamePlatform } from './game/platform/yandex';
 
 const loadGameFont = async () => {
     if (!('fonts' in document)) {
@@ -15,7 +15,7 @@ const loadGameFont = async () => {
 document.addEventListener('DOMContentLoaded', async () => {
 
     AppLoadingScreen.show();
-    const platform = useTrailerProfile ? getGamePlatform() : await initializeGamePlatform();
+    const platform = await initializeGamePlatform();
 
     const language = platform.getLanguage();
 
@@ -23,21 +23,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.lang = language;
     AppLoadingScreen.refreshTexts();
 
-    if (useTrailerProfile) {
-        await loadGameFont();
-    } else {
-        const [cloudProfile] = await Promise.all([
-            platform.loadProfile(),
-            loadGameFont(),
-        ]);
-        const selectedProfile = PlayerProfile.selectNewestProfile(
-            PlayerProfile.getStoredProfile(),
-            cloudProfile,
-        );
+    const [cloudProfile] = await Promise.all([
+        platform.loadProfile(),
+        loadGameFont(),
+    ]);
+    const selectedProfile = PlayerProfile.selectNewestProfile(
+        PlayerProfile.getStoredProfile(),
+        cloudProfile,
+    );
 
-        PlayerProfile.setBootstrapProfile(selectedProfile);
-    }
-
+    PlayerProfile.setBootstrapProfile(selectedProfile);
     StartGame('game-container');
 
 });

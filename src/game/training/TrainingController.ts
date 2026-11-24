@@ -118,10 +118,7 @@ export class TrainingController {
   }
 
   completeBaseTrainingForInfinityTower() {
-    if (
-      this.player.profile.isTrailerProfile ||
-      !this.isInfiniteTrainingUnlocked()
-    ) {
+    if (!this.isInfiniteTrainingUnlocked()) {
       return false;
     }
 

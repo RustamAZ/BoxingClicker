@@ -8,10 +8,7 @@ import {
   type InfinityTowerConsumableId,
   type InfinityTowerConsumables,
 } from "../../configs/infinityTowerConsumables";
-import { dailyRewardsConfig } from "../../configs/dailyRewards";
-import { gameLevelStartPlayerLevels } from "../../configs/gameLevelsConfig";
 import { getGamePlatform } from "../../platform/yandex";
-import { ShopCatalog } from "../../shop/ShopCatalog";
 
 export type InfinityTowerProfile = {
   isAvailable: boolean;
@@ -67,24 +64,6 @@ type StoredLegacyWallet = {
   emeralds?: number;
 };
 
-export const useTrailerProfile = true;
-
-const trailerGloveItemIds = ShopCatalog.getItems().map((item) => item.id);
-
-const mockTrailerProfile: StoredPlayerProfile = {
-  id: "trailer-player",
-  onboardingCompleted: true,
-  purchasedItemIds: trailerGloveItemIds,
-  discoveredItemIds: trailerGloveItemIds,
-  equippedItemId: "six-seven-gloves",
-  globalLevel: gameLevelStartPlayerLevels.infinite,
-  InfinityTower: { isAvailable: true },
-  trainingLevels: {},
-  dailyRewards: {
-    claimedRewards: dailyRewardsConfig.map((_, index) => index),
-  },
-};
-
 export class PlayerProfile {
   private static readonly storageKey = "boxing-clicker-player-profile";
   private static readonly legacyWalletStorageKey = "boxing-clicker-wallet";
@@ -100,7 +79,6 @@ export class PlayerProfile {
   };
   private static bootstrapProfile: StoredPlayerProfile | undefined;
 
-  readonly isTrailerProfile = useTrailerProfile;
   private id: string;
   private updatedAt: number;
   private onboardingCompleted: boolean;
@@ -118,7 +96,8 @@ export class PlayerProfile {
 
   static getStoredEquippedItemId() {
     try {
-      const profile = PlayerProfile.getCurrentProfile();
+      const profile =
+        PlayerProfile.bootstrapProfile ?? PlayerProfile.getStoredProfile();
 
       if (!profile) {
         return PlayerProfile.defaultEquippedItemId;
@@ -579,15 +558,10 @@ export class PlayerProfile {
     this.save({ flush: true });
   }
 
-  private static getCurrentProfile() {
-    return useTrailerProfile
-      ? mockTrailerProfile
-      : (PlayerProfile.bootstrapProfile ?? PlayerProfile.getStoredProfile());
-  }
-
   private loadProfile(): PlayerProfileSnapshot {
     try {
-      const profile = PlayerProfile.getCurrentProfile();
+      const profile =
+        PlayerProfile.bootstrapProfile ?? PlayerProfile.getStoredProfile();
 
       if (!profile) {
         return this.getDefaultProfile();
@@ -845,11 +819,6 @@ export class PlayerProfile {
 
   private save(options: { flush?: boolean } = {}) {
     this.updatedAt = Date.now();
-
-    if (this.isTrailerProfile) {
-      return;
-    }
-
     const snapshot = this.getSnapshot();
 
     try {
