@@ -1,5 +1,4 @@
 import {
-  trainingConfig,
   trainingItemIds,
   type TrainingItemId,
   type TrainingLevels,
@@ -71,7 +70,6 @@ type StoredLegacyWallet = {
 export const useTrailerProfile = true;
 
 const trailerGloveItemIds = ShopCatalog.getItems().map((item) => item.id);
-const trailerTrainingLevel = 3;
 
 const mockTrailerProfile: StoredPlayerProfile = {
   id: "trailer-player",
@@ -81,15 +79,7 @@ const mockTrailerProfile: StoredPlayerProfile = {
   equippedItemId: "six-seven-gloves",
   globalLevel: gameLevelStartPlayerLevels.infinite,
   InfinityTower: { isAvailable: true },
-  trainingLevels: Object.fromEntries(
-    trainingConfig.items.map((item) => [
-      item.id,
-      // The training menu displays tower levels above the completed base tier.
-      item.infinityTowerUpgrade
-        ? item.maxLevel + trailerTrainingLevel
-        : Math.min(item.maxLevel, trailerTrainingLevel),
-    ]),
-  ),
+  trainingLevels: {},
   dailyRewards: {
     claimedRewards: dailyRewardsConfig.map((_, index) => index),
   },
