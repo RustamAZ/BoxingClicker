@@ -5,7 +5,8 @@ import { RewardChoiceController } from "../upgrades/RewardChoiceController";
 import type { RewardChoice } from "../upgrades/types";
 
 type RewardCard = {
-  container: GameObjects.Image;
+  view: GameObjects.Container;
+  background: GameObjects.Image;
   icon: GameObjects.Image;
   hitArea: GameObjects.Rectangle;
   description: GameObjects.Text;
@@ -15,13 +16,15 @@ type RewardCard = {
 export class LevelUpRewardModal {
   private static readonly depth = 1200;
   private static readonly selectionLockDurationMs = 800;
+  private static readonly selectionAnimationDurationMs = 150;
+  private static readonly selectionScale = 1.12;
   private static readonly backgroundTextureKey = "buff-container-empty";
   private static readonly backgroundPath =
     "assets/images/ui/buffs/buff-container-empty.png";
   private static readonly titleYOffset = -187;
   private static readonly cardYOffset = 56;
   private static readonly iconYOffset = -82;
-  private static readonly descriptionYOffset = 144;
+  private static readonly descriptionYOffset = 88;
   private static readonly cardGap = 286;
   private static readonly cardWidth = 262;
   private static readonly cardHeight = 360;
@@ -35,6 +38,7 @@ export class LevelUpRewardModal {
   private onSelect?: (choice: RewardChoice) => void;
   private isSelectionLocked = false;
   private unlockSelectionTimer?: Phaser.Time.TimerEvent;
+  private selectionUpdate?: (time: number, delta: number) => void;
 
   static preload(scene: Scene) {
     scene.load.image(
@@ -98,6 +102,7 @@ export class LevelUpRewardModal {
       this.refreshTexts();
     });
     this.scene.events.once("shutdown", () => {
+      this.clearSelectionAnimation();
       this.unsubscribeLanguageChange();
     });
   }
@@ -106,12 +111,15 @@ export class LevelUpRewardModal {
     this.onSelect = onSelect;
     this.isSelectionLocked = true;
     this.clearUnlockSelectionTimer();
+    this.clearSelectionAnimation();
     this.setVisible(true);
 
     this.cards.forEach((card, index) => {
       const choice = choices[index];
 
       card.choice = choice;
+      card.view.setScale(1);
+      card.background.clearTint();
 
       if (choice) {
         this.setCardData(card, choice);
@@ -138,6 +146,7 @@ export class LevelUpRewardModal {
     this.onSelect = undefined;
     this.isSelectionLocked = false;
     this.clearUnlockSelectionTimer();
+    this.clearSelectionAnimation();
     this.setVisible(false);
     this.cards.forEach((card) => {
       card.choice = undefined;
@@ -146,39 +155,23 @@ export class LevelUpRewardModal {
   }
 
   private createRewardCard(x: number, modalCenterY: number): RewardCard {
-    const card = {} as RewardCard;
     const cardY = modalCenterY + LevelUpRewardModal.cardYOffset;
 
-    const container = this.scene.add
-      .image(x, cardY, LevelUpRewardModal.backgroundTextureKey)
-      .setDepth(LevelUpRewardModal.depth + 2)
-      .setVisible(false);
-
-    const icon = this.scene.add
-      .image(
-        x,
-        cardY + LevelUpRewardModal.iconYOffset,
-        LevelUpRewardModal.backgroundTextureKey,
-      )
-      .setDepth(LevelUpRewardModal.depth + 3)
-      .setVisible(false);
-
-    const hitArea = this.scene.add
-      .rectangle(
-        x,
-        cardY,
-        LevelUpRewardModal.cardWidth,
-        LevelUpRewardModal.cardHeight,
-        0x000000,
-        0,
-      )
-      .setDepth(LevelUpRewardModal.depth + 4)
-      .setInteractive({ useHandCursor: true });
+    const background = this.scene.add.image(
+      0,
+      0,
+      LevelUpRewardModal.backgroundTextureKey,
+    );
+    const icon = this.scene.add.image(
+      0,
+      LevelUpRewardModal.iconYOffset,
+      LevelUpRewardModal.backgroundTextureKey,
+    );
 
     const description = this.scene.add
       .text(
-        x,
-        modalCenterY + LevelUpRewardModal.descriptionYOffset,
+        0,
+        LevelUpRewardModal.descriptionYOffset,
         "",
         {
           fontFamily: "Hardpixel",
@@ -193,13 +186,23 @@ export class LevelUpRewardModal {
         },
       )
       .setOrigin(0.5)
-      .setResolution(2)
-      .setDepth(LevelUpRewardModal.depth + 3);
+      .setResolution(2);
 
-    card.container = container;
-    card.icon = icon;
-    card.hitArea = hitArea;
-    card.description = description;
+    const view = this.scene.add
+      .container(x, cardY, [background, icon, description])
+      .setDepth(LevelUpRewardModal.depth + 2);
+    const hitArea = this.scene.add
+      .rectangle(
+        x,
+        cardY,
+        LevelUpRewardModal.cardWidth,
+        LevelUpRewardModal.cardHeight,
+        0x000000,
+        0,
+      )
+      .setDepth(LevelUpRewardModal.depth + 4)
+      .setInteractive({ useHandCursor: true });
+    const card: RewardCard = { view, background, icon, description, hitArea };
 
     hitArea.on(
       "pointerdown",
@@ -210,33 +213,65 @@ export class LevelUpRewardModal {
         event: Phaser.Types.Input.EventData,
       ) => {
         event.stopPropagation();
-
-      const choice = card.choice;
-      const onSelect = this.onSelect;
-
-      if (this.isSelectionLocked || !choice || !onSelect) {
-        return;
-      }
-
-      UiSoundPlayer.playClick(this.scene);
-      this.onSelect = undefined;
-      onSelect(choice);
+        this.selectCard(card);
       },
     );
     hitArea.on("pointerover", () => {
-      card.container.setTint(0xe8e8e8);
+      card.background.setTint(0xe8e8e8);
     });
     hitArea.on("pointerout", () => {
-      card.container.clearTint();
+      card.background.clearTint();
     });
 
     return card;
   }
 
+  private selectCard(card: RewardCard) {
+    const choice = card.choice;
+    const onSelect = this.onSelect;
+
+    if (this.isSelectionLocked || !choice || !onSelect) {
+      return;
+    }
+
+    this.onSelect = undefined;
+    this.cards.forEach((rewardCard) => this.setCardInteractive(rewardCard, false));
+    UiSoundPlayer.playClick(this.scene);
+
+    let elapsed = 0;
+
+    // The game pauses the scene's tween manager while the reward modal is open.
+    this.selectionUpdate = (_time, delta) => {
+      elapsed += delta;
+      const progress = Math.min(
+        elapsed / LevelUpRewardModal.selectionAnimationDurationMs,
+        1,
+      );
+      const easedProgress = 1 - (1 - progress) ** 3;
+
+      card.view.setScale(
+        1 + (LevelUpRewardModal.selectionScale - 1) * easedProgress,
+      );
+
+      if (progress === 1) {
+        this.clearSelectionAnimation();
+        onSelect(choice);
+      }
+    };
+    this.scene.events.on("update", this.selectionUpdate);
+  }
+
+  private clearSelectionAnimation() {
+    if (this.selectionUpdate) {
+      this.scene.events.off("update", this.selectionUpdate);
+      this.selectionUpdate = undefined;
+    }
+  }
+
   private setCardData(card: RewardCard, choice: RewardChoice) {
     const localizedChoice = RewardChoiceController.localizeChoice(choice);
 
-    card.container.setTexture(choice.rarityTextureKey);
+    card.background.setTexture(choice.rarityTextureKey);
     card.icon.setTexture(choice.iconTextureKey);
     card.description.setText(
       `${localizedChoice.title}\n${localizedChoice.description}`,
@@ -269,10 +304,8 @@ export class LevelUpRewardModal {
     visible: boolean,
     canInteract = visible,
   ) {
-    card.container.setVisible(visible);
-    card.icon.setVisible(visible);
+    card.view.setVisible(visible);
     card.hitArea.setVisible(visible);
-    card.description.setVisible(visible);
 
     this.setCardInteractive(card, visible && canInteract);
   }
